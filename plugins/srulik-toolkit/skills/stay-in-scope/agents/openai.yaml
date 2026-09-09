@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stay in scope"
+  short_description: "Stop scope drift and restore the request"
+  default_prompt: "Use $stay-in-scope to re-establish the current request's scope before continuing."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Swarm"
+  short_description: "Delegate work through available agents"
+  default_prompt: "Use $agent-swarm to delegate this task through the child-agent tools available here."

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "srulik-toolkit",
+  "version": "1.0.0",
+  "description": "Planning and engineering workflows for Claude Code and Codex.",
+  "owner": {
+    "name": "Zach Bonfil"
+  },
+  "plugins": [
+    {
+      "name": "srulik-toolkit",
+      "source": "./plugins/srulik-toolkit",
+      "description": "Seven practical skills for planning, project setup, review, scope control, delegated work, TDD, and minimal implementation.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Zach Bonfil"
+      },
+      "category": "development"
+    }
+  ]
+}

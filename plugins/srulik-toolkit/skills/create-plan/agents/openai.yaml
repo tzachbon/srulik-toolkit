@@ -1,0 +1,12 @@
+interface:
+  display_name: Create Plan
+  short_description: Research, grill, validate, and hand off execution-ready plans
+  default_prompt: 'Create an execution-ready plan for this task. Research available
+    evidence and relevant skills first. Grill me in layered question waves: map the
+    unresolved decision tree, ask up to four currently answerable frontier questions
+    with recommended answers, then re-research facts exposed by my answers and recompute
+    the frontier. Escalate from foundation to shape to adversarial edges and execution
+    closure until the readiness gates pass, then produce a self-contained plan with
+    validation, risks, dependencies, and exact skill handoffs for execution.'
+policy:
+  allow_implicit_invocation: true

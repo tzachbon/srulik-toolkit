@@ -1,0 +1,27 @@
+{
+  "name": "srulik-toolkit",
+  "version": "1.0.0",
+  "description": "Seven practical skills for planning, project setup, review, scope control, delegated work, TDD, and minimal implementation.",
+  "author": {
+    "name": "Zach Bonfil",
+    "url": "https://github.com/tzachbon"
+  },
+  "homepage": "https://github.com/tzachbon/srulik-toolkit",
+  "repository": "https://github.com/tzachbon/srulik-toolkit",
+  "license": "MIT",
+  "keywords": ["planning", "review", "tdd", "agents", "scope"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Srulik Toolkit",
+    "shortDescription": "Plan, review, and build with tighter scope.",
+    "longDescription": "Srulik Toolkit packages seven portable workflows for turning ideas into projects, planning work, reviewing changes, controlling scope, coordinating agents, using TDD, and keeping implementations small.",
+    "developerName": "Zach Bonfil",
+    "category": "Productivity",
+    "capabilities": ["Planning", "Code review", "Project setup"],
+    "defaultPrompt": [
+      "Turn this idea into a project.",
+      "Create an execution-ready plan.",
+      "Review the current changes."
+    ]
+  }
+}
