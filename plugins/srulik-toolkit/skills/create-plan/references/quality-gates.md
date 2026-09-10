@@ -10,14 +10,14 @@
 - Risk and recovery
 - Assumption pressure test
 - Skill handoff quality
-- Plan compression
+- Detail without filler
 - Final adversarial read
 
 Use these gates before finalizing any plan. The goal is to detect plans that sound complete but still force the executor to rediscover requirements, sequencing, decisions, or validation.
 
 ## Gate 1: outcome coverage
 
-Create an internal coverage map:
+Include a coverage map in the final plan:
 
 ```text
 Requirement/outcome | Plan workstream | Validation evidence | Status
@@ -120,7 +120,9 @@ For each recommended skill verify:
 
 If a capability is useful but no skill exists, label it as a missing capability.
 
-## Gate 9: plan compression
+## Gate 9: detail without filler
+
+Do not optimize for brevity. Fail the gate if the draft is only an outline, if task bullets hide necessary decisions, or if a source link substitutes for required execution context.
 
 Remove:
 
@@ -131,7 +133,7 @@ Remove:
 - decorative risk or quality sections
 - separate tasks for setup/docs/tests when they belong inside a deliverable
 
-Preserve information needed for correct execution even if it repeats an upstream requirements artifact. The final plan must be self-contained.
+Preserve explanations of current and intended behavior, decision rationale, concrete examples, task instructions, failure behavior, and verification procedures. Repeat critical contracts inside independently delegated tasks when needed. Preserve information needed for correct execution even if it repeats an upstream requirements artifact. The final plan must be self-contained.
 
 ## Gate 10: final adversarial read
 

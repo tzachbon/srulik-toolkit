@@ -49,7 +49,7 @@ for manifest in [
     data = json.loads(manifest.read_text())
     if data.get("name") != "srulik-toolkit":
         raise SystemExit(f"wrong manifest name: {manifest.relative_to(root)}")
-    if "version" in data and data["version"] != "1.0.0":
+    if "version" in data and data["version"] != "1.0.1":
         raise SystemExit(f"wrong version: {manifest.relative_to(root)}")
 
 for relative in [

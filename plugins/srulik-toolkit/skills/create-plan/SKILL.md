@@ -1,6 +1,6 @@
 ---
 name: create-plan
-description: Create execution-ready plans for engineering, architecture, research, reviews, migrations, investigations, operations, strategy, decisions, and other multi-step work. Use when the user asks to create, write, improve, pressure-test, decompose, or validate a plan before execution. Research available context first, run a mandatory adaptive grilling loop to resolve consequential ambiguity, re-research evidence exposed by the grill, repeat until readiness gates pass, then produce a self-contained plan with scope, decisions, dependencies, risks, validation, acceptance criteria, and explicit skill handoffs.
+description: Create detailed, comprehensive, execution-ready plans for engineering, architecture, research, reviews, migrations, investigations, operations, strategy, decisions, and other multi-step work. Use when the user asks to create, write, improve, pressure-test, decompose, or validate a plan before execution. Research available context first, run a mandatory adaptive grilling loop to resolve consequential ambiguity, re-research evidence exposed by the grill, repeat until readiness gates pass, then produce a self-contained plan with scope, decisions, dependencies, risks, validation, acceptance criteria, and explicit skill handoffs.
 metadata:
   skill-type: planning
 ---
@@ -8,6 +8,16 @@ metadata:
 # Create Plan
 
 Create plans that a capable executor can carry out without rediscovering the problem. Keep one discipline-agnostic planning protocol at the root. Load specialist references only when the task benefits from them.
+
+## Default depth: comprehensive
+
+Default to a substantial, self-contained plan, even when conversational replies should be brief. A short delivery message may link to the full artifact; it must not replace the artifact with an outline. Shorten the plan only when the user requests it.
+
+Assume the executor is capable but has no conversation history and little familiarity with the project, domain, or local conventions. Explain the problem, current behavior, intended behavior, relevant vocabulary, constraints, design rationale, and how each deliverable will be produced and verified. Include the details the executor would otherwise need to rediscover.
+
+Use layered structure so the reader can scan the overview and then work through full task instructions. Keep material rationale and evidence in the plan even when they also appear in a source document. Repeat a critical contract in a separately delegated task when that executor would otherwise miss it. Remove filler and duplicate work, but preserve useful explanation, examples, edge cases, and recovery instructions. There is no word-count target: completeness determines length.
+
+Read `references/detailed-plans.md` before drafting or revising the final plan. It defines the required depth, task format, and examples across disciplines. Read `references/quality-gates.md` before finalizing.
 
 ## Non-negotiable rules
 
@@ -90,7 +100,7 @@ Research to decision sufficiency, not exhaustiveness. Stop broad exploration onc
 
 ### 3. Build the planning brief and decision ledger
 
-Maintain a compact internal brief throughout planning:
+Maintain a working brief throughout planning. The brief is a tracking aid; expand its execution-relevant content in the final plan:
 
 - Objective
 - Verified facts
@@ -201,7 +211,11 @@ Use this root structure unless a discipline reference calls for a small adaptati
 
 ## Context and evidence
 
-<Current state, verified constraints, relevant decisions, and concise source pointers.>
+<Explain the current state and problem mechanism, affected people/systems, evidence, and why the change is needed. Include source pointers and material limits of the evidence.>
+
+## Requirements and constraints
+
+<Assign stable IDs to material requirements and observable acceptance conditions. Define global invariants and constraints with verified values. Explain relevant domain terms.>
 
 ## Decisions and assumptions
 
@@ -220,19 +234,33 @@ Use this root structure unless a discipline reference calls for a small adaptati
 
 ## Approach
 
-<Overall strategy, sequencing logic, alternatives rejected, and important tradeoffs.>
+<Explain the proposed state, how the parts interact, why this approach fits the evidence, credible alternatives rejected and their tradeoffs, and the reason for the sequence.>
+
+## Artifact and dependency map
+
+<Name the files, documents, systems, or datasets involved, each responsibility, and the contracts between workstreams. Distinguish verified existing artifacts from proposed new artifacts. Identify prerequisites, safe parallel work, and integration checkpoints.>
 
 ## Work plan
 
 ### 1. <Outcome or workstream>
 
-- Outcome: <independently verifiable result>
-- Inputs and dependencies: <what must be true or available first>
-- Work: <specific actions, artifacts, systems, analyses, or decisions>
-- Outputs/contracts: <what this workstream produces for later work>
-- Validation: <evidence proving the outcome>
-- Risks and recovery: <only material items>
-- Skills: <exact discovered skills to invoke here, if applicable>
+**Purpose and requirements:** <Why this task exists, requirement IDs, observable outcome.>
+
+**Starting context:** <What the executor must know, read, and have available; prerequisites and task dependencies.>
+
+**Artifacts and contracts:** <Exact verified targets or explicitly proposed new ones; responsibilities; inputs, outputs, and interfaces.>
+
+**Execution steps:**
+
+- [ ] <One bounded action. Supply the method, relevant content or example, and expected intermediate result.>
+- [ ] <Next action in dependency order. Include concrete edge-case and failure behavior where relevant.>
+- [ ] <Verification action with the procedure, expected result or threshold, and evidence to retain.>
+
+**Completion gate:** <What proves this task can be accepted and dependent work can begin.>
+
+**Failure and recovery:** <Material failure signals, stop conditions, fallback or recovery procedure.>
+
+**Handoff:** <Downstream consumer, output contract, and exact discovered skills with invocation timing, if applicable.>
 
 ### 2. <Outcome or workstream>
 
@@ -244,7 +272,13 @@ Use this root structure unless a discipline reference calls for a small adaptati
 
 ## Acceptance criteria
 
-- <Observable criterion>
+| Requirement | Observable acceptance condition | Task(s) | Verification and evidence |
+| --- | --- | --- | --- |
+| <ID> | <Condition> | <Task IDs> | <Procedure and proof> |
+
+## End-to-end verification
+
+<Describe the complete user journey, system behavior, research conclusion, or operational outcome to verify after task-level checks. State prerequisites, procedure, expected results, evidence location, and failure response.>
 
 ## Risks and mitigations
 
@@ -265,7 +299,7 @@ Use this root structure unless a discipline reference calls for a small adaptati
 - <source, file, document, issue, URL, decision record, or other evidence>
 ```
 
-Omit empty sections. Add discipline-specific sections only when they improve execution.
+Omit empty sections. Add discipline-specific sections when they improve execution. The template is a scaffold: expand each substantive section into explanations, tables, examples, and executable steps as needed. Do not treat its short placeholders as the intended output length.
 
 ### 9. Right-size and sequence work items
 
@@ -277,7 +311,7 @@ A work item should usually be the smallest unit that:
 - exposes a clear output or interface to dependent work
 - could be reviewed, accepted, rolled back, or rejected separately when relevant
 
-For engineering, smaller executable steps may be useful inside a work item. For research or review, use evidence-producing stages rather than implementation-style microsteps.
+Give work items stable IDs and explicit dependencies. Within each engineering work item, provide ordered checkbox steps with concrete implementation and verification detail. For research or review, use evidence-producing stages rather than implementation-style microsteps.
 
 Build the dependency graph before final ordering. Do not sequence by narrative convenience.
 
@@ -289,7 +323,8 @@ Follow `references/quality-gates.md`.
 
 Review the draft as both a skeptical executor and a skeptical approver. At minimum verify:
 
-- complete requirement and scope coverage
+- sufficient explanatory depth for an executor with no conversation history
+- complete requirement and scope coverage, visible in the acceptance traceability table
 - no unexplained execution context
 - dependency-correct ordering
 - outcome-based validation rather than activity completion
@@ -299,7 +334,7 @@ Review the draft as both a skeptical executor and a skeptical approver. At minim
 - exact names, paths, commands, APIs, owners, dates, and skills verified rather than guessed
 - skill handoff present and phase-specific
 - no placeholders that research should have resolved
-- no duplicate, decorative, or non-actionable work
+- no duplicate, decorative, or non-actionable work; no removal of useful context merely to make the plan shorter
 
 If QA reveals a material gap, return to research and grilling. Do not patch over it with a vague TODO.
 

@@ -32,7 +32,7 @@ For each meaningful engineering unit, record verified paths when known:
 - Test: exact path or test target
 - Configuration/data migration: exact artifact
 
-Do not invent paths. If a path is unknown, include a discovery action defining what must be located and why.
+Verify existing paths. Explicitly label new paths as proposed and align them with inspected repository conventions. Resolve discoverable paths during planning. When evidence will only exist during execution, include a bounded discovery action with a completion criterion and block dependent work until it resolves.
 
 Where workstreams depend on one another, specify interfaces:
 
@@ -48,6 +48,12 @@ Use independently testable deliverables. Fold setup, configuration, scaffolding,
 For TDD-oriented repositories, make the red/green/refactor cycle explicit where it matches existing practice. Do not impose TDD when another validation strategy is more appropriate.
 
 Prefer steps small enough to execute reliably, but do not optimize for arbitrary minute counts. The right boundary is an outcome with its own evidence and review gate.
+
+## Execution detail
+
+Apply `references/detailed-plans.md` from the skill root. Include concrete implementation logic, representative code or patch sketches where useful, specific test cases with expected results, and ordered checkbox steps. Explain relevant current behavior and how the proposed change addresses it. Name specific error and boundary cases instead of delegating their design through phrases such as “handle edge cases.”
+
+For each verification command, state its working directory, prerequisites, expected outcome, and what evidence to retain. Distinguish inspected commands from checks actually executed during planning. Include final integration or end-to-end verification beyond local task checks.
 
 ## Validation
 
