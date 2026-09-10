@@ -61,7 +61,7 @@ for manifest in [
     data = json.loads(manifest.read_text())
     if data.get("name") != "srulik-toolkit":
         raise SystemExit(f"wrong manifest name: {manifest.relative_to(root)}")
-    manifests[str(manifest.relative_to(root))] = data
+    manifests[manifest.relative_to(root).as_posix()] = data
     if "version" in data and data["version"] != "1.1.0":
         raise SystemExit(f"wrong version: {manifest.relative_to(root)}")
     if "hooks" in data:
