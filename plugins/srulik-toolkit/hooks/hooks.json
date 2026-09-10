@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"Srulik Toolkit skills: to-project, review-pro-max, create-plan, stay-in-scope, agent-swarm, tdd, keep-it-simple, research, stop-slop, pr-babysit, resolving-merge-conflicts, fix-ci. Read relevant skills and stay within the requested scope.\""
+          }
+        ]
+      }
+    ]
+  }
+}

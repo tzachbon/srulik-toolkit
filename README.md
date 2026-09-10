@@ -7,15 +7,16 @@
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Seven focused skills for planning and shipping software with Claude Code and Codex.**
+**Twelve focused skills for planning and shipping software with Claude Code and Codex.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
 </div>
 
 Srulik Toolkit packages the workflows I use to turn loose ideas into projects,
-write plans, review changes, keep work in scope, delegate suitable tasks, work
-test-first, and resist unnecessary code.
+research questions, write plans, review changes, keep work in scope, delegate
+suitable tasks, work test-first, and maintain pull requests. It also covers prose
+editing, merge conflicts, and CI failures.
 
 Each skill works on its own. Install one plugin, then invoke the skill you need
 by name or describe the task in plain language.
@@ -36,11 +37,24 @@ Restart Claude Code after installation.
 ### Codex
 
 ```bash
-codex plugin marketplace add tzachbon/srulik-toolkit
+codex plugin marketplace add tzachbon/srulik-toolkit --ref main
 codex plugin add srulik-toolkit@srulik-toolkit
 ```
 
-Start a new Codex task after installation.
+Start a new Codex task after installation. Open `/hooks` and trust the plugin
+hook to enable the startup hint. Codex requires separate hook trust after an
+installation or a hook change; installing the plugin alone does not grant it.
+
+## Startup hint
+
+On a new session, the plugin writes the twelve skill names and a short routing
+instruction to model context. It uses the default `hooks/hooks.json` location
+and runs only for `SessionStart` with the `startup` matcher. It does not run on
+each prompt or emit a user-facing warning.
+
+The hint uses a static ASCII `echo` command. It reads no files, makes no network
+requests, and changes no configuration. Skills remain available when the hook
+is disabled or untrusted.
 
 ## Choose a skill
 
@@ -53,6 +67,11 @@ Start a new Codex task after installation.
 | [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. |
 | [`tdd`](plugins/srulik-toolkit/skills/tdd/SKILL.md) | Build one behavior at a time through red, green, and refactor. |
 | [`keep-it-simple`](plugins/srulik-toolkit/skills/keep-it-simple/SKILL.md) | Find the smallest correct change after understanding the affected flow. |
+| [`research`](plugins/srulik-toolkit/skills/research/SKILL.md) | Investigate a question and produce a cited report with evidence gaps. |
+| [`stop-slop`](plugins/srulik-toolkit/skills/stop-slop/SKILL.md) | Edit prose for direct language while preserving facts and uncertainty. |
+| [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Address review feedback and checks within an authorized pull request scope. |
+| [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
+| [`fix-ci`](plugins/srulik-toolkit/skills/fix-ci/SKILL.md) | Diagnose failing checks, apply the smallest repair, and verify the result. |
 
 Example prompts:
 
@@ -60,7 +79,8 @@ Example prompts:
 $create-plan Add offline support to this app
 $review-pro-max Review the changes on my current branch
 $tdd Implement expiration for cached sessions
-$keep-it-simple Simplify this proposal before we build it
+$research Trace how this repository handles retries
+$fix-ci Diagnose and fix the failing checks on this pull request
 ```
 
 Claude Code may expose skills as slash commands. Codex uses `$skill-name`.
@@ -90,8 +110,12 @@ external skill, but it cannot install one without your approval.
 - `review-pro-max` can use GitHub CLI for pull requests. It can also run
   CodeRabbit when you opt in and the command is installed and authenticated.
   CodeRabbit may send source outside the local machine.
-- `agent-swarm` uses the child-agent controls supplied by the active tool. It
-  keeps eligible work serial when those controls are unavailable.
+- `agent-swarm` and `research` use available child-agent controls when useful.
+  They can work inline when those controls are unavailable.
+- `pr-babysit` and `fix-ci` can use an authenticated GitHub CLI or an equivalent
+  connector for checks, logs, and pull requests. Local checks use the project
+  toolchain. Continued monitoring requires a supported scheduler or an active
+  session; the skills do not install one.
 - `to-project` can search public skill catalogs when you ask. It requires your
   approval before installing another skill.
 
@@ -115,6 +139,21 @@ codex plugin marketplace upgrade srulik-toolkit
 codex plugin remove srulik-toolkit@srulik-toolkit
 codex plugin marketplace remove srulik-toolkit
 ```
+
+Restart Claude Code or start a new Codex task after updating. In Codex, open
+`/hooks` again and review trust if the hook changed.
+
+## Windows
+
+Use the same plugin commands in the shell supported by your Claude Code or
+Codex installation. The startup command works in POSIX shells, PowerShell, and
+`cmd.exe`; it has no Bash, Python, or Node dependency. `cmd.exe` may retain the
+outer quotes in the context hint.
+
+Repository validation uses Bash and Python 3. On Windows, run it from Git Bash
+with Python 3 on `PATH`. The CI matrix checks Linux, macOS, and Windows, including
+the native Windows PowerShell and `cmd.exe` echo behavior. Project work may
+require the tools used by that project.
 
 ## Local development
 
@@ -148,6 +187,7 @@ srulik-toolkit/
 ├── plugins/srulik-toolkit/
 │   ├── .claude-plugin/plugin.json
 │   ├── .codex-plugin/plugin.json
+│   ├── hooks/hooks.json
 │   └── skills/
 └── scripts/validate.sh
 ```

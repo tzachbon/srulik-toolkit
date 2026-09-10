@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stop slop"
+  short_description: "Edit prose for clarity and preserve meaning"
+  default_prompt: "Use $stop-slop to improve this prose while preserving its meaning, tone, and evidence."

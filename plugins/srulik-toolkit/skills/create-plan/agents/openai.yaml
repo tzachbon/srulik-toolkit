@@ -9,9 +9,4 @@ interface:
     closure until the readiness gates pass, then produce a self-contained plan with
     context and rationale, requirements traceability, artifact and interface maps, ordered checkbox steps, concrete examples, validation procedures and expected results, risks and recovery, dependencies, and exact skill handoffs for execution. Preserve useful detail; do not compress the artifact into an outline.'
 policy:
-  products:
-  - chatgpt
-  - codex
-  - api
-  - atlas
   allow_implicit_invocation: true
