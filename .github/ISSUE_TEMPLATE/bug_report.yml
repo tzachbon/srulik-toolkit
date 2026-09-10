@@ -1,0 +1,66 @@
+name: Bug report
+description: Report incorrect or unexpected skill behavior
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the prompt, expected behavior, and observed behavior.
+    validations:
+      required: true
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Tool
+      options:
+        - Claude Code
+        - Codex
+        - Both
+    validations:
+      required: true
+  - type: input
+    id: skill
+    attributes:
+      label: Skill
+      description: Name the affected skill, if known.
+      placeholder: create-plan
+    validations:
+      required: false
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Install version...
+        2. Run the prompt...
+        3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions and operating system
+      description: Include the toolkit version, tool version, and operating system.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: Remove credentials, private paths, and private source before pasting output.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: I restarted the tool after installing or updating the plugin.
+          required: true
+        - label: This report contains no credentials or private information.
+          required: true

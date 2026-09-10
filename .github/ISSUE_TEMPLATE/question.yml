@@ -1,0 +1,37 @@
+name: Question
+description: Ask about installation, usage, or contributing
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What do you want to accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: Include the relevant command or prompt and remove private information.
+    validations:
+      required: false
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Tool
+      options:
+        - Claude Code
+        - Codex
+        - Both
+        - Not tool-specific
+    validations:
+      required: true
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checks
+      options:
+        - label: I checked the README and existing issues.
+          required: true

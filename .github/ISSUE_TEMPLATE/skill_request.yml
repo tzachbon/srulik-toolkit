@@ -1,0 +1,47 @@
+name: Skill request
+description: Propose a new skill or a focused change to an existing one
+title: "[Skill]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem should the skill solve?
+      description: Describe the recurring task and where current tools fall short.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Desired behavior
+      description: Show one or two example prompts and the result you expect.
+    validations:
+      required: true
+  - type: textarea
+    id: fit
+    attributes:
+      label: Why does it belong in Srulik Toolkit?
+      description: Explain how it fits planning, review, scope, delegation, testing, or implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Existing alternatives
+      description: Name any skill, command, or workflow you already tried.
+    validations:
+      required: false
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to work on a pull request for this change.
+          required: false
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for this request.
+          required: true
