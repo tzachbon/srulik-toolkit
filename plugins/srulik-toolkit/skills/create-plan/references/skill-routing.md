@@ -82,17 +82,11 @@ Avoid decorative skill lists.
 
 ## Capability gaps
 
-When no installed skill covers a material execution need:
+When no installed skill covers a material planning or execution need:
 
-1. Name the missing capability, where it is needed, and the output it must
-   provide. Continue with the runtime's general capabilities when they can still
-   produce the required outcome.
-2. Read `dynamic-skills.md` and search for qualified external candidates only
-   when the user requests external discovery.
-3. Keep installation separate from discovery. Install only after an explicit
-   user request.
-4. If the user requested external discovery and a qualified candidate exists,
-   record it as `available by explicit installation request`, with its exact
-   phase and expected output.
-5. If no candidate qualifies, retain the missing capability in the plan. Suggest creating a
-   new skill only as a future improvement, not as if it already exists.
+1. Read `dynamic-skills.md` and search for qualified external candidates when discovery tools are available.
+2. Keep installation separate from discovery and require explicit user authorization before installing anything.
+3. Ask about installation during planning only when the candidate is required to complete planning. If the user declines, use a documented fallback or leave the affected decision unresolved.
+4. Record execution-time candidates as `available with approval`, with their exact phase and expected output. Do not interrupt planning to offer optional installation.
+5. Label candidates with insufficient quality evidence as `unverified`; do not recommend loading or installing them.
+6. If no candidate qualifies, name the `missing capability`, where it is needed, and the output it must provide. Suggest creating a new skill only as a future improvement, not as if it already exists.

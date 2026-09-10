@@ -20,7 +20,7 @@ Create plans that a capable executor can carry out without rediscovering the pro
 5. If evidence can answer a question, research it instead of asking the user.
 6. After each answered grill wave, reconcile decisions and run targeted re-research before constructing the next wave when the answers expose verifiable facts or new planning surfaces.
 7. Continue research -> grill -> re-research -> grill until the readiness gate passes or unresolved items are explicitly deferred without invalidating the executable plan.
-8. When the runtime exposes an installed skill catalog, inspect it early. Invoke clearly applicable installed skills during planning when needed and include exact execution-time skill handoffs in the final plan.
+8. Discover relevant available skills early. Invoke clearly applicable skills during planning when needed and always include exact execution-time skill handoffs in the final plan.
 9. Never invent skill names, files, commands, APIs, owners, dates, requirements, source facts, or implementation details.
 10. Separate verified facts, user decisions, inferences, and assumptions.
 11. Prefer independently verifiable outcomes over activity lists.
@@ -39,8 +39,7 @@ Classify the task before deep research. A plan may use multiple routes.
 - Operations, programs, launches, recurring processes, cross-functional delivery: read `references/operations-program.md`.
 - Unlisted or unusual domain: read `references/domain-adaptation.md` and derive domain-native research, grilling, risk, and validation checks.
 - Any planning request: read `references/grilling.md`, `references/skill-routing.md`, and `references/quality-gates.md` when their detail is needed.
-- External skill discovery is optional. Read `references/dynamic-skills.md` only
-  when the user asks to search for additional skills.
+- When the installed skill catalog lacks a material planning or execution capability, read `references/dynamic-skills.md` before declaring a capability gap.
 
 For mixed-domain work, combine only relevant references. Do not force software-specific sections into non-software plans.
 
@@ -65,11 +64,7 @@ If an existing plan is supplied, treat it as evidence to inspect, not settled tr
 
 ### 2. Discover skills and research first
 
-Before grilling, inspect available evidence and the installed skill catalog when
-the runtime exposes one. Load installed matches when they apply. If no installed
-skill covers a material capability, name the capability in the plan; do not
-search an external marketplace unless the user asks. External search never
-authorizes installation, and installation requires an explicit user request.
+Before grilling, inspect available evidence and the installed skill catalog when the runtime supports them. Load installed matches when they apply. If no installed skill covers a material capability, follow `references/dynamic-skills.md` to search the open skill ecosystem and present qualified candidates. Search does not authorize installation. Ask about installation during planning only when the missing skill is required to finish the plan; defer execution-time candidates to the final skill handoff.
 
 Use the strongest applicable sources available, such as:
 
@@ -314,18 +309,13 @@ Skill selection is part of planning and execution design. Follow `references/ski
 
 At minimum:
 
-1. Inspect installed skills relevant to the task before deep planning when the
-   runtime exposes an installed catalog.
+1. Discover available skills relevant to the task before deep planning when the runtime supports discovery.
 2. Invoke matching skills needed to research, inspect, analyze, or create planning artifacts.
 3. Re-check skill needs after grilling reveals new domains, tools, artifacts, or risk surfaces.
-4. If the user requests external discovery, use `references/dynamic-skills.md`
-   and distinguish installed skills, external candidates, and unresolved
-   capabilities.
+4. Use `references/dynamic-skills.md` when installed skills leave a material gap; distinguish installed skills, external candidates, and unresolved capabilities.
 5. Include `## Skill handoff` in every final plan.
 6. For every recommended skill, state exact invocation timing and expected output or decision.
-7. If no qualified installed skill exists, state the missing capability instead
-   of inventing a skill name. Mention an external candidate only when the user
-   requested external discovery and the candidate was verified.
+7. If no qualified installed or external skill exists, state the missing capability instead of inventing a skill name.
 
 ## Evidence discipline
 
