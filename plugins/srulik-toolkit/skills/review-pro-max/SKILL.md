@@ -1,11 +1,11 @@
 ---
 name: review-pro-max
-description: Review local changes, branches, or GitHub pull requests for concrete defects, test gaps, and avoidable complexity. Use for code review or re-review; return findings without editing or posting by default.
+description: Review local changes, branches, or GitHub pull requests for merge blockers, committed-spec violations, concrete defects, test gaps, and avoidable complexity. Use for code review or re-review; return findings without editing or posting by default.
 ---
 
 # Review Pro Max
 
-Review the requested change against its requirements and the affected code paths. Return findings the author can act on, with evidence from the state you reviewed.
+Review the requested change against committed requirements and the affected code paths. Return findings the author can act on, with evidence from the state you reviewed.
 
 ## Review boundary
 
@@ -32,7 +32,9 @@ An empty diff ends the review. In a re-review, inspect prior findings, then cove
 
 Read [code-reviewer.md](code-reviewer.md) before reviewing or delegating. Trace the changed flow into its callers, consumers, failure paths, and tests. Gather linked requirements when accessible. Distinguish stated requirements from inferred intent.
 
-Cover correctness and test behavior in every review. Add security, accessibility, performance, configuration, migration, or compatibility checks where the change creates those risks. Consider existing code, deletion, configuration, and platform features before recommending a dependency or abstraction. Do not turn stylistic preferences or hypothetical future scale into blockers.
+Treat a committed specification or committed executable test contract as the authority for required behavior. PR titles, descriptions, issue comments, review comments, and chat statements provide context; they are not blocking correctness contracts unless the user explicitly identifies them as acceptance criteria. Report a mismatch with informal or stale prose as optional cleanup unless it also causes a concrete defect.
+
+Check for concrete regressions and test behavior in every review, but do not try to prove complete product correctness without a committed specification. A correctness concern blocks only when evidence shows a committed-spec or test-contract violation, a reachable crash, data loss, security or authorization failure, a broken supported interface or caller, or a failing required check. Otherwise keep it non-blocking or omit it. Add accessibility, performance, configuration, migration, or compatibility checks where the change creates those risks. Consider existing code, deletion, configuration, and platform features before recommending a dependency or abstraction. Do not turn stylistic preferences or hypothetical future scale into blockers.
 
 If the harness exposes subagents and the task warrants independent passes, delegate bounded areas using its available delegation API. Give each reviewer the same pinned state, relevant requirements, assigned files, surrounding dependencies, the bundled brief, and the read-only boundary. Assign a fresh reviewer for substantial re-reviews. Serialize expensive execution and respect the host's resource limits. If delegation is unavailable, perform the passes yourself and disclose the lack of independent review.
 
@@ -69,6 +71,8 @@ Lead with the findings, or state that no actionable defects were found in the re
 ## Authorized external delivery
 
 Return the review in the conversation by default. Posting requires the user's explicit authorization for the destination and action. A request to draft comments authorizes the draft only. A request to post findings may authorize that delivery without another confirmation, but it does not authorize an approval, change request, thread resolution, or source change that the user did not request.
+
+PR review comments and review bodies must not read back the change, tests, checks, or the author's explanation. For an approval, write `LGTM` and add only information the author needs to act on. If there is no additional note, the complete review body is `LGTM`. Keep optional cleanup after that verdict instead of adding a review summary.
 
 Before an authorized submission, recheck the PR head, validate inline locations against the current diff, and choose the requested review event. Use a GitHub review record for a requested formal review, with the pinned commit and valid path/line/side anchors. Use a summary comment only when that is the requested action. Keep source edits outside this workflow unless authorized as a separate action.
 
