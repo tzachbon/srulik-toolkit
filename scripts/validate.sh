@@ -9,11 +9,19 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
+version = (plugin / "VERSION").read_text().strip()
+if version != "1.1.3":
+    raise SystemExit("wrong packaged VERSION")
 expected = {
     "to-project",
     "review-pro-max",
@@ -63,7 +71,7 @@ for manifest in [
     if data.get("name") != "srulik-toolkit":
         raise SystemExit(f"wrong manifest name: {manifest.relative_to(root)}")
     manifests[manifest.relative_to(root).as_posix()] = data
-    if "version" in data and data["version"] != "1.1.2":
+    if "version" in data and data["version"] != version:
         raise SystemExit(f"wrong version: {manifest.relative_to(root)}")
     if "hooks" in data:
         raise SystemExit(f"hooks must use default discovery: {manifest.relative_to(root)}")
@@ -74,10 +82,10 @@ for catalog in [claude_catalog, codex_catalog]:
     entries = catalog.get("plugins", [])
     if len(entries) != 1 or entries[0].get("name") != "srulik-toolkit":
         raise SystemExit("catalog must contain exactly the srulik-toolkit plugin")
-if claude_catalog.get("version") != "1.1.2":
+if claude_catalog.get("version") != version:
     raise SystemExit("wrong Claude marketplace version")
 claude_entry = claude_catalog["plugins"][0]
-if claude_entry.get("version") != "1.1.2" or claude_entry.get("source") != "./plugins/srulik-toolkit":
+if claude_entry.get("version") != version or claude_entry.get("source") != "./plugins/srulik-toolkit":
     raise SystemExit("wrong Claude catalog version or source")
 codex_entry = codex_catalog["plugins"][0]
 if codex_entry.get("source") != {"source": "local", "path": "./plugins/srulik-toolkit"}:
@@ -88,7 +96,7 @@ if not codex_entry.get("category"):
     raise SystemExit("missing Codex catalog category")
 for harness in ["claude", "codex"]:
     manifest = manifests[f"plugins/srulik-toolkit/.{harness}-plugin/plugin.json"]
-    if manifest.get("version") != "1.1.2" or manifest.get("license") != "MIT":
+    if manifest.get("version") != version or manifest.get("license") != "MIT":
         raise SystemExit(f"wrong {harness} plugin version or license")
     if not manifest.get("description", "").startswith("Thirteen "):
         raise SystemExit(f"stale {harness} plugin skill count")
@@ -106,31 +114,68 @@ group = groups[0]
 if set(group) != {"matcher", "hooks"} or group["matcher"] != "startup" or len(group["hooks"]) != 1:
     raise SystemExit("hook must run once for startup only")
 hook = group["hooks"][0]
-if set(hook) != {"type", "command"} or hook["type"] != "command":
-    raise SystemExit("hook must contain only a command, with no user-visible warning")
+if set(hook) != {"type", "command", "timeout"} or hook["type"] != "command" or hook["timeout"] != 3:
+    raise SystemExit("hook must contain one three-second command")
 command = hook["command"]
-if not isinstance(command, str) or not re.fullmatch(r'echo "[A-Za-z0-9 ,:.-]+"', command):
-    raise SystemExit("startup command must be a static ASCII echo with no shell expansion")
-message = command[len('echo "'):-1]
-if len(message) > 500 or set(re.findall(r"\b[a-z]+(?:-[a-z]+)+\b|\btdd\b|\bresearch\b", message)) != expected:
-    raise SystemExit("startup hint must name exactly the thirteen public skills")
-if "Read relevant skills" not in message or "scope" not in message:
-    raise SystemExit("startup hint must give a relevant-skill and scope instruction")
-if os.name == "nt":
-    runs = [
-        ("cmd.exe", "cmd.exe /d /s /c " + command),
-        ("powershell.exe", ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command]),
-    ]
-else:
-    runs = [("/bin/sh", ["/bin/sh", "-c", command])]
-for shell_name, invocation in runs:
-    result = subprocess.run(invocation, capture_output=True, text=True, timeout=10, check=True)
-    output = result.stdout.strip()
-    if shell_name == "cmd.exe":
-        output = output.strip('"')
-    if result.stderr or output != message:
-        raise SystemExit(f"startup echo output mismatch in {shell_name}")
-    print(f"Startup echo passed: {shell_name}")
+if command != 'node -e "require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + \'/hooks/check-version.js\')"':
+    raise SystemExit("startup hook must invoke the packaged version checker")
+
+node = shutil.which("node")
+if not node:
+    raise SystemExit("Node.js is required by the startup hook")
+
+requests = {}
+class VersionHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        requests[self.path] = requests.get(self.path, 0) + 1
+        if self.path == "/slow":
+            time.sleep(0.2)
+        body = {"/equal": version, "/new": "9.9.9", "/bad": "not-a-version", "/slow": "9.9.9"}.get(self.path)
+        self.send_response(200 if body else 404)
+        self.end_headers()
+        try:
+            self.wfile.write((body or "missing").encode())
+        except BrokenPipeError:
+            pass
+    def log_message(self, *_):
+        pass
+
+server = ThreadingHTTPServer(("127.0.0.1", 0), VersionHandler)
+threading.Thread(target=server.serve_forever, daemon=True).start()
+base_url = f"http://127.0.0.1:{server.server_port}"
+hint_start = "Srulik Toolkit skills:"
+
+def check(endpoint, data_root, timeout="2000"):
+    env = os.environ | {
+        "PLUGIN_ROOT": str(plugin),
+        "PLUGIN_DATA": str(data_root),
+        "SRULIK_TOOLKIT_VERSION_URL": base_url + endpoint,
+        "SRULIK_TOOLKIT_VERSION_TIMEOUT_MS": timeout,
+    }
+    result = subprocess.run([node, str(plugin / "hooks" / "check-version.js")], env=env, capture_output=True, text=True, timeout=5, check=True)
+    if result.stderr or not result.stdout.startswith(hint_start):
+        raise SystemExit(f"version checker did not preserve startup hint: {result.stderr or result.stdout}")
+    return result.stdout
+
+with tempfile.TemporaryDirectory() as temporary:
+    data = pathlib.Path(temporary)
+    if "is available" in check("/equal", data):
+        raise SystemExit("equal versions must not suggest an upgrade")
+with tempfile.TemporaryDirectory() as temporary:
+    data = pathlib.Path(temporary)
+    if "9.9.9 is available" not in check("/new", data):
+        raise SystemExit("version mismatch must suggest an upgrade")
+    check("/new", data)
+    if requests.get("/new") != 1:
+        raise SystemExit("fresh cached version must prevent a second request")
+with tempfile.TemporaryDirectory() as temporary:
+    if "is available" in check("/bad", pathlib.Path(temporary)):
+        raise SystemExit("invalid upstream version must be silent")
+with tempfile.TemporaryDirectory() as temporary:
+    if "is available" in check("/slow", pathlib.Path(temporary), "50"):
+        raise SystemExit("timed-out upstream request must be silent")
+server.shutdown()
+print("Startup version checker passed")
 
 for relative in [
     "skills/to-project/EXTEND.md",
@@ -196,6 +241,11 @@ PY
 if command -v claude >/dev/null 2>&1; then
   claude plugin validate --strict "$repo_root"
   claude plugin validate --strict "$plugin_root"
+fi
+
+if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" && "${RUNNER_OS:-}" == "Linux" ]]; then
+  git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
+  "$repo_root/scripts/check-version-bump.sh" FETCH_HEAD
 fi
 
 echo "Srulik Toolkit validation passed."

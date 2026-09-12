@@ -53,6 +53,10 @@ together:
 - `plugins/srulik-toolkit/.claude-plugin/plugin.json`
 - `plugins/srulik-toolkit/.codex-plugin/plugin.json`
 
+Pull requests that change packaged plugin or marketplace files must also change
+`plugins/srulik-toolkit/VERSION`. Documentation-only and CI-only changes do not
+require a version bump.
+
 ## Validate the change
 
 Run:

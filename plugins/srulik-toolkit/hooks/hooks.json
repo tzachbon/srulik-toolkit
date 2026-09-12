@@ -6,7 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"Srulik Toolkit skills: to-project, review-pro-max, create-plan, create-pr, stay-in-scope, agent-swarm, tdd, keep-it-simple, research, stop-slop, pr-babysit, resolving-merge-conflicts, fix-ci. Read relevant skills and stay within the requested scope.\""
+            "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/hooks/check-version.js')\"",
+            "timeout": 3
           }
         ]
       }
