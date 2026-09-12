@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text().strip()
-if version != "1.1.5":
+if version != "1.1.6":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "to-project",

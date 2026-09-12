@@ -1,6 +1,6 @@
 {
   "name": "srulik-toolkit",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Fifteen portable skills for research, planning, explanation, review, scoped implementation, writing, and pull request maintenance.",
   "author": {
     "name": "Zach Bonfil",

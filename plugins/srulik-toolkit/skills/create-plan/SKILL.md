@@ -35,7 +35,7 @@ Read `references/detailed-plans.md` before drafting or revising the final plan. 
 10. Separate verified facts, user decisions, inferences, and assumptions.
 11. Prefer independently verifiable outcomes over activity lists.
 12. Plan the work. Do not execute the planned work unless the user separately asks for execution.
-13. Invoke `keep-it-simple` after research establishes the requirements and before selecting approaches or work items. Apply it again during plan QA. Simplicity must remove unnecessary work without weakening completeness, safety, validation, or acceptance evidence.
+13. Invoke `keep-it-simple` after research establishes the requirements and before selecting approaches or work items. Apply it again during plan QA. In plans, "minimal" means avoiding unnecessary complexity, not limiting ambition. Preserve completeness, safety, validation, and acceptance evidence.
 
 ## Route by discipline
 
