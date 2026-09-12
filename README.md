@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="srulik-toolkit.png" alt="Srulik Toolkit" width="500"/>
+
 # Srulik Toolkit
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
