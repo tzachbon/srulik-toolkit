@@ -11,6 +11,8 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
+from concurrent.futures import ThreadPoolExecutor
 
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
@@ -50,6 +52,45 @@ for skill_name in sorted(expected):
         raise SystemExit(f"wrong skill name: {skill_file.relative_to(root)}")
     if not re.search(r"^description:\s*\S", match.group(1), re.MULTILINE):
         raise SystemExit(f"missing skill description: {skill_file.relative_to(root)}")
+
+create_plan = (skill_root / "create-plan" / "SKILL.md").read_text()
+star_contract = [
+    ".create-plan-star-suggested",
+    "https://github.com/tzachbon/srulik-toolkit",
+    "Optional:",
+    "Create the marker before adding the suggestion",
+    "Already exists: deliver the plan without the suggestion",
+    "Any other read or write failure: append the suggestion anyway",
+]
+if not all(token in create_plan for token in star_contract):
+    raise SystemExit("create-plan is missing the one-time star suggestion contract")
+
+def claim_star_suggestion(marker, mkdir=os.mkdir):
+    try:
+        mkdir(marker)
+        return True
+    except FileExistsError:
+        return False
+    except OSError:
+        return True
+
+with tempfile.TemporaryDirectory() as temp_dir:
+    marker = pathlib.Path(temp_dir) / ".create-plan-star-suggested"
+    if not claim_star_suggestion(marker) or claim_star_suggestion(marker):
+        raise SystemExit("star suggestion marker does not suppress later runs")
+
+with tempfile.TemporaryDirectory() as temp_dir:
+    marker = pathlib.Path(temp_dir) / ".create-plan-star-suggested"
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        claims = list(pool.map(lambda _: claim_star_suggestion(marker), range(2)))
+    if claims.count(True) != 1:
+        raise SystemExit("concurrent star suggestion claims did not produce one winner")
+
+def fail_write(_marker):
+    raise PermissionError
+
+if not claim_star_suggestion("unused", fail_write):
+    raise SystemExit("star suggestion must be shown when state cannot be written")
 
 manifests = {}
 for manifest in [
