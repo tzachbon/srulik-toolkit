@@ -1,4 +1,4 @@
 interface:
   display_name: "Keep It Simple"
-  short_description: "Choose the smallest correct implementation"
-  default_prompt: "Use $keep-it-simple to implement this request with the smallest correct change."
+  short_description: "Choose the smallest correct plan or implementation"
+  default_prompt: "Use $keep-it-simple to plan or implement this request with the smallest correct approach."

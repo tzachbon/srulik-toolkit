@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text().strip()
-if version != "1.1.4":
+if version != "1.1.5":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "to-project",
@@ -64,6 +64,15 @@ for skill_name in sorted(expected):
         raise SystemExit(f"missing skill description: {skill_file.relative_to(root)}")
 
 create_plan = (skill_root / "create-plan" / "SKILL.md").read_text()
+keep_it_simple = (skill_root / "keep-it-simple" / "SKILL.md").read_text()
+skill_routing = (skill_root / "create-plan" / "references" / "skill-routing.md").read_text()
+readme = (root / "README.md").read_text()
+if not all(token in keep_it_simple for token in ["plan or implementation", "During planning", "During implementation", "acceptance evidence"]):
+    raise SystemExit("keep-it-simple is missing its planning and implementation contract")
+if not all(token in create_plan + skill_routing for token in ["Always invoke `keep-it-simple`", "For implementation-oriented plans", "during plan QA"]):
+    raise SystemExit("create-plan is missing its keep-it-simple planning or handoff contract")
+if not all(token in readme for token in ['"smallest correct plan"', '"smallest correct implementation"']):
+    raise SystemExit("README is missing the keep-it-simple planning or implementation flow")
 star_contract = [
     ".create-plan-star-suggested",
     "https://github.com/tzachbon/srulik-toolkit",
@@ -297,7 +306,6 @@ tour_contract = [
 if not all(token in tour for token in tour_contract):
     raise SystemExit("tour is missing its research, grilling, visualization, or delivery contract")
 
-readme = (root / "README.md").read_text()
 for skill_name in expected:
     if f"skills/{skill_name}/SKILL.md" not in readme:
         raise SystemExit(f"README is missing skill: {skill_name}")

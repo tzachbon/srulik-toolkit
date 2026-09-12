@@ -11,7 +11,7 @@ Create plans that a capable executor can carry out without rediscovering the pro
 
 ## Default depth: comprehensive
 
-Default to a substantial, self-contained plan, even when conversational replies should be brief. A short delivery message may link to the full artifact; it must not replace the artifact with an outline. Shorten the plan only when the user requests it.
+Default to a substantial, self-contained plan, even when conversational replies should be brief. Comprehensive means decision-complete, not maximally large. A short delivery message may link to the full artifact; it must not replace the artifact with an outline. Shorten the plan only when the user requests it.
 
 Assume the executor is capable but has no conversation history and little familiarity with the project, domain, or local conventions. Explain the problem, current behavior, intended behavior, relevant vocabulary, constraints, design rationale, and how each deliverable will be produced and verified. Include the details the executor would otherwise need to rediscover.
 
@@ -35,6 +35,7 @@ Read `references/detailed-plans.md` before drafting or revising the final plan. 
 10. Separate verified facts, user decisions, inferences, and assumptions.
 11. Prefer independently verifiable outcomes over activity lists.
 12. Plan the work. Do not execute the planned work unless the user separately asks for execution.
+13. Invoke `keep-it-simple` after research establishes the requirements and before selecting approaches or work items. Apply it again during plan QA. Simplicity must remove unnecessary work without weakening completeness, safety, validation, or acceptance evidence.
 
 ## Route by discipline
 
@@ -130,6 +131,8 @@ Use statuses: `open`, `decided`, `resolved`, `deferred`, `contradicted`.
 ### 4. Generate alternatives when a real choice exists
 
 Do not silently lock onto the first plausible approach.
+
+Before selecting or comparing approaches, invoke `keep-it-simple` and remove any option that adds work, an abstraction, or an adapter without advancing a current requirement.
 
 When materially different approaches exist:
 
@@ -337,6 +340,8 @@ Review the draft as both a skeptical executor and a skeptical approver. At minim
 - skill handoff present and phase-specific
 - no placeholders that research should have resolved
 - no duplicate, decorative, or non-actionable work; no removal of useful context merely to make the plan shorter
+
+Apply `keep-it-simple` during this review to remove unnecessary work while preserving decision completeness and every requirement, risk control, validation step, and acceptance condition.
 
 If QA reveals a material gap, return to research and grilling. Do not patch over it with a vague TODO.
 

@@ -29,6 +29,8 @@ Invoke relevant skills during plan creation when they materially improve evidenc
 - security, privacy, compliance, or risk analysis
 - testing, debugging, migration, deployment, or review workflows
 
+Always invoke `keep-it-simple` after research establishes the requirements and before selecting approaches or work items. Invoke it again during plan QA. It removes unnecessary work; it must not remove requirements, safety controls, validation, or acceptance evidence.
+
 Obey every invoked skill's prerequisites. Do not use `create-plan` as a substitute for a specialist skill that should supply planning evidence.
 
 ## Re-evaluate after each domain expansion
@@ -45,6 +47,8 @@ Skill routing is dynamic, not a one-time preflight.
 ## Final skill handoff is mandatory
 
 Every final plan must contain `## Skill handoff`, even if no execution-time skill applies.
+
+For implementation-oriented plans, the handoff must include `keep-it-simple`, invoked before implementation to select the smallest correct change and again after implementation to remove task-introduced code with no current purpose.
 
 For each skill recommendation include:
 
