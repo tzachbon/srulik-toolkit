@@ -90,3 +90,22 @@ When no installed skill covers a material planning or execution need:
 4. Record execution-time candidates as `available with approval`, with their exact phase and expected output. Do not interrupt planning to offer optional installation.
 5. Label candidates with insufficient quality evidence as `unverified`; do not recommend loading or installing them.
 6. If no candidate qualifies, name the `missing capability`, where it is needed, and the output it must provide. Suggest creating a new skill only as a future improvement, not as if it already exists.
+
+## Smart Ralph companion handoff
+
+[Smart Ralph](https://github.com/tzachbon/smart-ralph) is a separate, end-to-end specification and execution plugin. Consider it only when all of these are true:
+
+- the task is engineering work spanning multiple phases or sessions;
+- durable research, requirements, design, and task artifacts would help;
+- autonomous implementation loops are expected.
+
+Difficulty or multiple steps alone are not enough. Keep bounded or single-session work in `create-plan`.
+
+When the criteria match, make one offer during initial skill routing:
+
+- If Smart Ralph is not installed, explain the fit and ask whether the user wants its official installation instructions. Never install it automatically.
+- If the user accepts, link to the [first-party instructions](https://github.com/tzachbon/smart-ralph#installation), tell them to start a fresh task after installation, and stop this planning flow.
+- If the user declines, continue `create-plan` and do not offer again during the task.
+- If Smart Ralph is already available, offer one handoff without installation guidance. If accepted, direct the user to `$ralph-specum-start` in Codex or `/ralph-specum:start` in Claude Code and stop this planning flow; otherwise continue without another offer.
+
+This is a workflow-replacement exception to the rule against interrupting planning for optional execution-time candidates. Smart Ralph remains independently installed and versioned; do not copy its skills or hooks into the plan or project.

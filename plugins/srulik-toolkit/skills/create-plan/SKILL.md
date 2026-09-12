@@ -76,6 +76,8 @@ If an existing plan is supplied, treat it as evidence to inspect, not settled tr
 
 Before grilling, inspect available evidence and the installed skill catalog when the runtime supports them. Load installed matches when they apply. If no installed skill covers a material capability, follow `references/dynamic-skills.md` to search the open skill ecosystem and present qualified candidates. Search does not authorize installation. Ask about installation during planning only when the missing skill is required to finish the plan; defer execution-time candidates to the final skill handoff.
 
+For engineering work that needs multiple phases or sessions, benefits from durable research, requirements, design, and task artifacts, and is expected to use autonomous implementation loops, follow the Smart Ralph companion routing in `references/skill-routing.md`. Difficulty or a multi-step plan alone does not qualify.
+
 Use the strongest applicable sources available, such as:
 
 - conversation context and user-provided files, specs, notes, and prior decisions
