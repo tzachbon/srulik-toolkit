@@ -18,6 +18,7 @@ expected = {
     "to-project",
     "review-pro-max",
     "create-plan",
+    "create-pr",
     "stay-in-scope",
     "agent-swarm",
     "tdd",
@@ -89,7 +90,7 @@ for harness in ["claude", "codex"]:
     manifest = manifests[f"plugins/srulik-toolkit/.{harness}-plugin/plugin.json"]
     if manifest.get("version") != "1.1.1" or manifest.get("license") != "MIT":
         raise SystemExit(f"wrong {harness} plugin version or license")
-    if not manifest.get("description", "").startswith("Twelve "):
+    if not manifest.get("description", "").startswith("Thirteen "):
         raise SystemExit(f"stale {harness} plugin skill count")
 if manifests["plugins/srulik-toolkit/.codex-plugin/plugin.json"].get("skills") != "./skills/":
     raise SystemExit("wrong Codex skill discovery path")
@@ -112,7 +113,7 @@ if not isinstance(command, str) or not re.fullmatch(r'echo "[A-Za-z0-9 ,:.-]+"',
     raise SystemExit("startup command must be a static ASCII echo with no shell expansion")
 message = command[len('echo "'):-1]
 if len(message) > 500 or set(re.findall(r"\b[a-z]+(?:-[a-z]+)+\b|\btdd\b|\bresearch\b", message)) != expected:
-    raise SystemExit("startup hint must name exactly the twelve public skills")
+    raise SystemExit("startup hint must name exactly the thirteen public skills")
 if "Read relevant skills" not in message or "scope" not in message:
     raise SystemExit("startup hint must give a relevant-skill and scope instruction")
 if os.name == "nt":
@@ -188,8 +189,8 @@ readme = (root / "README.md").read_text()
 for skill_name in expected:
     if f"skills/{skill_name}/SKILL.md" not in readme:
         raise SystemExit(f"README is missing skill: {skill_name}")
-if "Twelve focused skills" not in readme or "/hooks" not in readme:
-    raise SystemExit("README must document twelve skills and Codex hook trust")
+if "Thirteen focused skills" not in readme or "/hooks" not in readme:
+    raise SystemExit("README must document thirteen skills and Codex hook trust")
 PY
 
 if command -v claude >/dev/null 2>&1; then

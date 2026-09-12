@@ -1,7 +1,7 @@
 {
   "name": "srulik-toolkit",
   "version": "1.1.1",
-  "description": "Twelve portable skills for research, planning, review, scoped implementation, writing, and pull request maintenance.",
+  "description": "Thirteen portable skills for research, planning, review, scoped implementation, writing, and pull request maintenance.",
   "author": {
     "name": "Zach Bonfil",
     "url": "https://github.com/tzachbon"
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Srulik Toolkit",
     "shortDescription": "Plan, review, and build with tighter scope.",
-    "longDescription": "Srulik Toolkit packages twelve portable workflows for project setup, research, planning, review, scope control, agent coordination, TDD, simple implementations, prose editing, pull request maintenance, merge conflicts, and CI fixes.",
+    "longDescription": "Srulik Toolkit packages thirteen portable workflows for project setup, research, planning, review, scope control, agent coordination, TDD, simple implementations, prose editing, pull request creation and maintenance, merge conflicts, and CI fixes.",
     "developerName": "Zach Bonfil",
     "category": "Productivity",
     "capabilities": [

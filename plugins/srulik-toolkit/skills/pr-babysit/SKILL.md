@@ -13,7 +13,9 @@ Do not ask for permission to perform an action this skill prohibits. A remote re
 
 ## Establish the target
 
-Derive the host, repository, PR number, base and head repositories, branches, head commit, and check providers from the supplied PR and live repository metadata. Account for fork PRs; do not assume the head branch lives on the base repository's remote. Use the available authenticated provider API or CLI, such as `gh`, with that explicit target. Ask only if the target remains ambiguous or access requires the user.
+Resolve a supplied PR first, or infer one from the current branch. If none exists, load [create-pr](../create-pr/SKILL.md) and complete that workflow. Continue only with the repository and PR number or URL that `create-pr` read back from the provider; propagate its stop conditions instead of duplicating or bypassing them.
+
+Derive the host, repository, PR number, base and head repositories, branches, head commit, and check providers from the supplied or created PR and live repository metadata. Account for fork PRs; do not assume the head branch lives on the base repository's remote. Use the available authenticated provider API or CLI, such as `gh`, with that explicit target. Ask only if the target remains ambiguous or access requires the user.
 
 Read repository instructions and inspect the worktree, current branch, and any active Git operation before editing. Preserve unrelated local changes. Fetch and compare the remote PR head with local history. Fast-forward a clean checkout when possible; otherwise integrate compatible remote commits without rewriting history. Do not reset away local work. Use an isolated checkout when needed to keep the PR changes separate.
 
