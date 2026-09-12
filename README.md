@@ -71,7 +71,7 @@ available when the hook is disabled, untrusted, or offline.
 | [`stay-in-scope`](plugins/srulik-toolkit/skills/stay-in-scope/SKILL.md) | Re-establish the requested boundary when work starts to drift. |
 | [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. |
 | [`tdd`](plugins/srulik-toolkit/skills/tdd/SKILL.md) | Build one behavior at a time through red, green, and refactor. |
-| [`keep-it-simple`](plugins/srulik-toolkit/skills/keep-it-simple/SKILL.md) | Find the smallest correct change after understanding the affected flow. |
+| [`keep-it-simple`](plugins/srulik-toolkit/skills/keep-it-simple/SKILL.md) | Find the smallest correct plan or implementation after understanding the affected flow. |
 | [`research`](plugins/srulik-toolkit/skills/research/SKILL.md) | Investigate a question and produce a cited report with evidence gaps. |
 | [`tour`](plugins/srulik-toolkit/skills/tour/SKILL.md) | Research a topic's history and current flow as a sourced visual narrative. |
 | [`show-me`](plugins/srulik-toolkit/skills/show-me/SKILL.md) | Explain the current topic with concise diagrams and focused visual artifacts. |
@@ -110,7 +110,8 @@ flowchart LR
     I --> J["pr-babysit"]
     C -. "when work can split" .-> F["agent-swarm"]
     C -. "when scope drifts" .-> G["stay-in-scope"]
-    D -. "when the design grows" .-> H["keep-it-simple"]
+    C -. "smallest correct plan" .-> H["keep-it-simple"]
+    D -. "smallest correct implementation" .-> H
     K["tour"] --> L["research"]
     K --> M["show-me"]
 ```
