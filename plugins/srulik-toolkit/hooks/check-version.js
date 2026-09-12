@@ -4,7 +4,7 @@ const https = require("node:https");
 const os = require("node:os");
 const path = require("node:path");
 
-const hint = "Srulik Toolkit skills: to-project, review-pro-max, create-plan, create-pr, stay-in-scope, agent-swarm, tdd, keep-it-simple, research, stop-slop, pr-babysit, resolving-merge-conflicts, fix-ci. Read relevant skills and stay within the requested scope.";
+const hint = "Srulik Toolkit skills: to-project, review-pro-max, create-plan, create-pr, stay-in-scope, agent-swarm, tdd, keep-it-simple, research, tour, show-me, stop-slop, pr-babysit, resolving-merge-conflicts, fix-ci. Read relevant skills and stay within the requested scope.";
 const versionPattern = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 const ttl = Number(process.env.SRULIK_TOOLKIT_VERSION_TTL_MS) || 86_400_000;
 const timeout = Number(process.env.SRULIK_TOOLKIT_VERSION_TIMEOUT_MS) || 2_000;

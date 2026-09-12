@@ -29,3 +29,11 @@ Copyright (c) 2025 Hardik Pandya
 
 The additional `stop-slop` editing guidance was written for this toolkit.
 The merged guidance uses new wording and does not publish an `unslop` alias.
+
+The `show-me` skill is copied from HumanLayer's public skills repository
+(https://github.com/humanlayer/skills) at revision
+`3c2629142c5d437428269b1b722b08c0b87f574d` under the MIT License. Its original
+license is retained in
+[`skills/show-me/LICENSE`](plugins/srulik-toolkit/skills/show-me/LICENSE).
+
+Copyright (c) 2026 HumanLayer
