@@ -50,11 +50,13 @@ installation or a hook change; installing the plugin alone does not grant it.
 On a new session, the plugin writes the thirteen skill names and a short routing
 instruction to model context. It uses the default `hooks/hooks.json` location
 and runs only for `SessionStart` with the `startup` matcher. It does not run on
-each prompt or emit a user-facing warning.
+each prompt or skill invocation.
 
-The hint uses a static ASCII `echo` command. It reads no files, makes no network
-requests, and changes no configuration. Skills remain available when the hook
-is disabled or untrusted.
+The same hook checks the installed version against this repository at most once
+every 24 hours and suggests an upgrade only when the versions differ. The
+request times out after two seconds; network and invalid-response failures are
+silent and are not cached. It never upgrades automatically. Skills remain
+available when the hook is disabled, untrusted, or offline.
 
 ## Choose a skill
 
@@ -161,9 +163,8 @@ Restart Claude Code or start a new Codex task after updating. In Codex, open
 ## Windows
 
 Use the same plugin commands in the shell supported by your Claude Code or
-Codex installation. The startup command works in POSIX shells, PowerShell, and
-`cmd.exe`; it has no Bash, Python, or Node dependency. `cmd.exe` may retain the
-outer quotes in the context hint.
+Codex installation. The startup checker uses Node.js and otherwise has no
+runtime dependency.
 
 Repository validation uses Bash and Python 3. On Windows, run it from Git Bash
 with Python 3 on `PATH`. The CI matrix checks Linux, macOS, and Windows, including
