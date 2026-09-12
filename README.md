@@ -9,14 +9,14 @@
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Thirteen focused skills for planning and shipping software with Claude Code and Codex.**
+**Fifteen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
 </div>
 
 Srulik Toolkit packages the workflows I use to turn loose ideas into projects,
-research questions, write plans, review changes, keep work in scope, delegate
+research questions, explain topics visually, give guided tours, write plans, review changes, keep work in scope, delegate
 suitable tasks, work test-first, and maintain pull requests. It also covers prose
 editing, merge conflicts, and CI failures.
 
@@ -49,7 +49,7 @@ installation or a hook change; installing the plugin alone does not grant it.
 
 ## Startup hint
 
-On a new session, the plugin writes the thirteen skill names and a short routing
+On a new session, the plugin writes the fifteen skill names and a short routing
 instruction to model context. It uses the default `hooks/hooks.json` location
 and runs only for `SessionStart` with the `startup` matcher. It does not run on
 each prompt or skill invocation.
@@ -73,6 +73,8 @@ available when the hook is disabled, untrusted, or offline.
 | [`tdd`](plugins/srulik-toolkit/skills/tdd/SKILL.md) | Build one behavior at a time through red, green, and refactor. |
 | [`keep-it-simple`](plugins/srulik-toolkit/skills/keep-it-simple/SKILL.md) | Find the smallest correct change after understanding the affected flow. |
 | [`research`](plugins/srulik-toolkit/skills/research/SKILL.md) | Investigate a question and produce a cited report with evidence gaps. |
+| [`tour`](plugins/srulik-toolkit/skills/tour/SKILL.md) | Research a topic's history and current flow as a sourced visual narrative. |
+| [`show-me`](plugins/srulik-toolkit/skills/show-me/SKILL.md) | Explain the current topic with concise diagrams and focused visual artifacts. |
 | [`stop-slop`](plugins/srulik-toolkit/skills/stop-slop/SKILL.md) | Edit prose for direct language while preserving facts and uncertainty. |
 | [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Address review feedback and checks within an authorized pull request scope. |
 | [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
@@ -86,6 +88,8 @@ $create-pr Open a pull request for the current changes
 $review-pro-max Review the changes on my current branch
 $tdd Implement expiration for cached sessions
 $research Trace how this repository handles retries
+$tour How did this repository's PR review workflow evolve?
+$show-me Explain the current request flow
 $fix-ci Diagnose and fix the failing checks on this pull request
 ```
 
@@ -107,6 +111,8 @@ flowchart LR
     C -. "when work can split" .-> F["agent-swarm"]
     C -. "when scope drifts" .-> G["stay-in-scope"]
     D -. "when the design grows" .-> H["keep-it-simple"]
+    K["tour"] --> L["research"]
+    K --> M["show-me"]
 ```
 
 `create-plan` checks installed skills before it looks for an external one. It

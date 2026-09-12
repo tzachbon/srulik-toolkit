@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text().strip()
-if version != "1.1.3":
+if version != "1.1.4":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "to-project",
@@ -33,6 +33,8 @@ expected = {
     "tdd",
     "keep-it-simple",
     "research",
+    "tour",
+    "show-me",
     "stop-slop",
     "pr-babysit",
     "resolving-merge-conflicts",
@@ -141,7 +143,7 @@ for harness in ["claude", "codex"]:
     manifest = manifests[f"plugins/srulik-toolkit/.{harness}-plugin/plugin.json"]
     if manifest.get("version") != version or manifest.get("license") != "MIT":
         raise SystemExit(f"wrong {harness} plugin version or license")
-    if not manifest.get("description", "").startswith("Thirteen "):
+    if not manifest.get("description", "").startswith("Fifteen "):
         raise SystemExit(f"stale {harness} plugin skill count")
 if manifests["plugins/srulik-toolkit/.codex-plugin/plugin.json"].get("skills") != "./skills/":
     raise SystemExit("wrong Codex skill discovery path")
@@ -230,6 +232,7 @@ for relative in [
     "skills/tdd/tests.md",
     "skills/tdd/mocking.md",
     "skills/stop-slop/LICENSE",
+    "skills/show-me/LICENSE",
 ]:
     if not (plugin / relative).is_file():
         raise SystemExit(f"missing bundled resource: {relative}")
@@ -269,16 +272,37 @@ for path in skill_root.rglob("*"):
 
 notice = (root / "NOTICE.md").read_text()
 license_text = (plugin / "skills" / "stop-slop" / "LICENSE").read_text()
-if not all(token in notice for token in ["2024 Zach Bonfil", "CodeRabbit", "Hardik Pandya", "MIT", "stop-slop/LICENSE"]):
+show_me_license = (plugin / "skills" / "show-me" / "LICENSE").read_text()
+if not all(token in notice for token in ["2024 Zach Bonfil", "CodeRabbit", "Hardik Pandya", "MIT", "stop-slop/LICENSE", "HumanLayer", "2026", "https://github.com/humanlayer/skills", "show-me/LICENSE"]):
     raise SystemExit("missing source attribution in NOTICE.md")
 if not all(token in license_text for token in ["MIT License", "2025 Hardik Pandya", "Permission is hereby granted", "THE SOFTWARE IS PROVIDED"]):
     raise SystemExit("missing retained stop-slop copyright or MIT terms")
+if not all(token in show_me_license for token in ["MIT License", "Copyright (c) 2026 HumanLayer", "Permission is hereby granted", "THE SOFTWARE IS PROVIDED"]):
+    raise SystemExit("missing retained show-me copyright or MIT terms")
+
+tour = (skill_root / "tour" / "SKILL.md").read_text()
+tour_contract = [
+    "Invoke `$research` for every tour",
+    "very thorough",
+    "chat-only output",
+    "after the initial research",
+    "materially change the tour's scope, chronology, or interpretation",
+    "invoke `$show-me` for every completed tour",
+    "OS-managed temporary path outside the repository",
+    "Context-encode every untrusted topic, repository, and research value",
+    "keep scripts static and trusted, and load no remote resources",
+    "OS-managed temporary Markdown file outside the repository",
+    "verified facts, user decisions, inferences, and unresolved gaps",
+]
+if not all(token in tour for token in tour_contract):
+    raise SystemExit("tour is missing its research, grilling, visualization, or delivery contract")
+
 readme = (root / "README.md").read_text()
 for skill_name in expected:
     if f"skills/{skill_name}/SKILL.md" not in readme:
         raise SystemExit(f"README is missing skill: {skill_name}")
-if "Thirteen focused skills" not in readme or "/hooks" not in readme:
-    raise SystemExit("README must document thirteen skills and Codex hook trust")
+if "Fifteen focused skills" not in readme or "/hooks" not in readme:
+    raise SystemExit("README must document fifteen skills and Codex hook trust")
 PY
 
 if command -v claude >/dev/null 2>&1; then
