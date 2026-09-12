@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "srulik-toolkit",
-  "version": "1.1.0",
-  "description": "Twelve portable skills for research, planning, review, scoped implementation, writing, and pull request maintenance.",
+  "version": "1.1.1",
+  "description": "Thirteen portable skills for research, planning, review, scoped implementation, writing, and pull request maintenance.",
   "owner": {
     "name": "Zach Bonfil"
   },
@@ -10,8 +10,8 @@
     {
       "name": "srulik-toolkit",
       "source": "./plugins/srulik-toolkit",
-      "description": "Twelve portable skills for research, planning, review, scoped implementation, writing, and pull request maintenance.",
-      "version": "1.1.0",
+      "description": "Thirteen portable skills for research, planning, review, scoped implementation, writing, and pull request maintenance.",
+      "version": "1.1.1",
       "author": {
         "name": "Zach Bonfil"
       },
