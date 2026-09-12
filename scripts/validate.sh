@@ -63,7 +63,7 @@ for manifest in [
     if data.get("name") != "srulik-toolkit":
         raise SystemExit(f"wrong manifest name: {manifest.relative_to(root)}")
     manifests[manifest.relative_to(root).as_posix()] = data
-    if "version" in data and data["version"] != "1.1.1":
+    if "version" in data and data["version"] != "1.1.2":
         raise SystemExit(f"wrong version: {manifest.relative_to(root)}")
     if "hooks" in data:
         raise SystemExit(f"hooks must use default discovery: {manifest.relative_to(root)}")
@@ -74,10 +74,10 @@ for catalog in [claude_catalog, codex_catalog]:
     entries = catalog.get("plugins", [])
     if len(entries) != 1 or entries[0].get("name") != "srulik-toolkit":
         raise SystemExit("catalog must contain exactly the srulik-toolkit plugin")
-if claude_catalog.get("version") != "1.1.1":
+if claude_catalog.get("version") != "1.1.2":
     raise SystemExit("wrong Claude marketplace version")
 claude_entry = claude_catalog["plugins"][0]
-if claude_entry.get("version") != "1.1.1" or claude_entry.get("source") != "./plugins/srulik-toolkit":
+if claude_entry.get("version") != "1.1.2" or claude_entry.get("source") != "./plugins/srulik-toolkit":
     raise SystemExit("wrong Claude catalog version or source")
 codex_entry = codex_catalog["plugins"][0]
 if codex_entry.get("source") != {"source": "local", "path": "./plugins/srulik-toolkit"}:
@@ -88,7 +88,7 @@ if not codex_entry.get("category"):
     raise SystemExit("missing Codex catalog category")
 for harness in ["claude", "codex"]:
     manifest = manifests[f"plugins/srulik-toolkit/.{harness}-plugin/plugin.json"]
-    if manifest.get("version") != "1.1.1" or manifest.get("license") != "MIT":
+    if manifest.get("version") != "1.1.2" or manifest.get("license") != "MIT":
         raise SystemExit(f"wrong {harness} plugin version or license")
     if not manifest.get("description", "").startswith("Thirteen "):
         raise SystemExit(f"stale {harness} plugin skill count")
