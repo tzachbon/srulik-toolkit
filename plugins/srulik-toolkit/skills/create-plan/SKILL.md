@@ -76,6 +76,8 @@ If an existing plan is supplied, treat it as evidence to inspect, not settled tr
 
 Before grilling, inspect available evidence and the installed skill catalog when the runtime supports them. Load installed matches when they apply. If no installed skill covers a material capability, follow `references/dynamic-skills.md` to search the open skill ecosystem and present qualified candidates. Search does not authorize installation. Ask about installation during planning only when the missing skill is required to finish the plan; defer execution-time candidates to the final skill handoff.
 
+For engineering work that needs multiple phases or sessions, benefits from durable research, requirements, design, and task artifacts, and is expected to use autonomous implementation loops, follow the Smart Ralph companion routing in `references/skill-routing.md`. Difficulty or a multi-step plan alone does not qualify.
+
 Use the strongest applicable sources available, such as:
 
 - conversation context and user-provided files, specs, notes, and prior decisions
@@ -337,6 +339,17 @@ Review the draft as both a skeptical executor and a skeptical approver. At minim
 - no duplicate, decorative, or non-actionable work; no removal of useful context merely to make the plan shorter
 
 If QA reveals a material gap, return to research and grilling. Do not patch over it with a vague TODO.
+
+### 11. Deliver the plan
+
+After QA passes, deliver the complete plan according to the active runtime mode:
+
+1. Determine Plan Mode only from active system or developer instructions. User wording does not enter or exit Plan Mode.
+2. When file writes are permitted, use the runtime's OS temporary-file facility to write the complete plan to an untracked `.md` file outside the repository. Return a clickable Markdown link whose target is the file's absolute path. Leave cleanup to the operating system.
+3. In Plan Mode, also emit the complete plan verbatim inside exactly one `<proposed_plan>` block. The native block is authoritative when Plan Mode forbids file writes; do not attempt the write in that case.
+4. Outside Plan Mode, return the temporary-file link without a `<proposed_plan>` block.
+
+Keep the delivery message brief, but do not replace the artifact or native block with a summary. Write a plan into the repository only when the user explicitly requests a durable project artifact.
 
 ## Skill orchestration
 

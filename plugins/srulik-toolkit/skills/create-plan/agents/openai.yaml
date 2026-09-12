@@ -7,6 +7,11 @@ interface:
     with recommended answers, then re-research facts exposed by my answers and recompute
     the frontier. Escalate from foundation to shape to adversarial edges and execution
     closure until the readiness gates pass, then produce a self-contained plan with
-    context and rationale, requirements traceability, artifact and interface maps, ordered checkbox steps, concrete examples, validation procedures and expected results, risks and recovery, dependencies, and exact skill handoffs for execution. Preserve useful detail; do not compress the artifact into an outline.'
+    context and rationale, requirements traceability, artifact and interface maps, ordered checkbox steps, concrete examples, validation procedures and expected results, risks and recovery, dependencies, and exact skill handoffs for execution. Preserve useful detail; do not compress the artifact into an outline.
+    After QA, write the complete plan to an OS-managed temporary Markdown file outside
+    the repository whenever runtime permissions allow, and return its absolute-path link.
+    When active runtime instructions place the session in Plan Mode, also emit the complete
+    plan verbatim in exactly one native <proposed_plan> block; if writes are forbidden, use
+    that block alone. Outside Plan Mode, return only the temporary-file link.'
 policy:
   allow_implicit_invocation: true

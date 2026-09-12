@@ -123,6 +123,17 @@ external skill, but it cannot install one without your approval.
 - `to-project` can search public skill catalogs when you ask. It requires your
   approval before installing another skill.
 
+## Optional companion plugin
+
+[Smart Ralph](https://github.com/tzachbon/smart-ralph#installation) provides an end-to-end,
+specification-driven workflow for persistent engineering work across multiple
+sessions. Srulik Toolkit keeps its skills focused and independently invokable;
+Smart Ralph remains a separately installed and versioned companion.
+
+When a `create-plan` request is a strong fit, the skill offers a handoff once.
+You choose whether to receive the official installation instructions or keep
+planning with Srulik Toolkit. It never installs Smart Ralph automatically.
+
 ## Update or remove
 
 ### Claude Code
