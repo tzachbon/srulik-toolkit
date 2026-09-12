@@ -1,4 +1,6 @@
 const fs = require("node:fs");
+const http = require("node:http");
+const https = require("node:https");
 const os = require("node:os");
 const path = require("node:path");
 
@@ -22,9 +24,20 @@ async function upstreamVersion() {
   } catch {}
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(timeout) });
-    const version = (await response.text()).trim();
-    if (!response.ok || !valid(version)) return null;
+    const version = await new Promise((resolve) => {
+      const request = (url.startsWith("https:") ? https : http).get(url, (response) => {
+        let body = "";
+        response.setEncoding("utf8");
+        response.on("data", (chunk) => {
+          body += chunk;
+          if (body.length > 64) request.destroy();
+        });
+        response.on("end", () => resolve(response.statusCode === 200 && valid(body.trim()) ? body.trim() : null));
+      });
+      request.setTimeout(timeout, () => request.destroy());
+      request.on("error", () => resolve(null));
+    });
+    if (!version) return null;
     fs.mkdirSync(dataRoot, { recursive: true });
     const temporary = `${cache}.${process.pid}`;
     fs.writeFileSync(temporary, `${version}\n`);
