@@ -243,4 +243,9 @@ if command -v claude >/dev/null 2>&1; then
   claude plugin validate --strict "$plugin_root"
 fi
 
+if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" && "${RUNNER_OS:-}" == "Linux" ]]; then
+  git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
+  "$repo_root/scripts/check-version-bump.sh" FETCH_HEAD
+fi
+
 echo "Srulik Toolkit validation passed."
