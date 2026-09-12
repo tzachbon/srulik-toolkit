@@ -25,6 +25,8 @@ If an unresolved gap would materially change the tour's scope, chronology, or in
 
 Once the chronology and current flow are understood, invoke `$show-me` for every completed tour. Ask it for the smallest visual that clarifies the central chronology, flow, or relationship. Prefer an inline timeline, call tree, file tree, state flow, Mermaid diagram, or diff; use focused HTML only when the idea is too dense for those forms.
 
+For HTML, require a collision-safe, OS-managed temporary path outside the repository and open the artifact from that path. Context-encode every untrusted topic, repository, and research value before inserting it; keep scripts static and trusted, and load no remote resources.
+
 If HTML cannot be opened, ask `$show-me` for an inline Mermaid or text fallback. If `$research` or `$show-me` is unavailable, stop and name the missing required skill instead of silently imitating it.
 
 ## Write the tour

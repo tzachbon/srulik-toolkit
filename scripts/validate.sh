@@ -288,6 +288,9 @@ tour_contract = [
     "after the initial research",
     "materially change the tour's scope, chronology, or interpretation",
     "invoke `$show-me` for every completed tour",
+    "OS-managed temporary path outside the repository",
+    "Context-encode every untrusted topic, repository, and research value",
+    "keep scripts static and trusted, and load no remote resources",
     "OS-managed temporary Markdown file outside the repository",
     "verified facts, user decisions, inferences, and unresolved gaps",
 ]
