@@ -146,7 +146,7 @@ Skip artificial alternatives when the evidence or constraints already determine 
 
 Follow `references/grilling.md`.
 
-Apply the **Outcome and Definition of Done gate** before other discretionary questions. Inspect the conversation, supplied plans or specifications, and authoritative project artifacts. If the Expected outcome or Definition of Done is not directly stated, place each missing item on the earliest eligible foundation frontier and ask separate grill questions. When both are missing, ask both as distinct questions in that wave. An inferred answer, recommendation, or labeled assumption does not close either decision.
+Apply the **Outcome and Definition of Done gate** before other discretionary questions. Inspect the conversation, supplied plans or specifications, and authoritative project artifacts. If the Expected outcome or Definition of Done is not directly stated, place each missing item on the earliest eligible foundation frontier and ask separate grill questions. When both are missing, ask both as distinct questions in that wave. They occupy two slots within the wave's hard cap of 4; defer lower-priority frontier questions instead of exceeding the cap. An inferred answer, recommendation, or labeled assumption does not close either decision.
 
 Map the unresolved decisions as a dependency tree, compute the currently answerable frontier, and ask that frontier in a numbered question wave. Default to 2-4 independent questions per wave, with a hard cap of 4. Use a one-question wave only when one upstream decision dominates or every other question depends on it.
 

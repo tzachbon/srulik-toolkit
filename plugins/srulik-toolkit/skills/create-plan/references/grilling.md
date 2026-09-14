@@ -33,7 +33,7 @@ Every plan requires two explicit and separate foundation decisions:
 
 Before constructing the first wave, inspect the conversation, supplied plans or specifications, and authoritative project artifacts for direct statements of both decisions. An explicit statement in any of those sources closes that item. An inference, recommended answer, or labeled assumption does not.
 
-Put each missing item on the earliest eligible foundation frontier and ask separate grill questions. When both are missing, ask both as distinct questions in the same first eligible wave; do not combine them or derive one from the other. Skip only the question whose answer is already explicit in an authoritative source.
+Put each missing item on the earliest eligible foundation frontier and ask separate grill questions. When both are missing, ask both as distinct questions in the same first eligible wave; do not combine them or derive one from the other. They occupy two slots within the wave's hard cap of 4, so defer lower-priority frontier questions when needed. Skip only the question whose answer is already explicit in an authoritative source.
 
 Neither item may be deferred. If interaction is allowed, keep grilling until both are decided. If the user forbids questions and research cannot find an explicit answer, report the missing item as blocking and do not finalize the plan.
 

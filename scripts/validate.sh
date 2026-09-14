@@ -204,6 +204,7 @@ for relative, text in [
         "Expected outcome",
         "Definition of Done",
         "separate grill questions",
+        "occupy two slots",
         "authoritative",
     ]:
         if required_phrase not in text:
