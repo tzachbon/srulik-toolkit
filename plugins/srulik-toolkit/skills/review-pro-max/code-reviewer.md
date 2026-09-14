@@ -8,10 +8,12 @@ Review only. Read the assigned changes and enough surrounding code to trace thei
 
 Use the exact pinned source. Report unavailable files, incomplete diffs, stale state, missing requirements, and failed checks as limits. Distinguish commands you ran, existing CI evidence, and analysis you inferred from the code. Run side-effecting checks only in an authorized isolated workspace.
 
+Use committed specifications and committed executable test contracts as the authority for required behavior. Treat PR titles, descriptions, issue comments, review comments, and chat statements as context unless the user explicitly makes them acceptance criteria. Do not block a review on informal or stale prose. Correctness concerns without a committed contract are blocking only when evidence shows a reachable crash, data loss, security or authorization failure, a broken supported interface or caller, or a failing required check.
+
 ## Review focus
 
 1. Trace the changed behavior from input to consumer. Check failure handling, state transitions, boundary values, and compatibility with existing callers. Confirm that a proposed failure can occur before reporting it.
-2. Compare implementation with the requested behavior. Identify requirement gaps and changes outside the agreed scope. Do not invent requirements from preferred architecture or style.
+2. Compare implementation with committed requirements. Identify committed requirement gaps and changes outside the agreed scope. Treat other intent signals as non-blocking context and do not invent requirements from preferred architecture or style.
 3. Assess tests at the public behavior boundary. Check whether assertions would catch a plausible regression. Passing tests only support paths they exercise; test names and mock counts do not prove behavior.
 4. Inspect risks that apply to the assigned changes: authorization, sensitive data, concurrency, accessibility, performance, configuration, deployment, or migrations. State the actual consequence and its prerequisites.
 5. Identify avoidable complexity that affects this change. Prefer existing helpers, configuration, standard features, and deletion where they preserve behavior. Recommend an abstraction only for demonstrated uses. Preserve security, accessibility, error handling, and agreed tests when suggesting simplification.

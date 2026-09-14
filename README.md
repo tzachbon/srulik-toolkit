@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="srulik-toolkit.png" alt="Srulik Toolkit" width="500"/>
+
 # Srulik Toolkit
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -7,14 +9,14 @@
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Twelve focused skills for planning and shipping software with Claude Code and Codex.**
+**Fifteen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
 </div>
 
 Srulik Toolkit packages the workflows I use to turn loose ideas into projects,
-research questions, write plans, review changes, keep work in scope, delegate
+research questions, explain topics visually, give guided tours, write plans, review changes, keep work in scope, delegate
 suitable tasks, work test-first, and maintain pull requests. It also covers prose
 editing, merge conflicts, and CI failures.
 
@@ -47,14 +49,16 @@ installation or a hook change; installing the plugin alone does not grant it.
 
 ## Startup hint
 
-On a new session, the plugin writes the twelve skill names and a short routing
+On a new session, the plugin writes the fifteen skill names and a short routing
 instruction to model context. It uses the default `hooks/hooks.json` location
 and runs only for `SessionStart` with the `startup` matcher. It does not run on
-each prompt or emit a user-facing warning.
+each prompt or skill invocation.
 
-The hint uses a static ASCII `echo` command. It reads no files, makes no network
-requests, and changes no configuration. Skills remain available when the hook
-is disabled or untrusted.
+The same hook checks the installed version against this repository at most once
+every 24 hours and suggests an upgrade only when the versions differ. The
+request times out after two seconds; network and invalid-response failures are
+silent and are not cached. It never upgrades automatically. Skills remain
+available when the hook is disabled, untrusted, or offline.
 
 ## Choose a skill
 
@@ -62,12 +66,15 @@ is disabled or untrusted.
 | --- | --- |
 | [`to-project`](plugins/srulik-toolkit/skills/to-project/SKILL.md) | Turn an idea or an existing folder into a project with durable context. |
 | [`create-plan`](plugins/srulik-toolkit/skills/create-plan/SKILL.md) | Research and pressure-test a task, then write a detailed plan with concrete steps, rationale, requirement traceability, and verification. |
+| [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request for the current changes. |
 | [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a local diff, branch, or pull request without changing it. |
 | [`stay-in-scope`](plugins/srulik-toolkit/skills/stay-in-scope/SKILL.md) | Re-establish the requested boundary when work starts to drift. |
 | [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. |
 | [`tdd`](plugins/srulik-toolkit/skills/tdd/SKILL.md) | Build one behavior at a time through red, green, and refactor. |
-| [`keep-it-simple`](plugins/srulik-toolkit/skills/keep-it-simple/SKILL.md) | Find the smallest correct change after understanding the affected flow. |
+| [`keep-it-simple`](plugins/srulik-toolkit/skills/keep-it-simple/SKILL.md) | Find the smallest correct plan or implementation after understanding the affected flow. |
 | [`research`](plugins/srulik-toolkit/skills/research/SKILL.md) | Investigate a question and produce a cited report with evidence gaps. |
+| [`tour`](plugins/srulik-toolkit/skills/tour/SKILL.md) | Research a topic's history and current flow as a sourced visual narrative. |
+| [`show-me`](plugins/srulik-toolkit/skills/show-me/SKILL.md) | Explain the current topic with concise diagrams and focused visual artifacts. |
 | [`stop-slop`](plugins/srulik-toolkit/skills/stop-slop/SKILL.md) | Edit prose for direct language while preserving facts and uncertainty. |
 | [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Address review feedback and checks within an authorized pull request scope. |
 | [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
@@ -77,9 +84,12 @@ Example prompts:
 
 ```text
 $create-plan Add offline support to this app
+$create-pr Open a pull request for the current changes
 $review-pro-max Review the changes on my current branch
 $tdd Implement expiration for cached sessions
 $research Trace how this repository handles retries
+$tour How did this repository's PR review workflow evolve?
+$show-me Explain the current request flow
 $fix-ci Diagnose and fix the failing checks on this pull request
 ```
 
@@ -96,9 +106,14 @@ flowchart LR
     B --> C["create-plan"]
     C --> D["tdd"]
     D --> E["review-pro-max"]
+    E --> I["create-pr"]
+    I --> J["pr-babysit"]
     C -. "when work can split" .-> F["agent-swarm"]
     C -. "when scope drifts" .-> G["stay-in-scope"]
-    D -. "when the design grows" .-> H["keep-it-simple"]
+    C -. "smallest correct plan" .-> H["keep-it-simple"]
+    D -. "smallest correct implementation" .-> H
+    K["tour"] --> L["research"]
+    K --> M["show-me"]
 ```
 
 `create-plan` checks installed skills before it looks for an external one. It
@@ -112,12 +127,23 @@ external skill, but it cannot install one without your approval.
   CodeRabbit may send source outside the local machine.
 - `agent-swarm` and `research` use available child-agent controls when useful.
   They can work inline when those controls are unavailable.
-- `pr-babysit` and `fix-ci` can use an authenticated GitHub CLI or an equivalent
-  connector for checks, logs, and pull requests. Local checks use the project
-  toolchain. Continued monitoring requires a supported scheduler or an active
+- `create-pr`, `pr-babysit`, and `fix-ci` can use an authenticated GitHub CLI
+  or an equivalent connector for checks, logs, and pull requests. Local checks
+  use the project toolchain. Continued monitoring requires a supported scheduler or an active
   session; the skills do not install one.
 - `to-project` can search public skill catalogs when you ask. It requires your
   approval before installing another skill.
+
+## Optional companion plugin
+
+[Smart Ralph](https://github.com/tzachbon/smart-ralph#installation) provides an end-to-end,
+specification-driven workflow for persistent engineering work across multiple
+sessions. Srulik Toolkit keeps its skills focused and independently invokable;
+Smart Ralph remains a separately installed and versioned companion.
+
+When a `create-plan` request is a strong fit, the skill offers a handoff once.
+You choose whether to receive the official installation instructions or keep
+planning with Srulik Toolkit. It never installs Smart Ralph automatically.
 
 ## Update or remove
 
@@ -146,9 +172,8 @@ Restart Claude Code or start a new Codex task after updating. In Codex, open
 ## Windows
 
 Use the same plugin commands in the shell supported by your Claude Code or
-Codex installation. The startup command works in POSIX shells, PowerShell, and
-`cmd.exe`; it has no Bash, Python, or Node dependency. `cmd.exe` may retain the
-outer quotes in the context hint.
+Codex installation. The startup checker uses Node.js and otherwise has no
+runtime dependency.
 
 Repository validation uses Bash and Python 3. On Windows, run it from Git Bash
 with Python 3 on `PATH`. The CI matrix checks Linux, macOS, and Windows, including
