@@ -24,6 +24,19 @@ Unless the user explicitly forbids interaction, run at least one substantive adv
 
 If normal research leaves no obvious ambiguity, build a small adversarial wave around the highest-impact remaining assumptions, tradeoffs, failure modes, or definitions of success. The point is to test whether apparent completeness survives scrutiny.
 
+## Outcome and Definition of Done gate
+
+Every plan requires two explicit and separate foundation decisions:
+
+- **Expected outcome:** the end state the plan must produce and why it matters.
+- **Definition of Done:** the observable evidence and plan-level acceptance gate that prove the expected outcome was achieved. It is not a list of completed implementation activities.
+
+Before constructing the first wave, inspect the conversation, supplied plans or specifications, and authoritative project artifacts for direct statements of both decisions. An explicit statement in any of those sources closes that item. An inference, recommended answer, or labeled assumption does not.
+
+Put each missing item on the earliest eligible foundation frontier and ask separate grill questions. When both are missing, ask both as distinct questions in the same first eligible wave; do not combine them or derive one from the other. They occupy two slots within the wave's hard cap of 4, so defer lower-priority frontier questions when needed. Skip only the question whose answer is already explicit in an authoritative source.
+
+Neither item may be deferred. If interaction is allowed, keep grilling until both are decided. If the user forbids questions and research cannot find an explicit answer, report the missing item as blocking and do not finalize the plan.
+
 ## Build the design tree first
 
 Model consequential unresolved decisions as a dependency tree or DAG before asking questions.
@@ -66,6 +79,7 @@ Move from surface certainty to deeper pressure-testing. Layers guide wave select
 Pin the planning target before debating implementation details:
 
 - desired outcome and why it matters
+- Definition of Done: observable evidence and the plan-level acceptance gate
 - primary users, stakeholders, or decision audience
 - scope and non-goals
 - current state or core flow
@@ -250,6 +264,8 @@ Do not carry a factual uncertainty into another grill wave when available eviden
 ## Completion test
 
 The grill is complete only when the decision-tree frontier contains no unresolved item that could materially change plan shape, sequencing, feasibility, validation, ownership, or risk treatment.
+
+The readiness gate cannot pass while the Expected outcome or Definition of Done is inferred, assumed, deferred, or unresolved. The grill is never complete under those conditions. Confirm that both are explicit, remain distinct, and are preserved in the plan's objective, acceptance criteria, and end-to-end verification.
 
 Remaining unknowns must be either:
 
