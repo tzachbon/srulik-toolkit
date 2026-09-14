@@ -72,7 +72,13 @@ Lead with the findings, or state that no actionable defects were found in the re
 
 Return the review in the conversation by default. Posting requires the user's explicit authorization for the destination and action. A request to draft comments authorizes the draft only. A request to post findings may authorize that delivery without another confirmation, but it does not authorize an approval, change request, thread resolution, or source change that the user did not request.
 
-PR review comments and review bodies must not read back the change, tests, checks, or the author's explanation. For an approval, write `LGTM` and add only information the author needs to act on. If there is no additional note, the complete review body is `LGTM`. Keep optional cleanup after that verdict instead of adding a review summary.
+PR review comments and review bodies must not read back the change, tests, checks, or the author's explanation. Apply the following rules to drafts as well as submitted reviews:
+
+- Keep line-specific findings and their evidence in inline comments. Do not repeat, summarize, or list those findings in the overall (root) review body.
+- Keep the overall body to one or two short sentences: state the verdict and, when present, point to the inline comments. Add only a review-wide blocker or limitation that is necessary to interpret the verdict and is not already covered inline. Keep detailed validation in the conversational report.
+- For an approval with no additional note, the complete review body is `LGTM`. Any additional note must give the author new information to act on, without repeating an inline comment.
+
+For example, a non-blocking comment review can say: `No blocking findings. A few comments below on regression coverage.` A change-request review can say: `Please address the blocking findings inline before merging.` Match the wording to the findings and the authorized review event.
 
 Before an authorized submission, recheck the PR head, validate inline locations against the current diff, and choose the requested review event. Use a GitHub review record for a requested formal review, with the pinned commit and valid path/line/side anchors. Use a summary comment only when that is the requested action. Keep source edits outside this workflow unless authorized as a separate action.
 
