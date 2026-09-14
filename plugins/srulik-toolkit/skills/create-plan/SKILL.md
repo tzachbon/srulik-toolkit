@@ -205,7 +205,7 @@ Check:
 - Execution context: a fresh executor can proceed without rediscovering critical context.
 - Skills: planning-time skills were used where needed and execution-time skill handoffs are mapped.
 
-The readiness gate cannot pass while the Expected outcome or Definition of Done is inferred, assumed, or unresolved.
+Neither item may be deferred. The readiness gate cannot pass while the Expected outcome or Definition of Done is inferred, assumed, deferred, or unresolved.
 
 If the user explicitly forbids questions, run the same grill internally and research everything resolvable. If the Expected outcome or Definition of Done remains unstated, report it as a blocking interaction-dependent uncertainty; do not invent it or finalize the plan. Other non-blocking uncertainties may still be labeled as assumptions under the existing rules. The grill itself is still mandatory.
 

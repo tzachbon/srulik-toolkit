@@ -265,7 +265,7 @@ Do not carry a factual uncertainty into another grill wave when available eviden
 
 The grill is complete only when the decision-tree frontier contains no unresolved item that could materially change plan shape, sequencing, feasibility, validation, ownership, or risk treatment.
 
-The grill is never complete while the Expected outcome or Definition of Done is inferred, assumed, deferred, or unresolved. Confirm that both are explicit, remain distinct, and are preserved in the plan's objective, acceptance criteria, and end-to-end verification.
+The readiness gate cannot pass while the Expected outcome or Definition of Done is inferred, assumed, deferred, or unresolved. The grill is never complete under those conditions. Confirm that both are explicit, remain distinct, and are preserved in the plan's objective, acceptance criteria, and end-to-end verification.
 
 Remaining unknowns must be either:
 

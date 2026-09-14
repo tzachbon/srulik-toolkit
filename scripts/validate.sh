@@ -327,6 +327,8 @@ for relative, text in [
         "separate grill questions",
         "occupy two slots",
         "authoritative",
+        "Neither item may be deferred",
+        "The readiness gate cannot pass while",
     ]:
         if required_phrase not in text:
             raise SystemExit(f"missing {required_phrase!r} from outcome and DoD contract: {relative}")
