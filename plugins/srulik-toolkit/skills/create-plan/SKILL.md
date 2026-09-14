@@ -24,18 +24,19 @@ Read `references/detailed-plans.md` before drafting or revising the final plan. 
 1. Loop:
    1.1. Research before asking questions.
    1.2. Grill before finalizing every plan. The grill is mandatory.
-2. Walk through the discussions and research. Ask the user to confirm or continue the loop.
-3. Unless the user explicitly forbids interaction, run at least one actual adversarial grilling wave even when the request appears complete.
-4. Ask only questions that require user judgment, intent, preference, ownership, approval, or unavailable context.
-5. If evidence can answer a question, research it instead of asking the user.
-6. After each answered grill wave, reconcile decisions and run targeted re-research before constructing the next wave when the answers expose verifiable facts or new planning surfaces.
-7. Continue research -> grill -> re-research -> grill until the readiness gate passes or unresolved items are explicitly deferred without invalidating the executable plan.
-8. Discover relevant available skills early. Invoke clearly applicable skills during planning when needed and always include exact execution-time skill handoffs in the final plan.
-9. Never invent skill names, files, commands, APIs, owners, dates, requirements, source facts, or implementation details.
-10. Separate verified facts, user decisions, inferences, and assumptions.
-11. Prefer independently verifiable outcomes over activity lists.
-12. Plan the work. Do not execute the planned work unless the user separately asks for execution.
-13. Invoke `keep-it-simple` after research establishes the requirements and before selecting approaches or work items. Apply it again during plan QA. In plans, "minimal" means avoiding unnecessary complexity, not limiting ambition. Preserve completeness, safety, validation, and acceptance evidence.
+2. Enforce the **Outcome and Definition of Done gate** in `references/grilling.md`. If either is not explicit in the conversation, a supplied plan or specification, or an authoritative project artifact, ask separate grill questions for the missing decisions. Do not satisfy the gate with inference or assumptions.
+3. Walk through the discussions and research. Ask the user to confirm or continue the loop.
+4. Unless the user explicitly forbids interaction, run at least one actual adversarial grilling wave even when the request appears complete.
+5. Ask only questions that require user judgment, intent, preference, ownership, approval, or unavailable context.
+6. If evidence can answer a question, research it instead of asking the user.
+7. After each answered grill wave, reconcile decisions and run targeted re-research before constructing the next wave when the answers expose verifiable facts or new planning surfaces.
+8. Continue research -> grill -> re-research -> grill until the readiness gate passes or unresolved items are explicitly deferred without invalidating the executable plan.
+9. Discover relevant available skills early. Invoke clearly applicable skills during planning when needed and always include exact execution-time skill handoffs in the final plan.
+10. Never invent skill names, files, commands, APIs, owners, dates, requirements, source facts, or implementation details.
+11. Separate verified facts, user decisions, inferences, and assumptions.
+12. Prefer independently verifiable outcomes over activity lists.
+13. Plan the work. Do not execute the planned work unless the user separately asks for execution.
+14. Invoke `keep-it-simple` after research establishes the requirements and before selecting approaches or work items. Apply it again during plan QA. In plans, "minimal" means avoiding unnecessary complexity, not limiting ambition. Preserve completeness, safety, validation, and acceptance evidence.
 
 ## Route by discipline
 
@@ -106,6 +107,8 @@ Research to decision sufficiency, not exhaustiveness. Stop broad exploration onc
 Maintain a working brief throughout planning. The brief is a tracking aid; expand its execution-relevant content in the final plan:
 
 - Objective
+- Expected outcome: the explicit end state the plan must produce and why it matters
+- Definition of Done: the explicit observable evidence and acceptance gate that proves the outcome was achieved
 - Verified facts
 - User decisions
 - Inferences
@@ -148,6 +151,8 @@ Skip artificial alternatives when the evidence or constraints already determine 
 
 Follow `references/grilling.md`.
 
+Apply the **Outcome and Definition of Done gate** before other discretionary questions. Inspect the conversation, supplied plans or specifications, and authoritative project artifacts. If the Expected outcome or Definition of Done is not directly stated, place each missing item on the earliest eligible foundation frontier and ask separate grill questions. When both are missing, ask both as distinct questions in that wave. They occupy two slots within the wave's hard cap of 4; defer lower-priority frontier questions instead of exceeding the cap. An inferred answer, recommendation, or labeled assumption does not close either decision.
+
 Map the unresolved decisions as a dependency tree, compute the currently answerable frontier, and ask that frontier in a numbered question wave. Default to 2-4 independent questions per wave, with a hard cap of 4. Use a one-question wave only when one upstream decision dominates or every other question depends on it.
 
 Escalate through layers as the plan becomes clearer:
@@ -186,7 +191,8 @@ Do not finalize while an unresolved item could materially change scope, approach
 
 Check:
 
-- Outcome: success is observable and specific.
+- Expected outcome: the end state and why it matters are explicit in the conversation, supplied material, or an authoritative source.
+- Definition of Done: observable completion evidence and the plan-level acceptance gate are explicit and distinct from task completion.
 - Scope: in-scope and out-of-scope boundaries are clear.
 - Current state: the relevant starting conditions are understood.
 - Constraints: material technical, organizational, legal, policy, time, cost, compatibility, and resource constraints are known.
@@ -199,7 +205,9 @@ Check:
 - Execution context: a fresh executor can proceed without rediscovering critical context.
 - Skills: planning-time skills were used where needed and execution-time skill handoffs are mapped.
 
-If the user explicitly forbids questions, run the same grill internally, research everything resolvable, label remaining assumptions, and state that interaction-dependent uncertainties remain. The grill itself is still mandatory.
+Neither item may be deferred. The readiness gate cannot pass while the Expected outcome or Definition of Done is inferred, assumed, deferred, or unresolved.
+
+If the user explicitly forbids questions, run the same grill internally and research everything resolvable. If the Expected outcome or Definition of Done remains unstated, report it as a blocking interaction-dependent uncertainty; do not invent it or finalize the plan. Other non-blocking uncertainties may still be labeled as assumptions under the existing rules. The grill itself is still mandatory.
 
 ### 8. Draft the plan
 
@@ -213,6 +221,10 @@ Use this root structure unless a discipline reference calls for a small adaptati
 ## Objective
 
 <What will be true when the plan succeeds, and why it matters.>
+
+## Definition of Done
+
+<The observable evidence and plan-level acceptance gate that prove the expected outcome was achieved. Do not substitute a list of completed implementation activities.>
 
 ## Context and evidence
 

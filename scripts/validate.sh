@@ -322,6 +322,27 @@ for skill_name in expected:
         raise SystemExit(f"README is missing skill: {skill_name}")
 if "Fifteen focused skills" not in readme or "/hooks" not in readme:
     raise SystemExit("README must document fifteen skills and Codex hook trust")
+
+outcome_dod_contract = "Outcome and Definition of Done gate"
+create_plan_text = (skill_root / "create-plan" / "SKILL.md").read_text()
+grilling_text = (skill_root / "create-plan" / "references" / "grilling.md").read_text()
+for relative, text in [
+    ("skills/create-plan/SKILL.md", create_plan_text),
+    ("skills/create-plan/references/grilling.md", grilling_text),
+]:
+    if outcome_dod_contract not in text:
+        raise SystemExit(f"missing outcome and Definition of Done gate: {relative}")
+    for required_phrase in [
+        "Expected outcome",
+        "Definition of Done",
+        "separate grill questions",
+        "occupy two slots",
+        "authoritative",
+        "Neither item may be deferred",
+        "The readiness gate cannot pass while",
+    ]:
+        if required_phrase not in text:
+            raise SystemExit(f"missing {required_phrase!r} from outcome and DoD contract: {relative}")
 PY
 
 if command -v claude >/dev/null 2>&1; then
