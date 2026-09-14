@@ -41,6 +41,29 @@ Where workstreams depend on one another, specify interfaces:
 
 Keep names/signatures consistent across the plan.
 
+## Technical design
+
+Every coding plan must include a `## Technical / Coding` section. Keep it proportional to the change. A simple fix may omit irrelevant subsections; a non-simple change must cover each applicable subsection below.
+
+### High-Level Design
+
+Show the affected system or component boundaries and the relevant data or control flow. Invoke `show-me` during planning and use its smallest useful visual: Mermaid flow, call tree, component tree, file tree, pseudocode, or diff. Do not create a large diagram when a compact code-shape sketch communicates the design.
+
+### System APIs
+
+When the change affects an interface, define the existing and proposed API, schema, event, command, configuration, or error contract. State inputs, outputs, validation, failure behavior, and compatibility impact. Omit this subsection when the change has no meaningful interface surface.
+
+### Low-Level Design
+
+Describe the implementation flow, module and file responsibilities, key algorithms, and boundaries in enough detail to prevent incompatible implementations. Use `show-me` for representative code, pseudocode, a diff, or a file-responsibility sketch. Inspect existing code before proposing new modules or abstractions.
+
+For non-simple changes, apply these implementation constraints:
+
+- Reuse existing modules, standard-library or platform features, and installed dependencies before adding code.
+- Split code by cohesive responsibility when that improves readability or testing; move domain behavior out of inline handlers or orchestration code that mixes responsibilities.
+- Do not add one-use interfaces, factories, wrappers, or speculative extension points merely to satisfy SOLID terminology.
+- Prefer 50-80 lines for each authored production-code file. Tests, generated code, data, and configuration are excluded. A cohesive production file may exceed 80 lines only when the plan records why splitting it would make ownership or readability worse.
+
 ## Task boundaries
 
 Use independently testable deliverables. Fold setup, configuration, scaffolding, tests, and documentation into the work item whose outcome needs them unless they form a separately reviewable deliverable.
@@ -90,3 +113,5 @@ Before finalizing check:
 - exact paths/commands are verified
 - no task relies on unexplained codebase conventions
 - the final state includes cleanup/deprecation work when temporary compatibility paths are introduced
+- every coding plan includes `## Technical / Coding`, with `show-me` visuals and API detail wherever they are applicable
+- non-simple designs reuse existing capabilities, keep responsibilities cohesive, avoid hidden inline domain logic, and justify production files above the 50-80 line preference

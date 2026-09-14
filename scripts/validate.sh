@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text().strip()
-if version != "1.1.8":
+if version != "1.1.9":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "to-project",
@@ -64,6 +64,7 @@ for skill_name in sorted(expected):
         raise SystemExit(f"missing skill description: {skill_file.relative_to(root)}")
 
 create_plan = (skill_root / "create-plan" / "SKILL.md").read_text()
+engineering_plan = (skill_root / "create-plan" / "references" / "engineering.md").read_text()
 keep_it_simple = (skill_root / "keep-it-simple" / "SKILL.md").read_text()
 skill_routing = (skill_root / "create-plan" / "references" / "skill-routing.md").read_text()
 readme = (root / "README.md").read_text()
@@ -71,6 +72,19 @@ if not all(token in keep_it_simple for token in ["plan or implementation", "Duri
     raise SystemExit("keep-it-simple is missing its planning and implementation contract")
 if not all(token in create_plan + skill_routing for token in ["Always invoke `keep-it-simple`", "For implementation-oriented plans", "during plan QA"]):
     raise SystemExit("create-plan is missing its keep-it-simple planning or handoff contract")
+technical_design_contract = create_plan + engineering_plan
+if not all(token in technical_design_contract for token in [
+    "Every coding plan must include a `## Technical / Coding` section",
+    "### High-Level Design",
+    "### System APIs",
+    "### Low-Level Design",
+    "Invoke `show-me`",
+    "50-80 lines",
+    "Tests, generated code, data, and configuration are excluded",
+    "one-use interfaces, factories, wrappers, or speculative extension points",
+    "inline handlers or orchestration code that mixes responsibilities",
+]):
+    raise SystemExit("create-plan is missing its technical design contract")
 if not all(token in readme for token in ['"smallest correct plan"', '"smallest correct implementation"']):
     raise SystemExit("README is missing the keep-it-simple planning or implementation flow")
 star_contract = [
