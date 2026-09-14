@@ -37,6 +37,7 @@ Read `references/detailed-plans.md` before drafting or revising the final plan. 
 12. Prefer independently verifiable outcomes over activity lists.
 13. Plan the work. Do not execute the planned work unless the user separately asks for execution.
 14. Invoke `keep-it-simple` after research establishes the requirements and before selecting approaches or work items. Apply it again during plan QA. In plans, "minimal" means avoiding unnecessary complexity, not limiting ambition. Preserve completeness, safety, validation, and acceptance evidence.
+15. Every coding plan must include a `## Technical / Coding` section. Follow `references/engineering.md`: use `show-me` for the smallest useful design visual, describe system APIs when applicable, and provide an implementation-ready low-level design. A simple fix may omit irrelevant subsections, but not the root section.
 
 ## Route by discipline
 
@@ -253,6 +254,22 @@ Use this root structure unless a discipline reference calls for a small adaptati
 
 <Explain the proposed state, how the parts interact, why this approach fits the evidence, credible alternatives rejected and their tradeoffs, and the reason for the sequence.>
 
+## Technical / Coding
+
+<Required for every coding plan. For a simple fix, keep this section concise and omit only subsections that add no useful information.>
+
+### High-Level Design
+
+<For a non-simple change, show system or component boundaries and the relevant control or data flow. Invoke `show-me` and include its smallest useful diagram.>
+
+### System APIs
+
+<When applicable, define affected or proposed APIs, schemas, events, commands, compatibility constraints, and error contracts.>
+
+### Low-Level Design
+
+<Describe the implementation flow, module and file responsibilities, key algorithms, and representative code or diff sketches. Use `show-me` to make the intended code shape explicit.>
+
 ## Artifact and dependency map
 
 <Name the files, documents, systems, or datasets involved, each responsibility, and the contracts between workstreams. Distinguish verified existing artifacts from proposed new artifacts. Identify prerequisites, safe parallel work, and integration checkpoints.>
@@ -316,7 +333,7 @@ Use this root structure unless a discipline reference calls for a small adaptati
 - <source, file, document, issue, URL, decision record, or other evidence>
 ```
 
-Omit empty sections. Add discipline-specific sections when they improve execution. The template is a scaffold: expand each substantive section into explanations, tables, examples, and executable steps as needed. Do not treat its short placeholders as the intended output length.
+Omit empty sections except `## Technical / Coding` in coding plans. Within that required section, simple fixes may omit irrelevant subsections. Add discipline-specific sections when they improve execution. The template is a scaffold: expand each substantive section into explanations, tables, examples, and executable steps as needed. Do not treat its short placeholders as the intended output length.
 
 ### 9. Right-size and sequence work items
 

@@ -20,8 +20,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
-version = (plugin / "VERSION").read_text().strip()
-if version != "1.1.9":
+version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
+if version != "1.1.10":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "to-project",
@@ -54,7 +54,7 @@ for path in root.rglob("*"):
 
 for skill_name in sorted(expected):
     skill_file = skill_root / skill_name / "SKILL.md"
-    text = skill_file.read_text()
+    text = skill_file.read_text(encoding="utf-8")
     match = re.search(r"^---\n(.*?)\n---", text, re.DOTALL)
     if not match:
         raise SystemExit(f"missing frontmatter: {skill_file.relative_to(root)}")
@@ -63,15 +63,29 @@ for skill_name in sorted(expected):
     if not re.search(r"^description:\s*\S", match.group(1), re.MULTILINE):
         raise SystemExit(f"missing skill description: {skill_file.relative_to(root)}")
 
-create_plan = (skill_root / "create-plan" / "SKILL.md").read_text()
-keep_it_simple = (skill_root / "keep-it-simple" / "SKILL.md").read_text()
-pr_babysit = (skill_root / "pr-babysit" / "SKILL.md").read_text()
-skill_routing = (skill_root / "create-plan" / "references" / "skill-routing.md").read_text()
-readme = (root / "README.md").read_text()
+create_plan = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
+engineering_plan = (skill_root / "create-plan" / "references" / "engineering.md").read_text(encoding="utf-8")
+keep_it_simple = (skill_root / "keep-it-simple" / "SKILL.md").read_text(encoding="utf-8")
+pr_babysit = (skill_root / "pr-babysit" / "SKILL.md").read_text(encoding="utf-8")
+skill_routing = (skill_root / "create-plan" / "references" / "skill-routing.md").read_text(encoding="utf-8")
+readme = (root / "README.md").read_text(encoding="utf-8")
 if not all(token in keep_it_simple for token in ["plan or implementation", "During planning", "During implementation", "acceptance evidence"]):
     raise SystemExit("keep-it-simple is missing its planning and implementation contract")
 if not all(token in create_plan + skill_routing for token in ["Always invoke `keep-it-simple`", "For implementation-oriented plans", "during plan QA"]):
     raise SystemExit("create-plan is missing its keep-it-simple planning or handoff contract")
+technical_design_contract = create_plan + engineering_plan
+if not all(token in technical_design_contract for token in [
+    "Every coding plan must include a `## Technical / Coding` section",
+    "### High-Level Design",
+    "### System APIs",
+    "### Low-Level Design",
+    "Invoke `show-me`",
+    "50-80 lines",
+    "Tests, generated code, data, and configuration are excluded",
+    "one-use interfaces, factories, wrappers, or speculative extension points",
+    "inline handlers or orchestration code that mixes responsibilities",
+]):
+    raise SystemExit("create-plan is missing its technical design contract")
 if not all(token in readme for token in ['"smallest correct plan"', '"smallest correct implementation"']):
     raise SystemExit("README is missing the keep-it-simple planning or implementation flow")
 pr_babysit_conversation_contract = [
@@ -132,7 +146,7 @@ for manifest in [
     plugin / ".claude-plugin" / "plugin.json",
     plugin / ".codex-plugin" / "plugin.json",
 ]:
-    data = json.loads(manifest.read_text())
+    data = json.loads(manifest.read_text(encoding="utf-8"))
     if data.get("name") != "srulik-toolkit":
         raise SystemExit(f"wrong manifest name: {manifest.relative_to(root)}")
     manifests[manifest.relative_to(root).as_posix()] = data
@@ -169,7 +183,7 @@ if manifests["plugins/srulik-toolkit/.codex-plugin/plugin.json"].get("skills") !
     raise SystemExit("wrong Codex skill discovery path")
 
 hook_file = plugin / "hooks" / "hooks.json"
-hook_config = json.loads(hook_file.read_text())
+hook_config = json.loads(hook_file.read_text(encoding="utf-8"))
 if set(hook_config) != {"hooks"} or set(hook_config["hooks"]) != {"SessionStart"}:
     raise SystemExit("hook must contain only SessionStart; no user-visible messages or prompt hooks")
 groups = hook_config["hooks"]["SessionStart"]
@@ -274,7 +288,7 @@ forbidden = [
 for path in skill_root.rglob("*"):
     if not path.is_file():
         continue
-    text = path.read_text(errors="ignore")
+    text = path.read_text(encoding="utf-8", errors="ignore")
     if re.search(r"/Users/[A-Za-z0-9_.-]+|/home/[A-Za-z0-9_.-]+|[A-Za-z]:[\\/]Users[\\/]", text):
         raise SystemExit(f"personal filesystem path: {path.relative_to(root)}")
     for token in forbidden:
@@ -290,9 +304,9 @@ for path in skill_root.rglob("*"):
             if not resource.is_relative_to(plugin.resolve()) or not resource.exists():
                 raise SystemExit(f"missing or external bundled resource {target!r}: {path.relative_to(root)}")
 
-notice = (root / "NOTICE.md").read_text()
-license_text = (plugin / "skills" / "stop-slop" / "LICENSE").read_text()
-show_me_license = (plugin / "skills" / "show-me" / "LICENSE").read_text()
+notice = (root / "NOTICE.md").read_text(encoding="utf-8")
+license_text = (plugin / "skills" / "stop-slop" / "LICENSE").read_text(encoding="utf-8")
+show_me_license = (plugin / "skills" / "show-me" / "LICENSE").read_text(encoding="utf-8")
 if not all(token in notice for token in ["2024 Zach Bonfil", "CodeRabbit", "Hardik Pandya", "MIT", "stop-slop/LICENSE", "HumanLayer", "2026", "https://github.com/humanlayer/skills", "show-me/LICENSE"]):
     raise SystemExit("missing source attribution in NOTICE.md")
 if not all(token in license_text for token in ["MIT License", "2025 Hardik Pandya", "Permission is hereby granted", "THE SOFTWARE IS PROVIDED"]):
@@ -300,7 +314,7 @@ if not all(token in license_text for token in ["MIT License", "2025 Hardik Pandy
 if not all(token in show_me_license for token in ["MIT License", "Copyright (c) 2026 HumanLayer", "Permission is hereby granted", "THE SOFTWARE IS PROVIDED"]):
     raise SystemExit("missing retained show-me copyright or MIT terms")
 
-tour = (skill_root / "tour" / "SKILL.md").read_text()
+tour = (skill_root / "tour" / "SKILL.md").read_text(encoding="utf-8")
 tour_contract = [
     "Invoke `$research` for every tour",
     "very thorough",
@@ -324,8 +338,8 @@ if "Fifteen focused skills" not in readme or "/hooks" not in readme:
     raise SystemExit("README must document fifteen skills and Codex hook trust")
 
 outcome_dod_contract = "Outcome and Definition of Done gate"
-create_plan_text = (skill_root / "create-plan" / "SKILL.md").read_text()
-grilling_text = (skill_root / "create-plan" / "references" / "grilling.md").read_text()
+create_plan_text = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
+grilling_text = (skill_root / "create-plan" / "references" / "grilling.md").read_text(encoding="utf-8")
 for relative, text in [
     ("skills/create-plan/SKILL.md", create_plan_text),
     ("skills/create-plan/references/grilling.md", grilling_text),
