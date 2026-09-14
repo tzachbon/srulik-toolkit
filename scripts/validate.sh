@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text().strip()
-if version != "1.1.7":
+if version != "1.1.8":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "to-project",
@@ -65,6 +65,7 @@ for skill_name in sorted(expected):
 
 create_plan = (skill_root / "create-plan" / "SKILL.md").read_text()
 keep_it_simple = (skill_root / "keep-it-simple" / "SKILL.md").read_text()
+pr_babysit = (skill_root / "pr-babysit" / "SKILL.md").read_text()
 skill_routing = (skill_root / "create-plan" / "references" / "skill-routing.md").read_text()
 readme = (root / "README.md").read_text()
 if not all(token in keep_it_simple for token in ["plan or implementation", "During planning", "During implementation", "acceptance evidence"]):
@@ -73,6 +74,16 @@ if not all(token in create_plan + skill_routing for token in ["Always invoke `ke
     raise SystemExit("create-plan is missing its keep-it-simple planning or handoff contract")
 if not all(token in readme for token in ['"smallest correct plan"', '"smallest correct implementation"']):
     raise SystemExit("README is missing the keep-it-simple planning or implementation flow")
+pr_babysit_conversation_contract = [
+    "must immediately give the main session the conversation URL or location",
+    "take an authorized action toward resolution or ask the user for the precise decision needed",
+    "Treat the conversation as a blocker until a fresh provider read verifies that it is resolved",
+    "zero unresolved review conversations",
+]
+if not all(token in pr_babysit for token in pr_babysit_conversation_contract):
+    raise SystemExit("pr-babysit is missing its unresolved review conversation contract")
+if "Leave questions awaiting an answer open" in pr_babysit:
+    raise SystemExit("pr-babysit must not leave review questions unresolved")
 star_contract = [
     ".create-plan-star-suggested",
     "https://github.com/tzachbon/srulik-toolkit",
