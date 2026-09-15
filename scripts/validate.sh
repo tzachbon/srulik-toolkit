@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.1.10":
+if version != "1.1.11":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "to-project",
@@ -65,14 +65,57 @@ for skill_name in sorted(expected):
 
 create_plan = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
 engineering_plan = (skill_root / "create-plan" / "references" / "engineering.md").read_text(encoding="utf-8")
+dynamic_skills = (skill_root / "create-plan" / "references" / "dynamic-skills.md").read_text(encoding="utf-8")
+quality_gates = (skill_root / "create-plan" / "references" / "quality-gates.md").read_text(encoding="utf-8")
 keep_it_simple = (skill_root / "keep-it-simple" / "SKILL.md").read_text(encoding="utf-8")
 pr_babysit = (skill_root / "pr-babysit" / "SKILL.md").read_text(encoding="utf-8")
 skill_routing = (skill_root / "create-plan" / "references" / "skill-routing.md").read_text(encoding="utf-8")
+create_plan_openai = (skill_root / "create-plan" / "agents" / "openai.yaml").read_text(encoding="utf-8")
 readme = (root / "README.md").read_text(encoding="utf-8")
 if not all(token in keep_it_simple for token in ["plan or implementation", "During planning", "During implementation", "acceptance evidence"]):
     raise SystemExit("keep-it-simple is missing its planning and implementation contract")
 if not all(token in create_plan + skill_routing for token in ["Always invoke `keep-it-simple`", "For implementation-oriented plans", "during plan QA"]):
     raise SystemExit("create-plan is missing its keep-it-simple planning or handoff contract")
+strict_skill_discovery_contract = create_plan + dynamic_skills + skill_routing
+if not all(token in strict_skill_discovery_contract for token in [
+    "External discovery is mandatory for every non-trivial plan",
+    "one focused external search per material discipline",
+    "Loading a discovered skill is optional",
+    "SKIPPED: TRIVIAL",
+    "Skill discovery: `INCOMPLETE`",
+    "after the Expected outcome and Definition of Done are explicit",
+    "CLI-native",
+    "--agent",
+]):
+    raise SystemExit("create-plan is missing its strict external skill discovery contract")
+for stale_gap_only_rule in [
+    "Use this reference only when the installed catalog lacks a material planning or execution capability",
+    "If no installed skill covers a material capability",
+    "When the installed skill catalog lacks a material planning or execution capability",
+]:
+    if stale_gap_only_rule in strict_skill_discovery_contract:
+        raise SystemExit(f"create-plan retains stale gap-only discovery rule: {stale_gap_only_rule}")
+if not all(token in create_plan_openai for token in [
+    "$create-plan",
+    "mandatory external skill discovery per material discipline",
+    "loading remains optional",
+    "Skill handoff",
+]):
+    raise SystemExit("create-plan Codex prompt is missing strict skill discovery guidance")
+if not all(token in quality_gates for token in [
+    "every material discipline",
+    "all strict-trivial conditions",
+    "discovery alone did not trigger either action",
+]):
+    raise SystemExit("create-plan quality gates are missing strict skill discovery evidence")
+if not all(token in readme for token in [
+    "every non-trivial plan",
+    "one external search per material discipline",
+    "Loading a discovered skill is optional",
+]):
+    raise SystemExit("README is missing strict create-plan skill discovery guidance")
+if "It only searches when the plan has a material capability gap" in readme:
+    raise SystemExit("README retains stale gap-only create-plan discovery guidance")
 technical_design_contract = create_plan + engineering_plan
 if not all(token in technical_design_contract for token in [
     "Every coding plan must include a `## Technical / Coding` section",

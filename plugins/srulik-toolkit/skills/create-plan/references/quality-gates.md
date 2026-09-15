@@ -112,11 +112,15 @@ A material assumption that can still change plan shape means the readiness gate 
 
 For each recommended skill verify:
 
+- discovery status is `COMPLETE`, `INCOMPLETE`, or `SKIPPED: TRIVIAL`
+- every material discipline has installed-catalog evidence and an exact external query and result, or all strict-trivial conditions are evidenced
+- unavailable or inconclusive searches are marked `INCOMPLETE` without a complete-coverage claim
 - exact installed skill name was discovered
 - the skill is relevant to a concrete phase
 - invocation timing is explicit
 - expected output, artifact, validation, or decision is explicit
 - no more specific skill is available
+- loading and installation decisions are explicit, and discovery alone did not trigger either action
 
 If a capability is useful but no skill exists, label it as a missing capability.
 
