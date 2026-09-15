@@ -2,11 +2,11 @@
 
 Treat skills as specialized execution protocols. Planning must identify skills needed now and skills needed later.
 
-## Inspect installed skills when supported
+## Classify disciplines and inspect installed skills
 
 When the runtime exposes an installed skill catalog:
 
-1. Inspect it early after classifying the task.
+1. Classify every material discipline or workstream, then inspect the catalog early.
 2. Match the request against actual installed skill names and descriptions.
 3. Prefer the most specific applicable skill over a general one.
 4. Invoke a clearly matching skill before using its associated specialized workflow or tools when the platform requires it.
@@ -14,7 +14,9 @@ When the runtime exposes an installed skill catalog:
 
 Do not fabricate skill names. Do not present a tool or connector as a skill.
 
-If skill discovery is unsupported, say so only when it affects the handoff and identify needed capabilities generically.
+Installed catalog inspection and external discovery are separate checks. An installed match does not cancel the external search required by `dynamic-skills.md`. If installed catalog inspection is unsupported, record that limitation in the handoff and identify needed capabilities generically.
+
+Redact or generalize confidential terms before external skill discovery. Never send secrets, private paths, proprietary requirements, customer names, or internal identifiers; if safe generalization is not possible, mark Skill discovery: `INCOMPLETE`.
 
 ## Planning-time invocation
 
@@ -38,7 +40,7 @@ Obey every invoked skill's prerequisites. Do not use `create-plan` as a substitu
 A grill answer may reveal that the plan now involves a new artifact or discipline. When this happens:
 
 1. classify the new planning surface
-2. discover whether a matching skill exists
+2. inspect installed skills and run the required external search for the new discipline
 3. invoke it if needed to resolve planning evidence
 4. update the final handoff map
 
@@ -47,6 +49,8 @@ Skill routing is dynamic, not a one-time preflight.
 ## Final skill handoff is mandatory
 
 Every final plan must contain `## Skill handoff`, even if no execution-time skill applies.
+
+The handoff must begin with Skill discovery: `COMPLETE`, Skill discovery: `INCOMPLETE`, or Skill discovery: `SKIPPED: TRIVIAL` and include the disciplines, exact external searches, installed and external candidates, and selected, loaded, rejected, or deferred decisions. A plan without this evidence is invalid.
 
 For implementation-oriented plans, the handoff must include `keep-it-simple`, invoked before implementation to select the smallest correct change and again after implementation to remove task-introduced code with no current purpose.
 
@@ -62,11 +66,13 @@ Example shape:
 
 ```markdown
 ## Skill handoff
+- Skill discovery: `COMPLETE`.
+- Disciplines and searches: <discipline> -> <installed matches> -> `<exact external query>` -> <result>.
 - During planning: `skill-a` -> inspected <surface> and established <evidence>.
 - During execution:
   - Workstream 1 -> `skill-b` -> invoke before <specific action> -> produce <artifact/result>.
   - Workstream 3 -> `skill-c` -> invoke after <condition> -> verify <acceptance condition>.
-- Missing capability: <capability needed but no installed skill was found>.
+- External candidates: <candidate> -> selected, rejected, loaded, or deferred -> <reason and installation decision>.
 ```
 
 If skills were discovered but none are relevant for execution, state that explicitly rather than inventing a recommendation.
@@ -84,16 +90,16 @@ For each candidate ask:
 
 Avoid decorative skill lists.
 
-## Capability gaps
+## Mandatory external discovery
 
-When no installed skill covers a material planning or execution need:
+For every non-trivial plan:
 
-1. Read `dynamic-skills.md` and search for qualified external candidates when discovery tools are available.
+1. Read `dynamic-skills.md` and run one focused external search per material discipline, even when installed skills cover the work.
 2. Keep installation separate from discovery and require explicit user authorization before installing anything.
-3. Ask about installation during planning only when the candidate is required to complete planning. If the user declines, use a documented fallback or leave the affected decision unresolved.
-4. Record execution-time candidates as `available with approval`, with their exact phase and expected output. Do not interrupt planning to offer optional installation.
+3. After the Expected outcome and Definition of Done are explicit, ask about planning-critical candidates; defer execution-only candidates to the closure wave.
+4. If installation is selected, record project or global scope and CLI-native `--agent` targets as an execution item. Do not install during planning.
 5. Label candidates with insufficient quality evidence as `unverified`; do not recommend loading or installing them.
-6. If no candidate qualifies, name the `missing capability`, where it is needed, and the output it must provide. Suggest creating a new skill only as a future improvement, not as if it already exists.
+6. Mark unavailable or inconclusive discovery as Skill discovery: `INCOMPLETE` and do not claim complete coverage.
 
 ## Smart Ralph companion handoff
 

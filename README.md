@@ -116,9 +116,15 @@ flowchart LR
     K --> M["show-me"]
 ```
 
-`create-plan` checks installed skills before it looks for an external one. It
-only searches when the plan has a material capability gap. It can suggest an
-external skill, but it cannot install one without your approval.
+`create-plan` checks installed skills first. For every non-trivial plan, it runs
+one external search per material discipline even when an installed skill covers
+the work. Loading a discovered skill is optional, and installation remains a
+separate execution step that requires your approval.
+
+Redact or generalize confidential terms before external skill discovery. Never
+send secrets, private paths, proprietary requirements, customer names, or
+internal identifiers; if safe generalization is not possible, mark Skill
+discovery: `INCOMPLETE`.
 
 ## Optional tools
 
