@@ -10,6 +10,10 @@ Skill search is read-only. Search and recommend without asking for permission. I
 
 Loading a discovered skill is optional. Never claim that an external candidate was loaded or used. Load a skill only after installation succeeds and the current harness exposes it, and only when it materially improves the current planning work. When installation is not authorized, carry its intended capability into the plan as a proposed handoff, documented fallback, or unresolved dependency.
 
+## Confidentiality boundary
+
+Redact or generalize confidential terms before external skill discovery. Never send secrets, credentials, private paths, proprietary code or requirements, customer names, internal identifiers, or other confidential context to an external search. Use generic capability terms that preserve the planning question. If safe generalization is not possible for useful discovery, do not transmit the context; record Skill discovery: `INCOMPLETE` and the omitted context category.
+
 ## Strict-trivial exception
 
 Skip external search only when all of these conditions are evidenced:

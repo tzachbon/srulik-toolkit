@@ -16,6 +16,8 @@ Do not fabricate skill names. Do not present a tool or connector as a skill.
 
 Installed catalog inspection and external discovery are separate checks. An installed match does not cancel the external search required by `dynamic-skills.md`. If installed catalog inspection is unsupported, record that limitation in the handoff and identify needed capabilities generically.
 
+Redact or generalize confidential terms before external skill discovery. Never send secrets, private paths, proprietary requirements, customer names, or internal identifiers; if safe generalization is not possible, mark Skill discovery: `INCOMPLETE`.
+
 ## Planning-time invocation
 
 Invoke relevant skills during plan creation when they materially improve evidence, decisions, or plan quality. Typical categories include:

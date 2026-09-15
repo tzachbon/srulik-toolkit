@@ -121,6 +121,11 @@ one external search per material discipline even when an installed skill covers
 the work. Loading a discovered skill is optional, and installation remains a
 separate execution step that requires your approval.
 
+Redact or generalize confidential terms before external skill discovery. Never
+send secrets, private paths, proprietary requirements, customer names, or
+internal identifiers; if safe generalization is not possible, mark Skill
+discovery: `INCOMPLETE`.
+
 ## Optional tools
 
 - `review-pro-max` can use GitHub CLI for pull requests. It can also run

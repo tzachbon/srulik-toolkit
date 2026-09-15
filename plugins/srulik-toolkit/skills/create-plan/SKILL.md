@@ -82,6 +82,8 @@ External discovery may be skipped only when all strict-trivial conditions pass: 
 
 Ask about planning-critical external candidates only after the Expected outcome and Definition of Done are explicit, using the next eligible grilling wave. Defer execution-only candidates to the closure wave. If the user selects installation, record it as an execution-plan item and ask the dependent questions about project or global scope and the CLI-native detected `--agent` targets. `create-plan` never installs a candidate itself and never forces a particular skill directory.
 
+Redact or generalize confidential terms before external skill discovery. Never send secrets, private paths, proprietary requirements, customer names, or internal identifiers; if safe generalization is not possible, mark Skill discovery: `INCOMPLETE`.
+
 For engineering work that needs multiple phases or sessions, benefits from durable research, requirements, design, and task artifacts, and is expected to use autonomous implementation loops, follow the Smart Ralph companion routing in `references/skill-routing.md`. Difficulty or a multi-step plan alone does not qualify.
 
 Use the strongest applicable sources available, such as:

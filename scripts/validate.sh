@@ -108,6 +108,26 @@ if not all(token in quality_gates for token in [
     "discovery alone did not trigger either action",
 ]):
     raise SystemExit("create-plan quality gates are missing strict skill discovery evidence")
+discovery_surfaces = {
+    "create-plan": create_plan,
+    "dynamic-skills": dynamic_skills,
+    "skill-routing": skill_routing,
+    "openai.yaml": create_plan_openai,
+    "README": readme,
+}
+for surface_name, surface in discovery_surfaces.items():
+    normalized_surface = " ".join(surface.lower().split())
+    if not all(token in normalized_surface for token in [
+        "redact or generalize confidential terms before external skill discovery",
+        "if safe generalization is not possible",
+        "skill discovery: `incomplete`",
+    ]):
+        raise SystemExit(f"{surface_name} is missing the external discovery confidentiality boundary")
+gate8 = quality_gates.split("## Gate 8: skill handoff quality", 1)[1].split("## Gate 9:", 1)[0]
+if "At the plan level verify:" not in gate8 or "For each recommended skill additionally verify:" not in gate8:
+    raise SystemExit("quality Gate 8 is missing plan-level and recommended-skill scopes")
+if gate8.index("At the plan level verify:") > gate8.index("For each recommended skill additionally verify:"):
+    raise SystemExit("quality Gate 8 scopes plan-level discovery after recommended skills")
 if not all(token in readme for token in [
     "every non-trivial plan",
     "one external search per material discipline",
