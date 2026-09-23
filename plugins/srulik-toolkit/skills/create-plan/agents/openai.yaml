@@ -1,13 +1,13 @@
 interface:
   display_name: Create Plan
   short_description: Research, grill, validate, and hand off execution-ready plans
-  default_prompt: 'Create a comprehensive, detailed execution-ready plan for this task. Plans should be verbose enough for a fresh executor with no conversation history. Research available
-    evidence and relevant skills first. Grill me in layered question waves: map the
+  default_prompt: 'Use $create-plan to create a comprehensive, detailed execution-ready plan for this task. Plans should be verbose enough for a fresh executor with no conversation history. Research available
+    evidence and inspect installed skills first, then run mandatory external skill discovery per material discipline for every non-trivial plan; loading remains optional. Redact or generalize confidential terms before external skill discovery; if safe generalization is not possible, mark Skill discovery: `INCOMPLETE`. Grill me in layered question waves: map the
     unresolved decision tree, ask up to four currently answerable frontier questions
     with recommended answers, then re-research facts exposed by my answers and recompute
     the frontier. Escalate from foundation to shape to adversarial edges and execution
     closure until the readiness gates pass, then produce a self-contained plan with
-    context and rationale, requirements traceability, artifact and interface maps, ordered checkbox steps, concrete examples, validation procedures and expected results, risks and recovery, dependencies, and exact skill handoffs for execution. Preserve useful detail; do not compress the artifact into an outline.
+    context and rationale, requirements traceability, artifact and interface maps, ordered checkbox steps, concrete examples, validation procedures and expected results, risks and recovery, dependencies, and a Skill handoff with discovery status, exact searches, candidates, decisions, and execution timing. Preserve useful detail; do not compress the artifact into an outline.
     After QA, write the complete plan to an OS-managed temporary Markdown file outside
     the repository whenever runtime permissions allow, and return its absolute-path link.
     When active runtime instructions place the session in Plan Mode, also emit the complete

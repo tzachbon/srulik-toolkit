@@ -66,14 +66,77 @@ for skill_name in sorted(expected):
 
 create_plan = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
 engineering_plan = (skill_root / "create-plan" / "references" / "engineering.md").read_text(encoding="utf-8")
+dynamic_skills = (skill_root / "create-plan" / "references" / "dynamic-skills.md").read_text(encoding="utf-8")
+quality_gates = (skill_root / "create-plan" / "references" / "quality-gates.md").read_text(encoding="utf-8")
 keep_it_simple = (skill_root / "keep-it-simple" / "SKILL.md").read_text(encoding="utf-8")
 pr_babysit = (skill_root / "pr-babysit" / "SKILL.md").read_text(encoding="utf-8")
 skill_routing = (skill_root / "create-plan" / "references" / "skill-routing.md").read_text(encoding="utf-8")
+create_plan_openai = (skill_root / "create-plan" / "agents" / "openai.yaml").read_text(encoding="utf-8")
 readme = (root / "README.md").read_text(encoding="utf-8")
 if not all(token in keep_it_simple for token in ["plan or implementation", "During planning", "During implementation", "acceptance evidence"]):
     raise SystemExit("keep-it-simple is missing its planning and implementation contract")
 if not all(token in create_plan + skill_routing for token in ["Always invoke `keep-it-simple`", "For implementation-oriented plans", "during plan QA"]):
     raise SystemExit("create-plan is missing its keep-it-simple planning or handoff contract")
+strict_skill_discovery_contract = create_plan + dynamic_skills + skill_routing
+if not all(token in strict_skill_discovery_contract for token in [
+    "External discovery is mandatory for every non-trivial plan",
+    "one focused external search per material discipline",
+    "Loading a discovered skill is optional",
+    "SKIPPED: TRIVIAL",
+    "Skill discovery: `INCOMPLETE`",
+    "after the Expected outcome and Definition of Done are explicit",
+    "CLI-native",
+    "--agent",
+]):
+    raise SystemExit("create-plan is missing its strict external skill discovery contract")
+for stale_gap_only_rule in [
+    "Use this reference only when the installed catalog lacks a material planning or execution capability",
+    "If no installed skill covers a material capability",
+    "When the installed skill catalog lacks a material planning or execution capability",
+]:
+    if stale_gap_only_rule in strict_skill_discovery_contract:
+        raise SystemExit(f"create-plan retains stale gap-only discovery rule: {stale_gap_only_rule}")
+if not all(token in create_plan_openai for token in [
+    "$create-plan",
+    "mandatory external skill discovery per material discipline",
+    "loading remains optional",
+    "Skill handoff",
+]):
+    raise SystemExit("create-plan Codex prompt is missing strict skill discovery guidance")
+if not all(token in quality_gates for token in [
+    "every material discipline",
+    "all strict-trivial conditions",
+    "discovery alone did not trigger either action",
+]):
+    raise SystemExit("create-plan quality gates are missing strict skill discovery evidence")
+discovery_surfaces = {
+    "create-plan": create_plan,
+    "dynamic-skills": dynamic_skills,
+    "skill-routing": skill_routing,
+    "openai.yaml": create_plan_openai,
+    "README": readme,
+}
+for surface_name, surface in discovery_surfaces.items():
+    normalized_surface = " ".join(surface.lower().split())
+    if not all(token in normalized_surface for token in [
+        "redact or generalize confidential terms before external skill discovery",
+        "if safe generalization is not possible",
+        "skill discovery: `incomplete`",
+    ]):
+        raise SystemExit(f"{surface_name} is missing the external discovery confidentiality boundary")
+gate8 = quality_gates.split("## Gate 8: skill handoff quality", 1)[1].split("## Gate 9:", 1)[0]
+if "At the plan level verify:" not in gate8 or "For each recommended skill additionally verify:" not in gate8:
+    raise SystemExit("quality Gate 8 is missing plan-level and recommended-skill scopes")
+if gate8.index("At the plan level verify:") > gate8.index("For each recommended skill additionally verify:"):
+    raise SystemExit("quality Gate 8 scopes plan-level discovery after recommended skills")
+if not all(token in readme for token in [
+    "every non-trivial plan",
+    "one external search per material discipline",
+    "Loading a discovered skill is optional",
+]):
+    raise SystemExit("README is missing strict create-plan skill discovery guidance")
+if "It only searches when the plan has a material capability gap" in readme:
+    raise SystemExit("README retains stale gap-only create-plan discovery guidance")
 technical_design_contract = create_plan + engineering_plan
 if not all(token in technical_design_contract for token in [
     "Every coding plan must include a `## Technical / Coding` section",
