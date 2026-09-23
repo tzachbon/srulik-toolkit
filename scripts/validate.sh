@@ -21,9 +21,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.1.11":
+if version != "1.2.0":
     raise SystemExit("wrong packaged VERSION")
 expected = {
+    "can-you-help",
     "to-project",
     "review-pro-max",
     "create-plan",
@@ -240,7 +241,7 @@ for harness in ["claude", "codex"]:
     manifest = manifests[f"plugins/srulik-toolkit/.{harness}-plugin/plugin.json"]
     if manifest.get("version") != version or manifest.get("license") != "MIT":
         raise SystemExit(f"wrong {harness} plugin version or license")
-    if not manifest.get("description", "").startswith("Fifteen "):
+    if not manifest.get("description", "").startswith("Sixteen "):
         raise SystemExit(f"stale {harness} plugin skill count")
 if manifests["plugins/srulik-toolkit/.codex-plugin/plugin.json"].get("skills") != "./skills/":
     raise SystemExit("wrong Codex skill discovery path")
@@ -397,8 +398,8 @@ if not all(token in tour for token in tour_contract):
 for skill_name in expected:
     if f"skills/{skill_name}/SKILL.md" not in readme:
         raise SystemExit(f"README is missing skill: {skill_name}")
-if "Fifteen focused skills" not in readme or "/hooks" not in readme:
-    raise SystemExit("README must document fifteen skills and Codex hook trust")
+if "Sixteen focused skills" not in readme or "/hooks" not in readme:
+    raise SystemExit("README must document sixteen skills and Codex hook trust")
 
 outcome_dod_contract = "Outcome and Definition of Done gate"
 create_plan_text = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")

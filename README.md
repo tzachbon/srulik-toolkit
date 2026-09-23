@@ -9,14 +9,14 @@
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Fifteen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
+**Sixteen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
 </div>
 
-Srulik Toolkit packages the workflows I use to turn loose ideas into projects,
-research questions, explain topics visually, give guided tours, write plans, review changes, keep work in scope, delegate
+Srulik Toolkit packages the workflows I use to make sense of incoming requests, turn loose ideas into projects,
+investigate questions, explain topics visually, give guided tours, write plans, review changes, keep work in scope, delegate
 suitable tasks, work test-first, and maintain pull requests. It also covers prose
 editing, merge conflicts, and CI failures.
 
@@ -49,7 +49,7 @@ installation or a hook change; installing the plugin alone does not grant it.
 
 ## Startup hint
 
-On a new session, the plugin writes the fifteen skill names and a short routing
+On a new session, the plugin writes the sixteen skill names and a short routing
 instruction to model context. It uses the default `hooks/hooks.json` location
 and runs only for `SessionStart` with the `startup` matcher. It does not run on
 each prompt or skill invocation.
@@ -64,6 +64,7 @@ available when the hook is disabled, untrusted, or offline.
 
 | Skill | Use it when you want to |
 | --- | --- |
+| [`can-you-help`](plugins/srulik-toolkit/skills/can-you-help/SKILL.md) | Make sense of a supplied request, handle clear work, or decide together what help is needed. |
 | [`to-project`](plugins/srulik-toolkit/skills/to-project/SKILL.md) | Turn an idea or an existing folder into a project with durable context. |
 | [`create-plan`](plugins/srulik-toolkit/skills/create-plan/SKILL.md) | Research and pressure-test a task, then write a detailed plan with concrete steps, rationale, requirement traceability, and verification. |
 | [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request for the current changes. |
@@ -83,6 +84,7 @@ available when the hook is disabled, untrusted, or offline.
 Example prompts:
 
 ```text
+$can-you-help Here is a Slack thread. Can you help?
 $create-plan Add offline support to this app
 $create-pr Open a pull request for the current changes
 $review-pro-max Review the changes on my current branch
