@@ -60,6 +60,18 @@ request times out after two seconds; network and invalid-response failures are
 silent and are not cached. It never upgrades automatically. Skills remain
 available when the hook is disabled, untrusted, or offline.
 
+## Blocked task recovery
+
+When a main agent explicitly ends with a current blocked verdict, the `Stop`
+hook gives it one more turn to inspect the failure and try an authorized route.
+It stays silent for completed work, past blockers, subagents, and a second stop.
+The hook does not grant access, bypass approvals, or turn planning into execution.
+The agent may still report a real blocker after the recovery turn.
+
+Recovery is on by default. Set `SRULIK_TOOLKIT_BLOCKED_STOP=0` in the agent's
+environment before launch to disable only this hook. Codex users must review
+and trust the new `Stop` hook through `/hooks` after updating the plugin.
+
 ## Choose a skill
 
 | Skill | Use it when you want to |
@@ -180,7 +192,7 @@ Restart Claude Code or start a new Codex task after updating. In Codex, open
 ## Windows
 
 Use the same plugin commands in the shell supported by your Claude Code or
-Codex installation. The startup checker uses Node.js and otherwise has no
+Codex installation. The startup checker and recovery hook use Node.js and have no other
 runtime dependency.
 
 Repository validation uses Bash and Python 3. On Windows, run it from Git Bash
