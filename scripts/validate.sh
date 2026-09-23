@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.2.0":
+if version != "1.2.1":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -248,8 +248,8 @@ if manifests["plugins/srulik-toolkit/.codex-plugin/plugin.json"].get("skills") !
 
 hook_file = plugin / "hooks" / "hooks.json"
 hook_config = json.loads(hook_file.read_text(encoding="utf-8"))
-if set(hook_config) != {"hooks"} or set(hook_config["hooks"]) != {"SessionStart"}:
-    raise SystemExit("hook must contain only SessionStart; no user-visible messages or prompt hooks")
+if set(hook_config) != {"hooks"} or set(hook_config["hooks"]) != {"SessionStart", "Stop"}:
+    raise SystemExit("hook must contain SessionStart and Stop only")
 groups = hook_config["hooks"]["SessionStart"]
 if not isinstance(groups, list) or len(groups) != 1:
     raise SystemExit("hook must contain one startup matcher")
@@ -262,10 +262,66 @@ if set(hook) != {"type", "command", "timeout"} or hook["type"] != "command" or h
 command = hook["command"]
 if command != 'node -e "require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + \'/hooks/check-version.js\')"':
     raise SystemExit("startup hook must invoke the packaged version checker")
+stop_groups = hook_config["hooks"]["Stop"]
+if not isinstance(stop_groups, list) or len(stop_groups) != 1 or set(stop_groups[0]) != {"hooks"}:
+    raise SystemExit("Stop hook must have one unfiltered group")
+stop_hooks = stop_groups[0]["hooks"]
+if len(stop_hooks) != 1 or stop_hooks[0] != {
+    "type": "command",
+    "command": 'node -e "require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + \'/hooks/blocked-stop.js\')"',
+    "timeout": 3,
+}:
+    raise SystemExit("Stop hook must invoke the packaged recovery check")
 
 node = shutil.which("node")
 if not node:
     raise SystemExit("Node.js is required by the startup hook")
+
+def stop_check(payload, disabled=False):
+    env = os.environ.copy()
+    env.pop("SRULIK_TOOLKIT_BLOCKED_STOP", None)
+    if disabled:
+        env["SRULIK_TOOLKIT_BLOCKED_STOP"] = "0"
+    result = subprocess.run(
+        [node, str(plugin / "hooks" / "blocked-stop.js")],
+        input=payload if isinstance(payload, str) else json.dumps(payload),
+        env=env, capture_output=True, text=True, timeout=5, check=True,
+    )
+    if result.stderr:
+        raise SystemExit(f"Stop hook wrote stderr: {result.stderr}")
+    return result.stdout.strip()
+
+stop_input = {"hook_event_name": "Stop", "stop_hook_active": False}
+for message in [
+    "Blocked: GitHub sign-in needs an approved email code.",
+    "Blocked: no access to GitHub.",
+    "Blocked: not authenticated.",
+    "I'm blocked by a missing repository permission.",
+    "I can’t proceed with the available access.",
+]:
+    output = json.loads(stop_check(stop_input | {"last_assistant_message": message}))
+    if output.get("decision") != "block" or "authorized route" not in output.get("reason", ""):
+        raise SystemExit(f"Stop hook did not deliver recovery context for {message!r}")
+for message in [
+    "Completed: the GitHub login works.",
+    "Completed: the task was blocked earlier, but the login now works.",
+    "Blocked: none; all checks passed.",
+    "**Blocked:** none; all checks passed.",
+    "Previously blocked by login; this is resolved.",
+    "Blocked: missing permission (resolved).",
+    "Blocked: missing permission.\nResolved: signed in successfully; task complete.",
+    "Example output:\n```text\nBlocked: a missing permission.\n```\nThe task is complete.",
+]:
+    if stop_check(stop_input | {"last_assistant_message": message}):
+        raise SystemExit(f"Stop hook misclassified completed work: {message!r}")
+blocked_input = stop_input | {"last_assistant_message": "Blocked: access is unavailable."}
+if stop_check(blocked_input | {"stop_hook_active": True}):
+    raise SystemExit("Stop hook must allow the second stop")
+if stop_check(blocked_input, disabled=True):
+    raise SystemExit("Stop hook opt-out must be silent")
+if stop_check(stop_input) or stop_check(blocked_input | {"hook_event_name": "SubagentStop"}) or stop_check("{"):
+    raise SystemExit("Stop hook must fail open on missing, unrelated, or malformed input")
+print("Blocked Stop hook passed")
 
 requests = {}
 class VersionHandler(BaseHTTPRequestHandler):
