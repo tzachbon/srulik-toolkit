@@ -37,3 +37,14 @@ license is retained in
 [`skills/show-me/LICENSE`](plugins/srulik-toolkit/skills/show-me/LICENSE).
 
 Copyright (c) 2026 HumanLayer
+
+The `retro` skill adapts Matt Pocock's public `retro` skill
+(https://github.com/mattpocock/skills) at revision
+`4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d` under the MIT License. Its original
+license is retained in
+[`skills/retro/LICENSE`](plugins/srulik-toolkit/skills/retro/LICENSE).
+
+Copyright (c) 2026 Matt Pocock
+
+The adaptation adds portable session access, explicit evidence requirements,
+and scoped implementation guidance without requiring another installed skill.

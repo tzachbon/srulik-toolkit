@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.2.2":
+if version != "1.2.3":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -40,6 +40,7 @@ expected = {
     "pr-babysit",
     "resolving-merge-conflicts",
     "fix-ci",
+    "retro",
 }
 
 skill_root = plugin / "skills"
@@ -256,7 +257,7 @@ for harness in ["claude", "codex"]:
     manifest = manifests[f"plugins/srulik-toolkit/.{harness}-plugin/plugin.json"]
     if manifest.get("version") != version or manifest.get("license") != "MIT":
         raise SystemExit(f"wrong {harness} plugin version or license")
-    if not manifest.get("description", "").startswith("Sixteen "):
+    if not manifest.get("description", "").startswith("Seventeen "):
         raise SystemExit(f"stale {harness} plugin skill count")
 if manifests["plugins/srulik-toolkit/.codex-plugin/plugin.json"].get("skills") != "./skills/":
     raise SystemExit("wrong Codex skill discovery path")
@@ -373,7 +374,11 @@ def check(endpoint, data_root, timeout="2000"):
 
 with tempfile.TemporaryDirectory() as temporary:
     data = pathlib.Path(temporary)
-    if "is available" in check("/equal", data):
+    startup = check("/equal", data)
+    advertised = startup.split(hint_start, 1)[1].split(". Read relevant skills", 1)[0].strip()
+    if set(advertised.split(", ")) != expected:
+        raise SystemExit("startup hint must advertise every packaged skill")
+    if "is available" in startup:
         raise SystemExit("equal versions must not suggest an upgrade")
 with tempfile.TemporaryDirectory() as temporary:
     data = pathlib.Path(temporary)
@@ -402,6 +407,7 @@ for relative in [
     "skills/tdd/mocking.md",
     "skills/stop-slop/LICENSE",
     "skills/show-me/LICENSE",
+    "skills/retro/LICENSE",
 ]:
     if not (plugin / relative).is_file():
         raise SystemExit(f"missing bundled resource: {relative}")
@@ -442,12 +448,17 @@ for path in skill_root.rglob("*"):
 notice = (root / "NOTICE.md").read_text(encoding="utf-8")
 license_text = (plugin / "skills" / "stop-slop" / "LICENSE").read_text(encoding="utf-8")
 show_me_license = (plugin / "skills" / "show-me" / "LICENSE").read_text(encoding="utf-8")
+retro_license = (plugin / "skills" / "retro" / "LICENSE").read_text(encoding="utf-8")
 if not all(token in notice for token in ["2024 Zach Bonfil", "CodeRabbit", "Hardik Pandya", "MIT", "stop-slop/LICENSE", "HumanLayer", "2026", "https://github.com/humanlayer/skills", "show-me/LICENSE"]):
     raise SystemExit("missing source attribution in NOTICE.md")
 if not all(token in license_text for token in ["MIT License", "2025 Hardik Pandya", "Permission is hereby granted", "THE SOFTWARE IS PROVIDED"]):
     raise SystemExit("missing retained stop-slop copyright or MIT terms")
 if not all(token in show_me_license for token in ["MIT License", "Copyright (c) 2026 HumanLayer", "Permission is hereby granted", "THE SOFTWARE IS PROVIDED"]):
     raise SystemExit("missing retained show-me copyright or MIT terms")
+if not all(token in notice for token in ["Matt Pocock", "https://github.com/mattpocock/skills", "retro/LICENSE"]):
+    raise SystemExit("missing retro source attribution in NOTICE.md")
+if not all(token in retro_license for token in ["MIT License", "Copyright (c) 2026 Matt Pocock", "Permission is hereby granted", "THE SOFTWARE IS PROVIDED"]):
+    raise SystemExit("missing retained retro copyright or MIT terms")
 
 tour = (skill_root / "tour" / "SKILL.md").read_text(encoding="utf-8")
 tour_contract = [
@@ -469,8 +480,8 @@ if not all(token in tour for token in tour_contract):
 for skill_name in expected:
     if f"skills/{skill_name}/SKILL.md" not in readme:
         raise SystemExit(f"README is missing skill: {skill_name}")
-if "Sixteen focused skills" not in readme or "/hooks" not in readme:
-    raise SystemExit("README must document sixteen skills and Codex hook trust")
+if "Seventeen focused skills" not in readme or "/hooks" not in readme:
+    raise SystemExit("README must document seventeen skills and Codex hook trust")
 
 outcome_dod_contract = "Outcome and Definition of Done gate"
 create_plan_text = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
