@@ -26,7 +26,7 @@ Follow project guidance and any `CONTEXT-MAP.md` to select the relevant domain's
 `GLOSSARY.md`, or its existing `CONTEXT.md` when no glossary exists. When both
 exist, use `GLOSSARY.md` for terms and preserve `CONTEXT.md` for background; resolve
 conflicting definitions against project guidance. Update only the selected file.
-Create `GLOSSARY.md` or `docs/adr/` lazily if they do not exist yet (first term,
+Create the selected vocabulary file or `docs/adr/` lazily if missing (first term,
 first ADR). Match the existing file's format. For ADRs, only file one when the
 decision is hard to reverse AND surprising without context AND a real trade-off,
 otherwise route it as a fact or a task instead.

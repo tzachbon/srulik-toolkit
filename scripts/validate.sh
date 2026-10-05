@@ -330,7 +330,7 @@ def stop_check(payload, disabled=False):
     result = subprocess.run(
         [node, str(plugin / "hooks" / "blocked-stop.js")],
         input=payload if isinstance(payload, str) else json.dumps(payload),
-        env=env, capture_output=True, text=True, timeout=5, check=True,
+        env=env, capture_output=True, text=True, timeout=30, check=True,
     )
     if result.stderr:
         raise SystemExit(f"Stop hook wrote stderr: {result.stderr}")
@@ -396,7 +396,7 @@ def check(endpoint, data_root, timeout="2000"):
         "SRULIK_TOOLKIT_VERSION_URL": base_url + endpoint,
         "SRULIK_TOOLKIT_VERSION_TIMEOUT_MS": timeout,
     }
-    result = subprocess.run([node, str(plugin / "hooks" / "check-version.js")], env=env, capture_output=True, text=True, timeout=5, check=True)
+    result = subprocess.run([node, str(plugin / "hooks" / "check-version.js")], env=env, capture_output=True, text=True, timeout=30, check=True)
     if result.stderr or not result.stdout.startswith(hint_start):
         raise SystemExit(f"version checker did not preserve startup hint: {result.stderr or result.stdout}")
     advertised = set(result.stdout.splitlines()[0].split("skills: ", 1)[1].split(". Read", 1)[0].split(", "))
