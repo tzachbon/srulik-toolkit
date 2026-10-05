@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.2.1":
+if version != "1.2.2":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -160,6 +160,21 @@ pr_babysit_conversation_contract = [
 ]
 if not all(token in pr_babysit for token in pr_babysit_conversation_contract):
     raise SystemExit("pr-babysit is missing its unresolved review conversation contract")
+pr_babysit_background_contract = [
+    "Keep the main thread available for conversation throughout babysitting",
+    'mode: "async"',
+    "The parent owns the listener and handoff ledger",
+    "Green CI, missing approvals, silence, and a settled pass do not stop listening",
+    "stable provider ID/type",
+    "revision marker",
+    "previously resolved threads for new replies, edits, or reopening",
+    "asynchronous catch-up pass",
+    "Serialize workers for the same PR",
+    "Visible notifications are limited to input needed, readiness changes, monitoring failure, or PR closure",
+    "Never substitute foreground maintenance",
+]
+if not all(token in pr_babysit for token in pr_babysit_background_contract):
+    raise SystemExit("pr-babysit is missing its background review listening contract")
 if "Leave questions awaiting an answer open" in pr_babysit:
     raise SystemExit("pr-babysit must not leave review questions unresolved")
 star_contract = [
