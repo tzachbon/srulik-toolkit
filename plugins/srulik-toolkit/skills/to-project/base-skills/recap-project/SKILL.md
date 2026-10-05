@@ -18,7 +18,9 @@ files below unless they point you somewhere.
    what is in flight.
 3. Recent git history — `git log --oneline -15` and `git status` for uncommitted
    work in progress.
-4. `CONTEXT.md` — the canonical terms, so you speak the project's language.
+4. Follow project guidance and any `CONTEXT-MAP.md` to the relevant domain's
+   `GLOSSARY.md`, falling back to its existing `CONTEXT.md`. When both exist, use
+   the glossary for terms and context for background; report conflicting definitions.
 
 ## Print
 A brief, in this shape:

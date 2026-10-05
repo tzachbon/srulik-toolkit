@@ -7,7 +7,11 @@ description: Develop behavior test-first through agreed public interfaces. Use w
 
 TDD uses a red → green cycle for one behavior slice at a time. This skill defines the test boundary, test quality, and implementation limits for that cycle.
 
-When exploring the codebase, read `CONTEXT.md` (if it exists) so test names and interface vocabulary match the project's domain language, and respect ADRs in the area you're touching.
+When exploring the codebase, follow project guidance and any `CONTEXT-MAP.md` to
+the relevant domain's `GLOSSARY.md`, falling back to its existing `CONTEXT.md`.
+When both exist, use the glossary for terms and context for background; resolve
+conflicting definitions against project guidance. Match test and interface names
+to that vocabulary, and respect ADRs in the area you're touching.
 
 ## What a good test is
 

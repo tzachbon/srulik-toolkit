@@ -22,7 +22,7 @@ and waits for a yes.
    longer exist (or files with no pointer).
 4. **AGENTS.md index drift** — index entries for dirs/files that no longer exist,
    or top-level dirs/files missing from the index.
-5. **Broken cross-references** — links between docs (CONTEXT, ADRs, TASKS) whose
+5. **Broken cross-references** — links between docs (GLOSSARY, legacy CONTEXT, ADRs, TASKS) whose
    targets moved or were deleted.
 
 ## Two classes

@@ -21,13 +21,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.2.3":
+if version != "1.3.0":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
     "to-project",
     "review-pro-max",
     "create-plan",
+    "implement-plan",
     "create-pr",
     "stay-in-scope",
     "agent-swarm",
@@ -74,6 +75,34 @@ pr_babysit = (skill_root / "pr-babysit" / "SKILL.md").read_text(encoding="utf-8"
 skill_routing = (skill_root / "create-plan" / "references" / "skill-routing.md").read_text(encoding="utf-8")
 create_plan_openai = (skill_root / "create-plan" / "agents" / "openai.yaml").read_text(encoding="utf-8")
 readme = (root / "README.md").read_text(encoding="utf-8")
+implement_plan = (skill_root / "implement-plan" / "SKILL.md").read_text(encoding="utf-8")
+for dependency in ["create-plan", "agent-swarm", "keep-it-simple", "tdd", "resolving-merge-conflicts", "review-pro-max", "create-pr"]:
+    if f"../{dependency}/SKILL.md" not in implement_plan:
+        raise SystemExit(f"implement-plan is missing its {dependency} handoff")
+for boundary in ["Reject missing dependencies and cycles", "verified and integrated", "workspace binding", "execute ready tasks inline", "without authorization", "user separately", "uncommitted or unmerged"]:
+    if boundary not in implement_plan:
+        raise SystemExit(f"implement-plan is missing execution boundary: {boundary}")
+if "../../implement-plan/SKILL.md" not in skill_routing:
+    raise SystemExit("create-plan is missing its implement-plan handoff")
+
+glossary_format = skill_root / "to-project" / "GLOSSARY-FORMAT.md"
+if not glossary_format.is_file() or (skill_root / "to-project" / "CONTEXT-FORMAT.md").exists():
+    raise SystemExit("to-project must ship the renamed glossary format")
+for relative in ["to-project/SKILL.md", "to-project/templates.md", "to-project/EXTEND.md", "to-project/base-skills/capture-to-project/SKILL.md", "to-project/base-skills/recap-project/SKILL.md", "tdd/SKILL.md"]:
+    text = (skill_root / relative).read_text(encoding="utf-8")
+    if "GLOSSARY.md" not in text or "CONTEXT-FORMAT.md" in text:
+        raise SystemExit(f"stale glossary routing: {relative}")
+for relative in ["to-project/GLOSSARY-FORMAT.md", "to-project/EXTEND.md", "to-project/base-skills/capture-to-project/SKILL.md", "to-project/base-skills/recap-project/SKILL.md", "tdd/SKILL.md"]:
+    if "CONTEXT.md" not in (skill_root / relative).read_text(encoding="utf-8"):
+        raise SystemExit(f"missing legacy context compatibility: {relative}")
+
+pr_conventions = (skill_root / "create-pr" / "references" / "conventions.md").read_text(encoding="utf-8")
+pr_evidence = (skill_root / "create-pr" / "references" / "evidence.md").read_text(encoding="utf-8")
+pr_template = (root / ".github" / "PULL_REQUEST_TEMPLATE.md").read_text(encoding="utf-8")
+if not all(section in pr_conventions and f"## {section}" in pr_template for section in ["Evidence", "Merge danger", "Blast radius"]):
+    raise SystemExit("PR guidance and template must include evidence, merge danger, and blast radius")
+if "../../show-me/SKILL.md" not in pr_conventions or "same scenario" not in pr_evidence:
+    raise SystemExit("PR review guidance must connect useful visuals and matched before/after evidence")
 if not all(token in keep_it_simple for token in ["plan or implementation", "During planning", "During implementation", "acceptance evidence"]):
     raise SystemExit("keep-it-simple is missing its planning and implementation contract")
 if not all(token in create_plan + skill_routing for token in ["Always invoke `keep-it-simple`", "For implementation-oriented plans", "during plan QA"]):
@@ -257,7 +286,7 @@ for harness in ["claude", "codex"]:
     manifest = manifests[f"plugins/srulik-toolkit/.{harness}-plugin/plugin.json"]
     if manifest.get("version") != version or manifest.get("license") != "MIT":
         raise SystemExit(f"wrong {harness} plugin version or license")
-    if not manifest.get("description", "").startswith("Seventeen "):
+    if not manifest.get("description", "").startswith("Eighteen "):
         raise SystemExit(f"stale {harness} plugin skill count")
 if manifests["plugins/srulik-toolkit/.codex-plugin/plugin.json"].get("skills") != "./skills/":
     raise SystemExit("wrong Codex skill discovery path")
@@ -370,6 +399,9 @@ def check(endpoint, data_root, timeout="2000"):
     result = subprocess.run([node, str(plugin / "hooks" / "check-version.js")], env=env, capture_output=True, text=True, timeout=5, check=True)
     if result.stderr or not result.stdout.startswith(hint_start):
         raise SystemExit(f"version checker did not preserve startup hint: {result.stderr or result.stdout}")
+    advertised = set(result.stdout.splitlines()[0].split("skills: ", 1)[1].split(". Read", 1)[0].split(", "))
+    if advertised != expected:
+        raise SystemExit(f"startup hint differs from packaged skills: {sorted(advertised ^ expected)}")
     return result.stdout
 
 with tempfile.TemporaryDirectory() as temporary:
@@ -398,6 +430,7 @@ print("Startup version checker passed")
 
 for relative in [
     "skills/to-project/EXTEND.md",
+    "skills/to-project/GLOSSARY-FORMAT.md",
     "skills/to-project/templates.md",
     "skills/to-project/base-skills/capture-to-project/SKILL.md",
     "skills/to-project/base-skills/recap-project/SKILL.md",
@@ -480,8 +513,8 @@ if not all(token in tour for token in tour_contract):
 for skill_name in expected:
     if f"skills/{skill_name}/SKILL.md" not in readme:
         raise SystemExit(f"README is missing skill: {skill_name}")
-if "Seventeen focused skills" not in readme or "/hooks" not in readme:
-    raise SystemExit("README must document seventeen skills and Codex hook trust")
+if "Eighteen focused skills" not in readme or "/hooks" not in readme:
+    raise SystemExit("README must document eighteen skills and Codex hook trust")
 
 outcome_dod_contract = "Outcome and Definition of Done gate"
 create_plan_text = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")

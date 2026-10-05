@@ -53,7 +53,7 @@ Three skills live in `.agents/skills/`; `.claude/skills` is a relative alias to
 that directory. Use them in normal work:
 
 - **`capture-to-project`**: when a decision, term, durable fact, or actionable
-  item surfaces, run it to file the point into the right doc (`CONTEXT.md`, an
+  item surfaces, run it to file the point into the right doc (`GLOSSARY.md`, an
   ADR, `TASKS.md`, `docs/memory/`, or a `research/` note). It commits.
 - **`tidy-project`**: occasionally (session start, or after a batch of changes),
   run it to clear junk, fix stale tasks and index drift, then commit. It auto-fixes
@@ -84,7 +84,7 @@ Code.
     in a fresh scaffold.)_
   - `docs/memory/MEMORY.md`: repo-local memory index. One line per durable fact;
     facts live in sibling files.
-- **`CONTEXT.md`**: glossary of the project's canonical terms. Challenge any
+- **`GLOSSARY.md`**: glossary of the project's canonical terms. Challenge any
   usage that conflicts with it. _(Created on the first term resolved during the
   grill. May not exist yet in a fresh scaffold.)_
 
@@ -116,7 +116,7 @@ _(empty: queue the next items when priorities are clear)_
 
 ## Reference
 - Origin and sources: `assets/sources.md`
-- Glossary: `CONTEXT.md` _(if present; may not exist yet in a fresh scaffold)_
+- Glossary: `GLOSSARY.md` _(if present; may not exist yet in a fresh scaffold)_
 - Decisions: `docs/adr/` _(if present; may not exist yet in a fresh scaffold)_
 ```
 

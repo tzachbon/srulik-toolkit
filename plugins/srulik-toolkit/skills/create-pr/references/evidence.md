@@ -22,6 +22,14 @@ Prefer the cheapest artifact that lets a reviewer verify success:
 
 For frontend or rendered changes, include visual evidence when it can be produced safely and demonstrates the changed state. For non-visual changes, use media only when it communicates proof better than text. Never create a decorative terminal screenshot or other quota-filling artifact.
 
+For changed behavior, reproduce the same scenario against the baseline and the
+proposed state when safely possible. Match the application instance, project,
+provider, model, permission mode, and creation path when they affect the outcome.
+Record the before and after results and revisions. A repaired existing object
+does not prove a fresh-object creation path. If the baseline cannot be exercised,
+say why and distinguish inspected behavior from runtime evidence. Documentation
+changes may use a concrete before/after example rather than a fabricated failure.
+
 ## Attachment safety
 
 Before upload, inspect the actual media at full resolution and check for credentials, tokens, customer or personal data, internal hostnames, private paths, usernames, unrelated applications, notifications, browser tabs, and unintended screen regions. Use meaningful alt text that states what the evidence shows.
