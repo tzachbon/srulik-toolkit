@@ -9,7 +9,7 @@
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Sixteen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
+**Seventeen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
@@ -18,7 +18,7 @@
 Srulik Toolkit packages the workflows I use to make sense of incoming requests, turn loose ideas into projects,
 investigate questions, explain topics visually, give guided tours, write plans, review changes, keep work in scope, delegate
 suitable tasks, work test-first, and maintain pull requests. It also covers prose
-editing, merge conflicts, and CI failures.
+editing, merge conflicts, CI failures, and session retrospectives.
 
 Each skill works on its own. Install one plugin, then invoke the skill you need
 by name or describe the task in plain language.
@@ -49,7 +49,7 @@ installation or a hook change; installing the plugin alone does not grant it.
 
 ## Startup hint
 
-On a new session, the plugin writes the sixteen skill names and a short routing
+On a new session, the plugin writes the seventeen skill names and a short routing
 instruction to model context. It uses the default `hooks/hooks.json` location
 and runs only for `SessionStart` with the `startup` matcher. It does not run on
 each prompt or skill invocation.
@@ -92,6 +92,7 @@ and trust the new `Stop` hook through `/hooks` after updating the plugin.
 | [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Maintain a pull request in the background and keep listening for review feedback after CI passes, until closure or explicit stop. |
 | [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
 | [`fix-ci`](plugins/srulik-toolkit/skills/fix-ci/SKILL.md) | Diagnose failing checks, apply the smallest repair, and verify the result. |
+| [`retro`](plugins/srulik-toolkit/skills/retro/SKILL.md) | Learn from a coding session and propose evidence-backed improvements to the agent's environment. Adapted from Matt Pocock. |
 
 Example prompts:
 
@@ -105,6 +106,7 @@ $research Trace how this repository handles retries
 $tour How did this repository's PR review workflow evolve?
 $show-me Explain the current request flow
 $fix-ci Diagnose and fix the failing checks on this pull request
+$retro Review this session and suggest environment improvements
 ```
 
 Claude Code may expose skills as slash commands. Codex uses `$skill-name`.

@@ -1,7 +1,7 @@
 {
   "name": "srulik-toolkit",
-  "version": "1.2.2",
-  "description": "Sixteen portable skills for request triage, research, planning, explanation, review, scoped implementation, writing, and pull request maintenance.",
+  "version": "1.2.3",
+  "description": "Seventeen portable skills for request triage, research, planning, explanation, review, scoped implementation, writing, retrospectives, and pull request maintenance.",
   "author": {
     "name": "Zach Bonfil",
     "url": "https://github.com/tzachbon"
