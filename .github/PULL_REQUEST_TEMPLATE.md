@@ -14,6 +14,18 @@
 - [ ] `git diff --check`
 - [ ] I tested each changed skill in Claude Code, Codex, or both
 
+## Evidence
+
+<!-- Show the same scenario before and after. Cite results and revisions; state any untested scope. -->
+
+## Merge danger
+
+<!-- Is this a two-way or one-way door? Explain recovery and any effects a code revert cannot undo. -->
+
+## Blast radius
+
+<!-- Name affected users, callers, data, or services. Support scope claims with evidence. -->
+
 ## Checklist
 
 - [ ] The change stays focused on one problem

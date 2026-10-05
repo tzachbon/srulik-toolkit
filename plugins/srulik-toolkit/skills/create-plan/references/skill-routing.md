@@ -54,6 +54,13 @@ The handoff must begin with Skill discovery: `COMPLETE`, Skill discovery: `INCOM
 
 For implementation-oriented plans, the handoff must include `keep-it-simple`, invoked before implementation to select the smallest correct change and again after implementation to remove task-introduced code with no current purpose.
 
+For an approved engineering plan that the user wants executed, route to
+[implement-plan](../../implement-plan/SKILL.md). Include stable task IDs,
+dependencies, owned paths, input/output contracts, acceptance checks, and final
+integration verification. This is a handoff, not permission to execute during
+planning. Smart Ralph remains the optional companion for persistent autonomous
+loops; `implement-plan` coordinates the existing plan without installing a loop.
+
 For each skill recommendation include:
 
 - exact discovered skill name

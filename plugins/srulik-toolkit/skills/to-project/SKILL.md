@@ -13,7 +13,7 @@ interview.
 
 **Core principle:** a folder is not a project. A project is a *contract* other
 agents can pick up cold: where to look first (`TASKS.md`), how not to collide
-(the multi-agent norms), and why it exists (provenance + `CONTEXT.md`).
+(the multi-agent norms), and why it exists (provenance + `GLOSSARY.md`).
 
 ## Workflow
 
@@ -24,7 +24,8 @@ interview, it cannot be delegated.
 "extend / add to / continue" intent, or a target path that already holds a
 project: `AGENTS.md` or `.git`), this is an **extend** run, follow EXTEND.md
 instead of the steps below. Otherwise it is a **new** run, continue here. Both
-modes accept one or more sources.
+modes accept one or more sources. For vocabulary selection and legacy
+`CONTEXT.md` compatibility, follow [GLOSSARY-FORMAT.md](GLOSSARY-FORMAT.md).
 
 ### 1. Ingest
 Accept whatever the user has: a one-line idea, a pasted artifact, a path to
@@ -59,13 +60,13 @@ answer. If a question is answerable from the input, answer it from the input
 instead of asking.
 
 Write decisions live, do not batch:
-- **Terminology** -> `CONTEXT.md` glossary (format: CONTEXT-FORMAT.md). Devoid of
+- **Terminology** -> `GLOSSARY.md` glossary (format: GLOSSARY-FORMAT.md). Devoid of
   implementation detail. A glossary, nothing else.
 - **Hard-to-reverse trade-offs** -> `docs/adr/NNNN-slug.md`, sparingly. File only
   when it clears the ADR gate (format and gate: ADR-FORMAT.md).
 
 Grilling moves:
-- Challenge terms that conflict with what is already in `CONTEXT.md`.
+- Challenge terms that conflict with what is already in `GLOSSARY.md`.
 - Sharpen fuzzy or overloaded words into one canonical term.
 - Stress-test relationships with concrete edge-case scenarios.
 - The input seeds questions, it never shortens the grill.
@@ -89,13 +90,13 @@ Wait for one explicit "go".
 
 ### 6. Scaffold (on go)
 Before writing any file, self-edit every piece of synthesized prose you are
-about to commit (`AGENTS.md`, `TASKS.md`, `CONTEXT.md`, ADRs). Keep it direct,
+about to commit (`AGENTS.md`, `TASKS.md`, `GLOSSARY.md`, ADRs). Keep it direct,
 specific, and free of filler. The conventions written into `AGENTS.md` govern
 the scaffolded project itself, not just future work in it.
 
 Write from templates.md:
 - **`AGENTS.md`**: write from templates.md, filling every placeholder. Include the
-  multi-agent contract (below). The `CONTEXT.md` and `docs/adr/` index entries are
+  multi-agent contract (below). The `GLOSSARY.md` and `docs/adr/` index entries are
   conditional: both are created lazily during the grill and may not exist in a
   fresh scaffold. Add the "Related projects" section only if step 4a found any
   (path + one-line why).
@@ -116,7 +117,7 @@ Write from templates.md:
   unsure. Reflect whatever you add in the `AGENTS.md` index.
 - **Memory index**: seed the repo-local index (header + format, no facts).
 - **Provenance**: copy the source artifact into `assets/` with a dated name, log
-  it in `assets/sources.md`; ADRs and CONTEXT terms that came from it cite it. A
+  it in `assets/sources.md`; ADRs and glossary terms that came from it cite it. A
   typed-only idea with no file goes to `assets/origin.md`.
 - **Base skills**: copy the three bundled base skills into the project. For
   each of `capture-to-project`, `tidy-project`, `recap-project`, copy this skill's
@@ -158,7 +159,7 @@ syntax. If either file already exists, preserve its content and merge the
 steering instructions instead of overwriting it.
 
 ## Files
-templates.md (scaffold file bodies), EXTEND.md (extend mode), CONTEXT-FORMAT.md and
+templates.md (scaffold file bodies), EXTEND.md (extend mode), GLOSSARY-FORMAT.md and
 ADR-FORMAT.md (formats for step 4), base-skills/ (capture-to-project, tidy-project,
 recap-project, copied into each scaffold). Additional skill discovery is optional
 and runs only when the user requests it.

@@ -1,9 +1,9 @@
-# CONTEXT.md Format
+# GLOSSARY.md Format
 
 ## Structure
 
 ```md
-# {Context Name}
+# {Domain Name}: Glossary
 
 {One or two sentence description of what this context is and why it exists.}
 
@@ -46,32 +46,17 @@ _Avoid_: Client, buyer, account
 - **Group terms under subheadings** when natural clusters emerge. If all terms belong to a single cohesive area, a flat list is fine.
 - **Write an example dialogue.** A conversation between a dev and a domain expert that demonstrates how the terms interact naturally and clarifies boundaries between related concepts.
 
-## Single vs multi-context repos
+## Select the vocabulary file
 
-**Single context (most repos):** One `CONTEXT.md` at the repo root.
+Follow the repository's instructions and existing domain map first. New projects
+use a root `GLOSSARY.md`, created lazily when the first domain term is resolved.
+For multiple domains, use the relevant domain's glossary and index it in the
+existing steering or map file; create no extra map merely for the filename change.
 
-**Multiple contexts:** A `CONTEXT-MAP.md` at the repo root lists the contexts, where they live, and how they relate to each other:
-
-```md
-# Context Map
-
-## Contexts
-
-- [Ordering](./src/ordering/CONTEXT.md): receives and tracks customer orders
-- [Billing](./src/billing/CONTEXT.md): generates invoices and processes payments
-- [Fulfillment](./src/fulfillment/CONTEXT.md): manages warehouse picking and shipping
-
-## Relationships
-
-- **Ordering → Fulfillment**: Ordering emits `OrderPlaced` events; Fulfillment consumes them to start picking
-- **Fulfillment → Billing**: Fulfillment emits `ShipmentDispatched` events; Billing consumes them to generate invoices
-- **Ordering ↔ Billing**: Shared types for `CustomerId` and `Money`
-```
-
-The skill infers which structure applies:
-
-- If `CONTEXT-MAP.md` exists, read it to find contexts
-- If only a root `CONTEXT.md` exists, single context
-- If neither exists, create a root `CONTEXT.md` lazily when the first term is resolved
-
-When multiple contexts exist, infer which one the current topic relates to. If unclear, ask.
+Existing `CONTEXT.md` and `CONTEXT-MAP.md` files remain supported. Read a context
+map to find the relevant domain, then use that domain's `GLOSSARY.md` if present,
+or its existing `CONTEXT.md` otherwise. When both exist, use `GLOSSARY.md` for
+vocabulary and retain `CONTEXT.md` for background. Update only the selected
+vocabulary file; do not create a duplicate glossary, rename existing project
+files automatically, or discard relationships and other context. Resolve
+conflicting definitions against project guidance before changing a term.

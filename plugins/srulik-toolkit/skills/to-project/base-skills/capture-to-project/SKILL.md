@@ -16,13 +16,17 @@ owns that kind of knowledge. Do not invent a new file or a catch-all log.
 
 | Content | Destination |
 |---|---|
-| A term or definition | `CONTEXT.md` glossary |
+| A term or definition | selected vocabulary file |
 | A hard-to-reverse decision with a real trade-off | new `docs/adr/NNNN-slug.md` |
 | An actionable item / next step | `TASKS.md` (Backlog, or Now/Next if clearly current) |
 | A durable fact worth recalling later | a file in `docs/memory/` + a pointer line in `docs/memory/MEMORY.md` |
 | A finding or notes that fit none of the above | a dated note in `research/` |
 
-Create `CONTEXT.md` or `docs/adr/` lazily if they do not exist yet (first term,
+Follow project guidance and any `CONTEXT-MAP.md` to select the relevant domain's
+`GLOSSARY.md`, or its existing `CONTEXT.md` when no glossary exists. When both
+exist, use `GLOSSARY.md` for terms and preserve `CONTEXT.md` for background; resolve
+conflicting definitions against project guidance. Update only the selected file.
+Create the selected vocabulary file or `docs/adr/` lazily if missing (first term,
 first ADR). Match the existing file's format. For ADRs, only file one when the
 decision is hard to reverse AND surprising without context AND a real trade-off,
 otherwise route it as a fact or a task instead.

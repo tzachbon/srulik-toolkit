@@ -22,7 +22,7 @@ When repository evidence is insufficient:
 - Commit and PR title: Conventional Commit form, `<type>(optional-scope): <imperative summary>`.
 - Use the narrowest accurate type, commonly `feat`, `fix`, `docs`, `test`, `refactor`, `build`, `ci`, or `chore`.
 - Keep the summary specific and omit a period.
-- Body: `Summary` and `Validation`; add `Why` only when the motivation is not evident.
+- Body: `Summary`, `Evidence`, `Merge danger`, and `Blast radius`; add `Why` only when the motivation is not evident. Use the review guidance below to fill them.
 - Create a non-draft PR unless the user requested a draft.
 - Do not assign reviewers, labels, milestones, or projects without repository evidence or a user request.
 
@@ -37,6 +37,26 @@ When a template exists:
 - fill only applicable optional sections;
 - mark a checkbox complete only when its condition is true;
 - explain a required but inapplicable item briefly instead of falsely checking it.
+
+## Help the reviewer decide
+
+Apply this guidance within the repository's required body structure. Add a missing
+section only when the template permits it; otherwise place the information under
+the nearest applicable heading.
+
+- **Summary:** describe the concrete trigger and resulting behavior. Invoke
+  [show-me](../../show-me/SKILL.md) when a small flow, pseudocode sketch, or diff
+  makes the change easier to review. Scale the visual to the change.
+- **Evidence:** use the captured [validation evidence](evidence.md). For a behavior
+  change, show the same scenario before and after, with exact outcomes and tested
+  revisions. Label unavailable baseline evidence and remaining coverage honestly.
+- **Merge danger:** state whether this is a two-way door or a one-way door and why.
+  A code revert may not undo deleted data, migrations, public actions, or external
+  side effects. Describe recovery prerequisites when they matter; do not run a
+  deployment or destructive action just to prove reversibility.
+- **Blast radius:** name the affected callers, users, data, or services and the
+  boundaries supported by inspection or checks. Explain a risk that changes the
+  review decision; avoid unsupported claims that a change is safe or isolated.
 
 Do not repeat the title, list every changed file, narrate routine commands, add generic benefits, or claim safety, completeness, performance, or compatibility without evidence. Link an issue only when the relationship is verified. Use closing keywords only when merge should close that issue.
 

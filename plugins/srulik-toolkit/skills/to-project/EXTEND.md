@@ -22,20 +22,22 @@ doubt, isolate.
 ## Procedure
 
 ### 1. Orient
-Read only the existing contract: `AGENTS.md`, `CONTEXT.md`, `TASKS.md`,
+Read only the existing contract: `AGENTS.md`, the selected vocabulary file, `TASKS.md`,
 `assets/sources.md`, and the ADR titles under `docs/adr/`. Load the current
-model. Do not read the whole repo.
+model. Select vocabulary with [GLOSSARY-FORMAT.md](GLOSSARY-FORMAT.md), preserving
+existing `CONTEXT.md` and context maps. Use the selected file in the steps below
+where `GLOSSARY.md` is named. Do not read the whole repo.
 
 ### 2. Grill the delta
 Grill the user one question at a time, recommended answer each, on only what the
 new input adds or contradicts relative to the loaded model. The existing docs
 answer the rest, let them shorten the grill. This is the deliberate inverse of
 new mode, where the grill is always full. Write decisions live as they settle:
-new or refined terms to `CONTEXT.md`, new hard-to-reverse trade-offs to a new ADR
-(formats: CONTEXT-FORMAT.md, ADR-FORMAT.md).
+new or refined terms to `GLOSSARY.md`, new hard-to-reverse trade-offs to a new ADR
+(formats: GLOSSARY-FORMAT.md, ADR-FORMAT.md).
 
 ### 3. Apply — append and refine, never clobber
-- **`CONTEXT.md`**: append new terms. A term the grill re-settles is updated in
+- **`GLOSSARY.md`**: append new terms. A term the grill re-settles is updated in
   place, never duplicated.
 - **`TASKS.md`**: new goals to Backlog, new questions to Open Questions, strike
   resolved ones. Leave **Now** and **Next** untouched, that is the operator's
@@ -43,7 +45,7 @@ new or refined terms to `CONTEXT.md`, new hard-to-reverse trade-offs to a new AD
 - **`docs/adr/`**: a new decision gets the next sequential number. Never rewrite
   an existing ADR, a reversal is a new ADR that supersedes the old one.
 - **`assets/` + `sources.md`**: copy each new source in with a dated name, append
-  a row to `sources.md`. ADR and CONTEXT entries derived from it cite it.
+  a row to `sources.md`. ADR and glossary entries derived from it cite it.
 - **`AGENTS.md`**: update "what this is" or the index only if the project's shape
   changed (a new type-dir, a new related project). Otherwise leave it.
 - **Base skills**: if `.agents/skills/` is missing any of `capture-to-project`,
@@ -70,7 +72,7 @@ git history is the undo.
 
 Most conflicts are additive and cheap to resolve:
 - New ADRs are new files, they never conflict.
-- `sources.md`, the `CONTEXT.md` term list, and the `TASKS.md` backlog are append
+- `sources.md`, the `GLOSSARY.md` term list, and the `TASKS.md` backlog are append
   regions, keep both sides.
 - The only real conflict is two sessions rewording the same existing term
   differently. Keep the sharper definition or merge both into one, and note it.

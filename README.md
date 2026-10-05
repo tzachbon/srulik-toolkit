@@ -9,14 +9,14 @@
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Seventeen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
+**Eighteen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
 </div>
 
 Srulik Toolkit packages the workflows I use to make sense of incoming requests, turn loose ideas into projects,
-investigate questions, explain topics visually, give guided tours, write plans, review changes, keep work in scope, delegate
+investigate questions, explain topics visually, give guided tours, write and implement plans, review changes, keep work in scope, delegate
 suitable tasks, work test-first, and maintain pull requests. It also covers prose
 editing, merge conflicts, CI failures, and session retrospectives.
 
@@ -49,7 +49,7 @@ installation or a hook change; installing the plugin alone does not grant it.
 
 ## Startup hint
 
-On a new session, the plugin writes the seventeen skill names and a short routing
+On a new session, the plugin writes the eighteen skill names and a short routing
 instruction to model context. It uses the default `hooks/hooks.json` location
 and runs only for `SessionStart` with the `startup` matcher. It does not run on
 each prompt or skill invocation.
@@ -79,7 +79,8 @@ and trust the new `Stop` hook through `/hooks` after updating the plugin.
 | [`can-you-help`](plugins/srulik-toolkit/skills/can-you-help/SKILL.md) | Make sense of a supplied request, handle clear work, or decide together what help is needed. |
 | [`to-project`](plugins/srulik-toolkit/skills/to-project/SKILL.md) | Turn an idea or an existing folder into a project with durable context. |
 | [`create-plan`](plugins/srulik-toolkit/skills/create-plan/SKILL.md) | Research and pressure-test a task, then write a detailed plan with concrete steps, rationale, requirement traceability, and verification. |
-| [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request for the current changes. |
+| [`implement-plan`](plugins/srulik-toolkit/skills/implement-plan/SKILL.md) | Execute an approved engineering plan, integrate dependency-ready tasks, and verify the complete outcome. |
+| [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request with review evidence, merge danger, and blast radius. |
 | [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a local diff, branch, or pull request without changing it. |
 | [`stay-in-scope`](plugins/srulik-toolkit/skills/stay-in-scope/SKILL.md) | Re-establish the requested boundary when work starts to drift. |
 | [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. |
@@ -99,6 +100,7 @@ Example prompts:
 ```text
 $can-you-help Here is a Slack thread. Can you help?
 $create-plan Add offline support to this app
+$implement-plan Execute the approved plan in docs/offline-plan.md
 $create-pr Open a pull request for the current changes
 $review-pro-max Review the changes on my current branch
 $tdd Implement expiration for cached sessions
@@ -120,14 +122,15 @@ Use only the skills that help with the current task. A common feature flow is:
 flowchart LR
     A["Idea or repository"] --> B["to-project"]
     B --> C["create-plan"]
-    C --> D["tdd"]
+    C --> N["implement-plan"]
+    N --> D["tdd"]
     D --> E["review-pro-max"]
     E --> I["create-pr"]
     I --> J["pr-babysit"]
-    C -. "when work can split" .-> F["agent-swarm"]
+    N -. "when work can split" .-> F["agent-swarm"]
     C -. "when scope drifts" .-> G["stay-in-scope"]
     C -. "smallest correct plan" .-> H["keep-it-simple"]
-    D -. "smallest correct implementation" .-> H
+    N -. "smallest correct implementation" .-> H
     K["tour"] --> L["research"]
     K --> M["show-me"]
 ```
@@ -141,6 +144,24 @@ Redact or generalize confidential terms before external skill discovery. Never
 send secrets, private paths, proprietary requirements, customer names, or
 internal identifiers; if safe generalization is not possible, mark Skill
 discovery: `INCOMPLETE`.
+
+`implement-plan` consumes an approved engineering plan with task IDs, dependencies,
+owned paths, and acceptance checks. It uses child agents and isolated worktrees
+when supported and useful, or executes ready tasks serially when they are not.
+Dependencies advance only after verified integration. Final acceptance and review
+cover the integrated outcome; publication requires the user's authorization.
+It creates no scheduler and installs no execution framework.
+
+`create-pr` respects repository templates while explaining the changed behavior,
+before/after evidence, whether recovery is a two-way or one-way door, and the
+affected users, callers, or data. A small diagram is included when it helps review.
+
+`to-project` now writes domain vocabulary to `GLOSSARY.md` in new projects.
+Existing `CONTEXT.md` and `CONTEXT-MAP.md` remain supported. Capture, recap, and TDD
+follow the project's selected vocabulary file; no existing project files are
+renamed automatically. When both files exist, the glossary owns terms and context
+retains background. `retro` continues to propose evidence-backed improvements
+for human review; a retrospective alone does not authorize environment changes.
 
 ## Optional tools
 
