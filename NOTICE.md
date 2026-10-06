@@ -48,3 +48,8 @@ Copyright (c) 2026 Matt Pocock
 
 The adaptation adds portable session access, explicit evidence requirements,
 and scoped implementation guidance without requiring another installed skill.
+
+The `create-plan` impact and risk assessment takes inspiration from the door
+and blast-radius concepts in [Matt Pocock's `pr` skill](https://github.com/mattpocock/skills/blob/6fd947921b935b7e1e69293a200400f0fdd5c15f/skills/engineering/pr/SKILL.md).
+The planning guidance uses new wording and adds task-linked failure scenarios,
+detection signals, stop conditions, and recovery limits.

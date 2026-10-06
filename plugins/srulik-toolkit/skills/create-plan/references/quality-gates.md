@@ -87,14 +87,20 @@ For every major workstream ask: "What evidence could convince a skeptical review
 
 ## Gate 6: risk and recovery
 
-Use a pre-mortem for material risk:
+Check the impact and risk assessment defined in the planning brief:
+
+- intended benefits and material costs or tradeoffs have evidence or labeled uncertainty
+- the blast radius includes indirect dependencies, with supported boundaries and explicit unknowns
+- consequential steps have a justified one-way or two-way door classification, commitment points, and recovery prerequisites and limits
+
+Use the `What can go wrong` section as a pre-mortem for material risk:
 
 1. Assume the plan failed.
 2. Identify the most plausible causes.
-3. Determine which causes need prevention, detection, recovery, stop conditions, or explicit acceptance.
-4. Place those controls in the workstream where they operate, not only in a detached risk list.
+3. Describe consequences, detection signals, prevention, stop conditions, recovery limits, and residual exposure for each material scenario.
+4. Trace controls to executable tasks, and check that unresolved material exposure has an explicit acceptance decision or blocks commitment.
 
-High-risk or irreversible steps need stronger evidence and explicit abort/recovery logic.
+Fail the gate when a rollback claim ignores persistent or external effects, the blast radius is asserted from diff size alone, or a material scenario has no operational response. High-risk or irreversible steps need stronger evidence and explicit abort/recovery logic; unavailable recovery must be stated honestly.
 
 ## Gate 7: assumption pressure test
 

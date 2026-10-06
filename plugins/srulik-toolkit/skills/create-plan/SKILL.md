@@ -130,6 +130,15 @@ Maintain a working brief throughout planning. The brief is a tracking aid; expan
 - Sources consulted
 - Skills discovered, invoked, or likely needed later
 
+Assess impact and risk before settling consequential decisions. Carry the assessment into the final plan, scaling detail to the stakes:
+
+- **Impact:** describe the intended before/after outcome, who benefits, and material costs or tradeoffs. Use evidence or agreed success criteria; label estimates and unknowns.
+- **Blast radius:** trace affected callers, users, data, services, or workflows, including indirect dependencies and failure propagation. State which boundaries inspection supports and where coverage remains unknown; a small diff does not prove a small blast radius.
+- **Door:** classify consequential decisions or steps as a **two-way door** (the prior state can be restored at acceptable cost) or a **one-way door** (irreversible or impractical to reverse). Explain why, identify the point of commitment, and describe recovery prerequisites and limits. A code revert does not restore deleted data or undo public commitments or external side effects. Assess mixed plans per step rather than hiding a one-way step under an overall reversible label.
+- **What can go wrong:** run a pre-mortem against the proposed approach. Describe plausible failure scenarios, their consequences, detection signals, prevention, stop conditions, and recovery or explicitly accepted residual exposure. Link each material control to the task where it operates. Distinguish evidence-backed risks from hypotheses; avoid generic risk lists and invented probability scores.
+
+Resolve factual gaps through research and judgment calls through the existing grill. One-way doors need stronger evidence before commitment; use a staged experiment when it can resolve uncertainty or reduce exposure. Record unavailable recovery as a limit rather than promising rollback. Keep bounded, low-risk assessments brief.
+
 Maintain a decision ledger for consequential branches:
 
 ```text
@@ -207,7 +216,7 @@ Check:
 - Dependencies: upstream, downstream, external, and approval dependencies are identified.
 - Interfaces: handoffs and contracts between workstreams are clear where relevant.
 - Validation: every major outcome has evidence that can prove completion.
-- Risk: consequential failure modes have mitigation, recovery, stop conditions, or explicit acceptance.
+- Impact and risk: benefits and tradeoffs, inspected blast radius, door classification and recovery limits, and plausible failure scenarios are explicit; material controls map to tasks and unresolved exposure is decided or blocks commitment.
 - Ownership: external inputs, approvals, and deferred decisions have owners or resolution sources where ownership matters.
 - Execution context: a fresh executor can proceed without rediscovering critical context.
 - Skills: planning-time skills were used where needed and execution-time skill handoffs are mapped.
@@ -256,6 +265,14 @@ Use this root structure unless a discipline reference calls for a small adaptati
 ### Out of scope
 
 - ...
+
+## Impact and blast radius
+
+<State intended benefits and material costs or tradeoffs. Name affected people, callers, data, systems, or workflows, including indirect effects, with evidence for the boundaries and explicit unknowns.>
+
+## Reversibility and recovery
+
+<Classify consequential decisions or steps as one-way or two-way doors and explain why. Identify commitment points, recovery procedure and prerequisites, and effects recovery cannot undo.>
 
 ## Approach
 
@@ -321,9 +338,11 @@ Use this root structure unless a discipline reference calls for a small adaptati
 
 <Describe the complete user journey, system behavior, research conclusion, or operational outcome to verify after task-level checks. State prerequisites, procedure, expected results, evidence location, and failure response.>
 
-## Risks and mitigations
+## What can go wrong
 
-- <Risk> -> <mitigation, fallback, stop condition, or accepted exposure>
+| Failure scenario | Consequence | Detection signal | Prevention / task | Stop condition and recovery / task | Residual exposure |
+| --- | --- | --- | --- | --- | --- |
+| <Plausible trigger and failure> | <Who or what is harmed, and how> | <Observable signal> | <Control and task ID> | <Abort threshold, recovery or its limits, and task ID> | <Remaining risk and acceptance decision when material> |
 
 ## Open and deferred items
 
@@ -342,7 +361,7 @@ Use this root structure unless a discipline reference calls for a small adaptati
 - <source, file, document, issue, URL, decision record, or other evidence>
 ```
 
-Omit empty sections except `## Technical / Coding` in coding plans. Within that required section, simple fixes may omit irrelevant subsections. Add discipline-specific sections when they improve execution. The template is a scaffold: expand each substantive section into explanations, tables, examples, and executable steps as needed. Do not treat its short placeholders as the intended output length.
+Omit empty sections except `## Technical / Coding` in coding plans. Keep the impact, reversibility, and failure assessment explicit; for bounded low-risk work, short paragraphs may replace the risk table. If no material failure scenario is identified, state that conclusion with its evidence limits. Within the required technical section, simple fixes may omit irrelevant subsections. Add discipline-specific sections when they improve execution. The template is a scaffold: expand each substantive section into explanations, tables, examples, and executable steps as needed. Do not treat its short placeholders as the intended output length.
 
 ### 9. Right-size and sequence work items
 
