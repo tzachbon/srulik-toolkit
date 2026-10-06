@@ -140,6 +140,11 @@ one external search per material discipline even when an installed skill covers
 the work. Loading a discovered skill is optional, and installation remains a
 separate execution step that requires your approval.
 
+Plans make intended impact and blast radius explicit, classify consequential
+steps as one-way or two-way doors with recovery limits, and include a “What can
+go wrong” assessment with detection, prevention, stop conditions, and recovery
+linked to execution tasks. Low-risk plans keep these assessments brief.
+
 Redact or generalize confidential terms before external skill discovery. Never
 send secrets, private paths, proprietary requirements, customer names, or
 internal identifiers; if safe generalization is not possible, mark Skill
