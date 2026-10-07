@@ -186,6 +186,8 @@ pr_babysit_contract = [
     "The main thread never owns the PR watch",
     "PR events never wake the main thread",
     "claude-haiku-5-5",
+    "gpt-6-luna",
+    "model-access error",
     "t3_thread_launch",
     "watch_pull_request",
     "One babysitter per PR",
