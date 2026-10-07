@@ -100,7 +100,11 @@ or acceptance.
 2. Classify each task by cost, complexity, risk, and tool needs.
 3. Choose a supported model and effort from active routing rules and live
    inventory. Set them explicitly when the transport accepts them. Otherwise,
-   record the harness default.
+   record the harness default. When no rule picks the model, weigh intelligence
+   against price: run `node ../../scripts/models.js --frontier` and prefer the
+   cheapest runnable model whose score fits the task. Without its
+   `ARTIFICIAL_ANALYSIS_API_KEY` it exits 2; fall back to a host benchmark tool
+   or your own judgment.
 4. Dispatch all ready independent tasks in the same tool turn, bounded by live
    capacity.
 5. Record each child, task, transport, model or default, state, and return
