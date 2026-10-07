@@ -15,10 +15,10 @@ The main thread never owns the PR watch and never runs maintenance passes. One d
 2. Look for an existing babysitter: `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"`, keeping only a thread whose title is exactly `Babysit PR <owner>/<repo>#<number>` (#34 also matches #347, and other repositories reuse numbers). If an unsettled one exists, send it the new request with `t3_thread_send` and stop. One babysitter per PR.
 3. Otherwise launch one with `t3_thread_launch`:
    - `title`: `Babysit PR <owner>/<repo>#<number>` (base repository)
-   - `modelSelection`: `claude-haiku-5-5` when the live catalog (`orchestrator_capabilities`) offers it; otherwise its cheapest general-purpose model.
+   - `modelSelection`: a small, fast model from the Haiku tier. Try `claude-haiku-5-5`, then `gpt-6-luna`, then another model of the same quality tier (for example by `aa-models` intelligence index), taking the first that the live catalog (`orchestrator_capabilities`) lists. Set its provider instance with it.
    - `workspaceStrategy`: a new worktree from the PR head (`branch: babysit/pr-<number>`). Same-repository PR: `baseRef` is the head branch, `startFromOrigin: true`. Fork PR: the head branch is not on `origin`, so first fetch it (`git fetch <fork remote> <head ref>`) and use the fetched local ref or head SHA as `baseRef` with `startFromOrigin: false`. If the branch already exists, bind its existing worktree from `t3_worktree_list` instead.
    - `message`: the brief below.
-   Launch has no retry key. If the result is uncertain, check `t3_thread_list` before retrying.
+   Launch has no retry key. If the result is uncertain, check `t3_thread_list` before retrying. A listed model can still be refused by the provider: if the babysitter's first turn fails with a model-access error, settle that thread and relaunch with the next model in the order above.
 4. Tell the user the babysitter's thread, then end the turn. Do not wait for it.
 5. Forward the user's later instructions for this PR to the babysitter with `t3_thread_send`: answers to its input-needed messages, merge authorization, or `STOP` (`mode: "auto"`, since an idle babysitter has no turn to steer) when the user asks to stop.
 
