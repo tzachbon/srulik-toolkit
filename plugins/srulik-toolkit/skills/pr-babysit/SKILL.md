@@ -12,7 +12,7 @@ The main thread never owns the PR watch and never runs maintenance passes. One d
 ## Main thread role
 
 1. Resolve the supplied PR, or infer it from the current branch. If none exists, load [create-pr](../create-pr/SKILL.md) and continue only with the PR it read back from the provider.
-2. Look for an existing babysitter: `t3_thread_list` with `titleContains: "Babysit PR #<number>"`. If an unsettled one exists, send it the new request with `t3_thread_send` and stop. One babysitter per PR.
+2. Look for an existing babysitter: `t3_thread_list` with `titleContains: "Babysit PR #<number>"`, keeping only a thread whose title is exactly `Babysit PR #<number>` (#34 also matches #347). If an unsettled one exists, send it the new request with `t3_thread_send` and stop. One babysitter per PR.
 3. Otherwise launch one with `t3_thread_launch`:
    - `title`: `Babysit PR #<number>`
    - `modelSelection`: `claude-haiku-5-5` when the live catalog (`orchestrator_capabilities`) offers it; otherwise its cheapest general-purpose model.
