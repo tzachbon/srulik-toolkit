@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.3.1":
+if version != "1.4.0":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -182,29 +182,25 @@ if not all(token in technical_design_contract for token in [
     raise SystemExit("create-plan is missing its technical design contract")
 if not all(token in readme for token in ['"smallest correct plan"', '"smallest correct implementation"']):
     raise SystemExit("README is missing the keep-it-simple planning or implementation flow")
-pr_babysit_conversation_contract = [
-    "must immediately give the main session the conversation URL or location",
-    "take an authorized action toward resolution or ask the user for the precise decision needed",
-    "Treat the conversation as a blocker until a fresh provider read verifies that it is resolved",
-    "zero unresolved review conversations",
-]
-if not all(token in pr_babysit for token in pr_babysit_conversation_contract):
-    raise SystemExit("pr-babysit is missing its unresolved review conversation contract")
-pr_babysit_background_contract = [
-    "Keep the main thread available for conversation throughout babysitting",
-    'mode: "async"',
-    "The parent owns the listener and handoff ledger",
-    "Green CI, missing approvals, silence, and a settled pass do not stop listening",
-    "stable provider ID/type",
-    "revision marker",
-    "previously resolved threads for new replies, edits, or reopening",
-    "asynchronous catch-up pass",
-    "Serialize workers for the same PR",
+pr_babysit_contract = [
+    "The main thread never owns the PR watch",
+    "PR events never wake the main thread",
+    "claude-haiku-5-5",
+    "t3_thread_launch",
+    "watch_pull_request",
+    "One babysitter per PR",
     "Visible notifications are limited to input needed, readiness changes, monitoring failure, or PR closure",
+    "Green CI, missing approvals, silence, and a settled pass do not stop listening",
+    "zero unresolved review conversations",
     "Never substitute foreground maintenance",
+    "Merge only when the user's request explicitly asks to merge",
+    "there is no round limit",
 ]
-if not all(token in pr_babysit for token in pr_babysit_background_contract):
-    raise SystemExit("pr-babysit is missing its background review listening contract")
+if not all(token in pr_babysit for token in pr_babysit_contract):
+    raise SystemExit("pr-babysit is missing its babysitter-thread contract")
+for removed in ['mode: "async"', "The parent owns the listener"]:
+    if removed in pr_babysit:
+        raise SystemExit(f"pr-babysit still contains the parent-owned listener design: {removed}")
 if "Leave questions awaiting an answer open" in pr_babysit:
     raise SystemExit("pr-babysit must not leave review questions unresolved")
 star_contract = [
