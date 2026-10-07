@@ -90,7 +90,7 @@ and trust the new `Stop` hook through `/hooks` after updating the plugin.
 | [`tour`](plugins/srulik-toolkit/skills/tour/SKILL.md) | Research a topic's history and current flow as a sourced visual narrative. |
 | [`show-me`](plugins/srulik-toolkit/skills/show-me/SKILL.md) | Explain the current topic with concise diagrams and focused visual artifacts. |
 | [`stop-slop`](plugins/srulik-toolkit/skills/stop-slop/SKILL.md) | Edit prose for direct language while preserving facts and uncertainty. |
-| [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Maintain a pull request in the background and keep listening for review feedback after CI passes, until closure or explicit stop. |
+| [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Hand a pull request to a dedicated low-cost babysitter thread that fixes conflicts, review feedback, and CI until closure, messaging you only when needed. |
 | [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
 | [`fix-ci`](plugins/srulik-toolkit/skills/fix-ci/SKILL.md) | Diagnose failing checks, apply the smallest repair, and verify the result. |
 | [`retro`](plugins/srulik-toolkit/skills/retro/SKILL.md) | Learn from a coding session and propose evidence-backed improvements to the agent's environment. Adapted from Matt Pocock. |
@@ -178,11 +178,12 @@ for human review; a retrospective alone does not authorize environment changes.
 - `create-pr`, `pr-babysit`, and `fix-ci` can use an authenticated GitHub CLI
   or an equivalent connector for checks, logs, and pull requests. Local checks
   use the project toolchain.
-- `pr-babysit` requires asynchronous workers and a persistent native PR listener
-  to keep the main conversation available. Listening continues after green CI
-  and quiet passes, subject to the host's event coverage and confirmed watch state.
-  Hosts without that support report the limitation; the skill does not install a
-  scheduler or substitute foreground waiting.
+- `pr-babysit` requires a host that can launch a separate background thread and
+  give it a native PR watch, such as T3 Code. That thread owns the watch, so PR
+  events never wake the main conversation. Listening continues after green CI
+  and quiet passes until the PR closes or you stop it. Hosts without that support
+  report the limitation; the skill does not install a scheduler or substitute
+  foreground waiting.
 - `to-project` can search public skill catalogs when you ask. It requires your
   approval before installing another skill.
 
