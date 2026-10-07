@@ -7,7 +7,7 @@ description: Babysit a pull request from a dedicated low-cost background thread 
 
 Invocation for a named PR authorizes scoped edits, commits, normal pushes to its head branch, review replies, and resolution of addressed review threads. Honor any narrower user limits. Keep changes within the PR's intended behavior. Never force-push, enable auto-merge, mark a draft ready, weaken checks, or expand the assignment. Merge only when the user's request explicitly asks to merge, after a fresh readiness check, using the repository's usual merge method.
 
-The main thread never owns the PR watch and never runs maintenance passes. One dedicated babysitter thread per PR does both, so PR events never wake the main thread and the user can keep talking to it. Green CI, missing approvals, silence, and a settled pass do not stop listening; only PR closure or an explicit stop does.
+The main thread never owns the PR watch and never runs maintenance passes. One dedicated babysitter thread per PR does both, so PR events never wake the main thread and the user can keep talking to it. Green CI, missing approvals, silence, and a quiet pass do not stop listening; only PR closure or an explicit stop does.
 
 ## Main thread role
 
@@ -20,7 +20,7 @@ The main thread never owns the PR watch and never runs maintenance passes. One d
    - `message`: the brief below.
    Launch has no retry key. If the result is uncertain, check `t3_thread_list` before retrying.
 4. Tell the user the babysitter's thread, then end the turn. Do not wait for it.
-5. On a user request to stop, send `STOP` to the babysitter with `t3_thread_send` (`mode: "steer"`).
+5. Forward the user's later instructions for this PR to the babysitter with `t3_thread_send`: answers to its input-needed messages, merge authorization, or `STOP` (`mode: "steer"`) when the user asks to stop.
 
 If thread launch or PR watching is unavailable in this harness, report the missing capability and stop. Never substitute foreground maintenance, a polling loop, a sleep, or a new scheduler.
 
@@ -49,7 +49,9 @@ Constraints: <repository instructions and machine resource limits that apply>.
 - `MONITORING FAILED: <what failed and the error>`
 - `CLOSED: <merged|closed> @ <head sha>`
 
-**Stop.** On `STOP` or PR closure, call `unwatch_pull_request`, send the final state, and settle this thread. A later wake after a stop does nothing.
+**Waiting for input.** After sending input needed, keep handling other feedback; act on that item once the main thread forwards the user's answer.
+
+**Stop.** On `STOP` or PR closure, call `unwatch_pull_request` (a watch that already ended on closure is not a failure), send the final state, and settle this thread. A later wake after a stop does nothing.
 
 ## Boundaries
 
