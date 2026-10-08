@@ -253,8 +253,9 @@ pr_babysit_t3_contract = [
     "| `completed`, `running`, `waiting` | Started.",
     "| `idle`, `preparing`, `queued`, `starting` with `timedOut: true` | Not yet running: startup is unverified. |",
     "There's an issue with the selected model",
-    "T3 Code's documented orchestrator tool set does not include `t3_thread_organize`",
-    "renaming works on every build",
+    "If the harness exposes `t3_thread_update`, call it",
+    "T3 Code's documented orchestrator tool set includes `t3_thread_update` but not `t3_thread_organize`, and builds can differ",
+    "If rename is missing, follow the skill's fallback for a host without capability 5",
     "Use `t3_thread_send` with `mode: \"auto\"`",
     "`steer` fails on it",
     "confirm with `list_thread_pull_requests`",
@@ -262,7 +263,7 @@ pr_babysit_t3_contract = [
     "not `delegate_task`",
     "`action: \"rename\"` and no `threadId`",
     "Report an unexpected end as `MONITORING FAILED`",
-    "Not observed: a full babysitter following this skill on a real PR",
+    "Not observed: a full babysitter following this skill on a real PR, and T3 builds without `t3_thread_organize` or `t3_thread_update`",
 ]
 if not all(token in pr_babysit_t3 for token in pr_babysit_t3_contract):
     missing = [token for token in pr_babysit_t3_contract if token not in pr_babysit_t3]
@@ -290,6 +291,8 @@ if not all(token in agents_guide for token in agents_contract):
     raise SystemExit(f"AGENTS.md is missing its architecture guidance: {[t for t in agents_contract if t not in agents_guide]}")
 if "[AGENTS.md](AGENTS.md)" not in (root / "CONTRIBUTING.md").read_text(encoding="utf-8"):
     raise SystemExit("CONTRIBUTING.md must point contributors to AGENTS.md")
+if re.search(r"(?i)works on every (T3 )?build", pr_babysit + pr_babysit_t3):
+    raise SystemExit("pr-babysit must not claim a T3 tool works on every build")
 if re.search(r"Try `claude-haiku-5-5`, then `gpt-6-luna`|gpt-6-luna`?\)? as (a )?fallback", pr_babysit + pr_babysit_t3):
     raise SystemExit("pr-babysit must keep gpt-6-luna first")
 if "Leave questions awaiting an answer open" in pr_babysit:

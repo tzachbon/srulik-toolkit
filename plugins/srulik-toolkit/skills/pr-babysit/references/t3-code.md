@@ -37,7 +37,7 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 | `completed`, `running`, `waiting` | Started. `waiting` means the babysitter is blocked on an approval or question in its own thread. |
 | `idle`, `preparing`, `queued`, `starting` with `timedOut: true` | Not yet running: startup is unverified. |
 
-**Retire.** Call `t3_thread_update` with `threadId`, `action: "rename"`, and the retired title. Then call `t3_thread_organize` with `action: "settle"` if the harness exposes it. T3 Code's documented orchestrator tool set does not include `t3_thread_organize`, so a build may lack it; renaming works on every build.
+**Retire.** If the harness exposes `t3_thread_update`, call it with `threadId`, `action: "rename"`, and the retired title. Then call `t3_thread_organize` with `action: "settle"` if the harness exposes it. Check which tools this harness exposes before relying on either: T3 Code's documented orchestrator tool set includes `t3_thread_update` but not `t3_thread_organize`, and builds can differ. If rename is missing, follow the skill's fallback for a host without capability 5.
 
 **Forward (step 5).** Use `t3_thread_send` with `mode: "auto"`. An idle babysitter has no active turn, and `steer` fails on it.
 
@@ -57,4 +57,4 @@ Observed on one T3 Code host on 2026-10-08 with controlled probe threads in a sc
 - A `gpt-6-luna` replacement under the same title completed, and the lookup then found only it.
 - A 3-second `t3_thread_wait` on a running `gpt-6-luna` thread returned `running` with `timedOut: true`. The run then completed.
 
-Not observed: a full babysitter following this skill on a real PR, and a T3 build without `t3_thread_organize`.
+Not observed: a full babysitter following this skill on a real PR, and T3 builds without `t3_thread_organize` or `t3_thread_update`.
