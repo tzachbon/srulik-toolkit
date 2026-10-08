@@ -186,23 +186,27 @@ if not all(token in readme for token in ['"smallest correct plan"', '"smallest c
 pr_babysit_contract = [
     "The main thread never owns the PR watch",
     "PR events never wake the main thread",
+    "## Host capabilities",
+    "Launch a thread with a chosen model, its own checkout, a title, and a first message",
+    "Give that thread a native PR watch",
+    "Report a launched thread's first-run outcome, or wait for it with a time limit that does not cancel the run",
+    "- T3 Code: [references/t3-code.md](references/t3-code.md)",
+    "For another host, map each capability to its own tools and state the mapping",
+    "If capability 1, 2, 3, or 4 is missing, report which one and stop",
+    "If only capability 6 is missing, launch anyway and tell the user that startup is unverified",
+    "If capability 5 is missing, retire threads by settling or archiving them",
     "Try `gpt-6-luna`, then `claude-haiku-5-5`",
-    "model-access error",
     "Check startup once",
-    "`t3_thread_wait` with the launch's `threadId` and `runId` and `timeoutMs: 120000`",
-    "a timeout does not cancel the babysitter",
+    "Wait once, for up to 2 minutes, for the first run's outcome; a timeout does not cancel the babysitter",
     "retire the thread and relaunch with the next model in the order above",
     "On any other failure, retire it and report the error to the user instead of relaunching",
     "When every candidate has been refused, report the refusals to the user and stop",
-    "with the model after the refused one",
-    "`cancelled`, `interrupted`, or `rolled_back`: the babysitter is not running. Retire it and report the status",
-    "`completed`, `running`, or a timeout: the babysitter started",
     "unless its only run failed with a model-access error",
-    "rename it with `t3_thread_update` (`action: \"rename\"`) to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`",
-    "Renaming works on every T3 build; settling does not",
-    "then settle it with `t3_thread_organize` if available",
-    "t3_thread_launch",
-    "watch_pull_request",
+    "with the model after the refused one",
+    "Ended without running (cancelled, interrupted, or rolled back): the babysitter is not running. Retire it and report the status",
+    "Completed, still running, or the wait timed out: the babysitter started",
+    "rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can",
+    "Renaming is the required step",
     "One babysitter per PR",
     "Visible notifications are limited to input needed, readiness changes, monitoring failure, or PR closure",
     "Green CI, missing approvals, silence, and a quiet pass do not stop listening",
@@ -213,10 +217,54 @@ pr_babysit_contract = [
     "there is no round limit",
 ]
 if not all(token in pr_babysit for token in pr_babysit_contract):
-    raise SystemExit("pr-babysit is missing its babysitter-thread contract")
+    missing = [token for token in pr_babysit_contract if token not in pr_babysit]
+    raise SystemExit(f"pr-babysit is missing its babysitter-thread contract: {missing}")
+# The core skill stays host-agnostic; T3 Code tool names and fields live only in its reference.
+pr_babysit_core = pr_babysit.replace("- T3 Code: [references/t3-code.md](references/t3-code.md)", "")
+t3_only = re.findall(r"t3_[a-z_]+|_pull_request\b|orchestrator_capabilities|delegate_task|workspaceStrategy|modelSelection|startFromOrigin|instanceId|timeoutMs|runId|threadId|rolled_back|mode: \"|\bT3\b", pr_babysit_core)
+if t3_only:
+    raise SystemExit(f"pr-babysit core must stay host-agnostic; move these to references/t3-code.md: {sorted(set(t3_only))}")
 for removed in ['mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread"]:
     if removed in pr_babysit:
         raise SystemExit(f"pr-babysit still contains a retired design: {removed}")
+pr_babysit_t3 = (skill_root / "pr-babysit" / "references" / "t3-code.md").read_text(encoding="utf-8")
+pr_babysit_t3_contract = [
+    "[host capability](../SKILL.md#host-capabilities)",
+    "| 1. Launch a thread | `t3_thread_launch` |",
+    "| 2. Native PR watch | `link_pull_request`, `watch_pull_request`, `unwatch_pull_request` |",
+    "| 3. Message a thread | `t3_thread_send` |",
+    "| 4. List threads by title | `t3_thread_list` |",
+    "| 5. Rename a thread | `t3_thread_update` with `action: \"rename\"` |",
+    "| 6. First-run outcome | `t3_thread_wait`, then `t3_thread_read` |",
+    "| Optional: settle | `t3_thread_organize` with `action: \"settle\"` |",
+    "keep only a thread whose `title` matches exactly",
+    "Call `orchestrator_capabilities` for the runnable catalog",
+    '{ "instanceId": "codex", "model": "gpt-6-luna" }',
+    '"startFromOrigin": true',
+    "use the fetched local ref or head SHA as `baseRef` with `startFromOrigin: false`",
+    "`t3_thread_launch` has no retry key",
+    "T3 does not notify the launcher when a top-level thread's run ends",
+    "Call `t3_thread_wait` once with the launch's `threadId`, `runId`, and `timeoutMs: 120000`",
+    "does not cancel the run",
+    "| `cancelled`, `interrupted`, `rolled_back` | Ended without running. |",
+    "| `completed`, `running`, or `timedOut: true` | Started. |",
+    "There's an issue with the selected model",
+    "T3 Code's documented orchestrator tool set does not include `t3_thread_organize`",
+    "renaming works on every build",
+    "Use `t3_thread_send` with `mode: \"auto\"`",
+    "`steer` fails on it",
+    "confirm with `list_thread_pull_requests`",
+    "Only a top-level thread can own a watch",
+    "not `delegate_task`",
+    "`action: \"rename\"` and no `threadId`",
+    "Report an unexpected end as `MONITORING FAILED`",
+    "Not observed: a full babysitter following this skill on a real PR",
+]
+if not all(token in pr_babysit_t3 for token in pr_babysit_t3_contract):
+    missing = [token for token in pr_babysit_t3_contract if token not in pr_babysit_t3]
+    raise SystemExit(f"pr-babysit T3 Code reference is missing its implementation contract: {missing}")
+if re.search(r"Try `claude-haiku-5-5`, then `gpt-6-luna`|gpt-6-luna`?\)? as (a )?fallback", pr_babysit + pr_babysit_t3):
+    raise SystemExit("pr-babysit must keep gpt-6-luna first")
 if "Leave questions awaiting an answer open" in pr_babysit:
     raise SystemExit("pr-babysit must not leave review questions unresolved")
 star_contract = [
