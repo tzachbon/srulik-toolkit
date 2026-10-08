@@ -192,8 +192,7 @@ pr_babysit_contract = [
     "Report a launched thread's first-run outcome, or wait for it with a time limit that does not cancel the run",
     "- T3 Code: [references/t3-code.md](references/t3-code.md)",
     "For another host, map each capability to its own tools, show the user the mapping, say that this host has no tested reference, and launch only after the user confirms",
-    "If capability 1, 2, 3, or 4 is missing, report which one and stop",
-    "If only capability 6 is missing, launch anyway and tell the user that startup is unverified",
+    "If capability 1, 2, 3, 4, or 6 is missing, report which one and stop: without 6, a refused or dead babysitter cannot be detected",
     "If capability 5 is missing, retire threads by settling or archiving them",
     "Relaunch only on a later request, after the lookup in step 2 no longer finds that thread",
     "Try `gpt-6-luna`, then `claude-haiku-5-5`",
@@ -230,7 +229,7 @@ pr_babysit_core = pr_babysit.replace("- T3 Code: [references/t3-code.md](referen
 t3_only = re.findall(r"t3_[a-z_]+|_pull_request\b|orchestrator_capabilities|delegate_task|workspaceStrategy|modelSelection|startFromOrigin|instanceId|timeoutMs|runId|threadId|rolled_back|mode: \"|\bT3\b", pr_babysit_core)
 if t3_only:
     raise SystemExit(f"pr-babysit core must stay host-agnostic; move these to references/t3-code.md: {sorted(set(t3_only))}")
-for removed in ['mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread", "or the wait timed out: the babysitter started", "Renaming is the required step"]:
+for removed in ['mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread", "or the wait timed out: the babysitter started", "Renaming is the required step", "If only capability 6 is missing, launch anyway"]:
     if removed in pr_babysit:
         raise SystemExit(f"pr-babysit still contains a retired design: {removed}")
 pr_babysit_t3 = (skill_root / "pr-babysit" / "references" / "t3-code.md").read_text(encoding="utf-8")
