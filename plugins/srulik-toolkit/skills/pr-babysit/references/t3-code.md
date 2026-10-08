@@ -43,7 +43,7 @@ For `failed`, read the error with `t3_thread_read` (`view: "activity"`). The pro
 
 **Retire.** If the harness exposes `t3_thread_update`, call it with `threadId`, `action: "rename"`, and the retired title. Then call `t3_thread_organize` with `action: "settle"` if the harness exposes it. Check which tools this harness exposes before relying on either: T3 Code's documented orchestrator tool set includes `t3_thread_update` but not `t3_thread_organize`, and builds can differ. If rename is missing, follow the skill's fallback for a host without capability 5.
 
-**Forward (step 5).** Use `t3_thread_send` with `mode: "auto"`. An idle babysitter has no active turn, and `steer` fails on it. For `STOP` to a Pending babysitter, call `t3_thread_interrupt` with its `threadId`, then retire it as above.
+**Forward (step 5).** Use `t3_thread_send` with `mode: "auto"`. An idle babysitter has no active turn, and `steer` fails on it. For `STOP` to a Pending babysitter, call `t3_thread_interrupt` with its `threadId`. It returned `interrupt_requested` for a running turn in the probe below. T3's documentation says it returns `no_active_run` for a thread with no active provider turn, and does not describe queued or preparing runs, so do not assume it cancels them. Then call `t3_thread_wait` with that run's `runId` and `timeoutMs: 120000` and classify the babysitter again before retiring it or reporting it stopped.
 
 ## Babysitter
 
