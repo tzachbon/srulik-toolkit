@@ -101,7 +101,7 @@ or acceptance.
 3. Choose a supported model and effort from active routing rules and live
    inventory. Set them explicitly when the transport accepts them. Otherwise,
    record the harness default. When no rule picks the model, weigh intelligence
-   against price: run `node ../../scripts/models.js --frontier` and prefer the
+   against price: run `node <plugin root>/scripts/models.js --frontier` (the plugin root is two directories above this skill file) and prefer the
    cheapest runnable model whose score fits the task. Without its
    `ARTIFICIAL_ANALYSIS_API_KEY` it exits 2; fall back to a host benchmark tool
    or your own judgment.

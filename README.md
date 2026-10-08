@@ -188,7 +188,8 @@ for human review; a retrospective alone does not authorize environment changes.
   price with `plugins/srulik-toolkit/scripts/models.js`. It reads the
   [Artificial Analysis](https://artificialanalysis.ai/) data API, needs a free
   `ARTIFICIAL_ANALYSIS_API_KEY`, and caches results for 24 hours. Without the
-  key, the skills use their built-in model order.
+  key, `pr-babysit` uses its fixed model order and `agent-swarm` uses a host
+  benchmark tool or its own judgment.
 - `to-project` can search public skill catalogs when you ask. It requires your
   approval before installing another skill.
 

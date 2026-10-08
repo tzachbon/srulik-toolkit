@@ -15,6 +15,7 @@ import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 import threading
+from urllib.parse import parse_qs, urlparse
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -341,10 +342,12 @@ class ModelsHandler(BaseHTTPRequestHandler):
         def model(slug, intelligence, price):
             return {"slug": slug, "name": slug, "model_creator": {"name": "Lab"},
                     "evaluations": {"artificial_analysis_intelligence_index": intelligence},
-                    "pricing": {"price_1m_blended_3_to_1": price, "price_1m_input_tokens": price, "price_1m_output_tokens": price},
-                    "median_output_tokens_per_second": 100}
-        body = json.dumps({"status": 200, "data": [model("smart", 60, 10), model("cheap", 40, 0.2),
-                                                  model("dominated", 39, 5), model("unpriced", 50, None)]}).encode()
+                    "pricing": {"price_1m_input_tokens": price, "price_1m_output_tokens": price},
+                    "performance": {"median_output_tokens_per_second": 100}}
+        pages = {"1": [model("smart", 60, 10), model("cheap", 40, 0.2)],
+                 "2": [model("dominated", 39, 5), model("unpriced", 50, None)]}
+        page = parse_qs(urlparse(self.path).query).get("page", ["1"])[0]
+        body = json.dumps({"data": pages.get(page, []), "pagination": {"page": int(page), "has_more": page == "1"}}).encode()
         self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers(); self.wfile.write(body)
     def log_message(self, *_):
         pass
