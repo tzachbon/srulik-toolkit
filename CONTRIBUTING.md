@@ -36,6 +36,10 @@ codex plugin add srulik-toolkit@srulik-toolkit
 
 ## Make a focused change
 
+Read [AGENTS.md](AGENTS.md) first. It explains the toolkit's purpose, where new
+skills and utilities fit, and how skills keep host-specific details out of
+their core instructions.
+
 - Keep skill instructions portable across machines and repositories.
 - Keep file references relative to the skill directory.
 - Add a new abstraction only when more than one real use needs it.

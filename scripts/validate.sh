@@ -263,6 +263,28 @@ pr_babysit_t3_contract = [
 if not all(token in pr_babysit_t3 for token in pr_babysit_t3_contract):
     missing = [token for token in pr_babysit_t3_contract if token not in pr_babysit_t3]
     raise SystemExit(f"pr-babysit T3 Code reference is missing its implementation contract: {missing}")
+agents_guide = (root / "AGENTS.md").read_text(encoding="utf-8")
+for link in re.findall(r"\]\(([^)#]+)", agents_guide):
+    if not (root / link).exists():
+        raise SystemExit(f"AGENTS.md links to a missing file: {link}")
+agents_stages = agents_guide[agents_guide.index("| Stage |"):agents_guide.index("Prefer extending")]
+if set(re.findall(r"`([a-z-]+)`", agents_stages)) != expected:
+    raise SystemExit("AGENTS.md stage table must list every skill exactly once by its directory name")
+agents_contract = [
+    "Generic across providers and agent harnesses",
+    "A streamlined path from request to merged change",
+    "Reusable skills and utilities",
+    "Write a skill's `SKILL.md` in terms of capabilities, not one harness's tools",
+    "[`references/t3-code.md`](plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md)",
+    "To support another harness, add a reference beside it; do not edit the core to fit one host",
+    "Never claim support for a harness that no reference documents or nobody has tested",
+    "Encode each skill's contract in `scripts/validate.sh`",
+    "Break each new check once on purpose and confirm validation fails",
+]
+if not all(token in agents_guide for token in agents_contract):
+    raise SystemExit(f"AGENTS.md is missing its architecture guidance: {[t for t in agents_contract if t not in agents_guide]}")
+if "[AGENTS.md](AGENTS.md)" not in (root / "CONTRIBUTING.md").read_text(encoding="utf-8"):
+    raise SystemExit("CONTRIBUTING.md must point contributors to AGENTS.md")
 if re.search(r"Try `claude-haiku-5-5`, then `gpt-6-luna`|gpt-6-luna`?\)? as (a )?fallback", pr_babysit + pr_babysit_t3):
     raise SystemExit("pr-babysit must keep gpt-6-luna first")
 if "Leave questions awaiting an answer open" in pr_babysit:
