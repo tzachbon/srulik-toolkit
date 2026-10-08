@@ -189,7 +189,7 @@ pr_babysit_contract = [
     "## Host capabilities",
     "Launch a thread with a chosen model, its own checkout, a title, and a first message",
     "Give that thread a native PR watch",
-    "Report a launched thread's first-run outcome, or wait for it with a time limit that does not cancel the run",
+    "Report a launched thread's first-run outcome with its error details, or wait for it with a time limit that does not cancel the run",
     "- T3 Code: [references/t3-code.md](references/t3-code.md)",
     "For another host, map each capability to its own tools, show the user the mapping, say that this host has no tested reference, and launch only after the user confirms",
     "If capability 1, 2, 3, 4, or 6 is missing, report which one and stop: without 6, a refused or dead babysitter cannot be detected",
@@ -201,7 +201,8 @@ pr_babysit_contract = [
     "retire the thread and relaunch with the next model in the order above",
     "On any other failure, retire it and report the error to the user instead of relaunching",
     "When every candidate has been refused, report the refusals to the user and stop",
-    "check how its only run ended, since a startup check that timed out may have missed the result",
+    "check how its first run ended, since a startup check that timed out may have missed the result and later requests may have queued more runs behind it",
+    "Blocked on an approval or question in its own thread: startup is unverified",
     "If that run failed or ended without running, that babysitter never started: handle it with the outcomes in step 4",
     "with the model after the refused one",
     "Ended without running (cancelled, interrupted, or rolled back): the babysitter is not running. Retire it and report the status",
@@ -229,7 +230,7 @@ pr_babysit_core = pr_babysit.replace("- T3 Code: [references/t3-code.md](referen
 t3_only = re.findall(r"t3_[a-z_]+|_pull_request\b|orchestrator_capabilities|delegate_task|workspaceStrategy|modelSelection|startFromOrigin|instanceId|timeoutMs|runId|threadId|rolled_back|mode: \"|\bT3\b", pr_babysit_core)
 if t3_only:
     raise SystemExit(f"pr-babysit core must stay host-agnostic; move these to references/t3-code.md: {sorted(set(t3_only))}")
-for removed in ['mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread", "or the wait timed out: the babysitter started", "Renaming is the required step", "If only capability 6 is missing, launch anyway"]:
+for removed in ['mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread", "or the wait timed out: the babysitter started", "Renaming is the required step", "If only capability 6 is missing, launch anyway", "A babysitter with more runs started"]:
     if removed in pr_babysit:
         raise SystemExit(f"pr-babysit still contains a retired design: {removed}")
 pr_babysit_t3 = (skill_root / "pr-babysit" / "references" / "t3-code.md").read_text(encoding="utf-8")
@@ -244,9 +245,9 @@ pr_babysit_t3_contract = [
     "| Optional: settle | `t3_thread_organize` with `action: \"settle\"` |",
     "keep only a thread whose `title` matches exactly",
     "pass each response's `nextCursor` as `cursor` until it is `null`",
-    "`t3_thread_list` returns neither run counts nor error details, so read the thread with `t3_thread_read`",
-    "If `runCount` is 1 and that run's `status` is `failed`, `cancelled`, `interrupted`, or `rolled_back`, apply the startup status table below to it instead of sending",
-    "A babysitter with more runs started, even if a later run failed",
+    "`t3_thread_list` returns neither runs nor error details, so read the thread with `t3_thread_read`",
+    "Find its first run, `ordinal: 1` in `recentRuns`",
+    "apply the startup status table below to it instead of sending, even when later runs exist",
     "Then retire this thread as in Retire, with no `threadId`",
     "Call `orchestrator_capabilities` for the runnable catalog",
     '{ "instanceId": "codex", "model": "gpt-6-luna" }',
@@ -257,7 +258,8 @@ pr_babysit_t3_contract = [
     "Call `t3_thread_wait` once with the launch's `threadId`, `runId`, and `timeoutMs: 120000`",
     "does not cancel the run",
     "| `cancelled`, `interrupted`, `rolled_back` | Ended without running. |",
-    "| `completed`, `running`, `waiting` | Started.",
+    "| `completed`, `running` | Started. |",
+    "| `waiting` | Blocked on an approval or question in its own thread: startup is unverified. |",
     "| `idle`, `preparing`, `queued`, `starting` with `timedOut: true` | Not yet running: startup is unverified. |",
     "There's an issue with the selected model",
     "If the harness exposes `t3_thread_update`, call it",

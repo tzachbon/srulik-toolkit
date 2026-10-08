@@ -14,7 +14,7 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 
 ## Main thread
 
-**Lookup (step 2).** Call `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"` and keep only a thread whose `title` matches exactly. Results are paginated: pass each response's `nextCursor` as `cursor` until it is `null`, so an exact match on a later page is not missed. An active babysitter is one that is not settled (`settled: false`). `t3_thread_list` returns neither run counts nor error details, so read the thread with `t3_thread_read` (`view: "activity"`). If `runCount` is 1 and that run's `status` is `failed`, `cancelled`, `interrupted`, or `rolled_back`, apply the startup status table below to it instead of sending; for `failed`, confirm a model-access refusal from the activity before retiring it and advancing past its `model`. A babysitter with more runs started, even if a later run failed. Send the new request with `t3_thread_send` and `mode: "auto"`.
+**Lookup (step 2).** Call `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"` and keep only a thread whose `title` matches exactly. Results are paginated: pass each response's `nextCursor` as `cursor` until it is `null`, so an exact match on a later page is not missed. An active babysitter is one that is not settled (`settled: false`). `t3_thread_list` returns neither runs nor error details, so read the thread with `t3_thread_read` (`view: "activity"`). Find its first run, `ordinal: 1` in `recentRuns` (raise `runLimit` if the thread has more runs than it returns). If that run's `status` is `failed`, `cancelled`, `interrupted`, or `rolled_back`, apply the startup status table below to it instead of sending, even when later runs exist; for `failed`, confirm a model-access refusal from the activity before retiring it and advancing past its `model`. Send the new request with `t3_thread_send` and `mode: "auto"`.
 
 **Launch (step 3).** Call `orchestrator_capabilities` for the runnable catalog, then `t3_thread_launch`:
 
@@ -34,7 +34,8 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 | --- | --- |
 | `failed` | Read the error with `t3_thread_read` (`view: "activity"`). The provider's model refusal reads like "There's an issue with the selected model (claude-haiku-5-5). It may not exist or you may not have access to it.", followed by the error item "Claude gave up after repeated API errors." |
 | `cancelled`, `interrupted`, `rolled_back` | Ended without running. |
-| `completed`, `running`, `waiting` | Started. `waiting` means the babysitter is blocked on an approval or question in its own thread. |
+| `completed`, `running` | Started. |
+| `waiting` | Blocked on an approval or question in its own thread: startup is unverified. |
 | `idle`, `preparing`, `queued`, `starting` with `timedOut: true` | Not yet running: startup is unverified. |
 
 **Retire.** If the harness exposes `t3_thread_update`, call it with `threadId`, `action: "rename"`, and the retired title. Then call `t3_thread_organize` with `action: "settle"` if the harness exposes it. Check which tools this harness exposes before relying on either: T3 Code's documented orchestrator tool set includes `t3_thread_update` but not `t3_thread_organize`, and builds can differ. If rename is missing, follow the skill's fallback for a host without capability 5.
