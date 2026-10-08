@@ -208,7 +208,8 @@ pr_babysit_contract = [
     "Not yet running when the wait ends (still queued or preparing): startup is unverified",
     "when step 2 replaces a refused babysitter",
     "rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can",
-    "Renaming is the required step",
+    "Rename whenever the host can, because not every host can settle or archive a thread; without rename, use the fallback in Host capabilities",
+    "Without rename, use the fallback in Host capabilities. A later wake after a stop does nothing",
     "One babysitter per PR",
     "Visible notifications are limited to input needed, readiness changes, monitoring failure, or PR closure",
     "Green CI, missing approvals, silence, and a quiet pass do not stop listening",
@@ -226,7 +227,7 @@ pr_babysit_core = pr_babysit.replace("- T3 Code: [references/t3-code.md](referen
 t3_only = re.findall(r"t3_[a-z_]+|_pull_request\b|orchestrator_capabilities|delegate_task|workspaceStrategy|modelSelection|startFromOrigin|instanceId|timeoutMs|runId|threadId|rolled_back|mode: \"|\bT3\b", pr_babysit_core)
 if t3_only:
     raise SystemExit(f"pr-babysit core must stay host-agnostic; move these to references/t3-code.md: {sorted(set(t3_only))}")
-for removed in ['mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread", "or the wait timed out: the babysitter started"]:
+for removed in ['mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread", "or the wait timed out: the babysitter started", "Renaming is the required step"]:
     if removed in pr_babysit:
         raise SystemExit(f"pr-babysit still contains a retired design: {removed}")
 pr_babysit_t3 = (skill_root / "pr-babysit" / "references" / "t3-code.md").read_text(encoding="utf-8")

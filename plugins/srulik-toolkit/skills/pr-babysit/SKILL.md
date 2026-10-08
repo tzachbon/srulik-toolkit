@@ -42,7 +42,7 @@ For another host, map each capability to its own tools, show the user the mappin
    - Completed, or running when the wait ends: the babysitter started. Tell the user its thread, then end the turn.
    - Not yet running when the wait ends (still queued or preparing): startup is unverified. Tell the user its thread and that a later refusal goes unnoticed until the skill runs again for this PR, when step 2 replaces a refused babysitter. Then end the turn.
 
-   Retire a thread that did not start so the lookup in step 2 no longer finds it: rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can. Renaming is the required step, because not every host can settle or archive a thread.
+   Retire a thread that did not start so the lookup in step 2 no longer finds it: rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can. Rename whenever the host can, because not every host can settle or archive a thread; without rename, use the fallback in Host capabilities.
 5. Forward the user's later instructions for this PR to the babysitter: answers to its input-needed messages, merge authorization, or `STOP` when the user asks to stop. Deliver them even when the babysitter is idle between wakes.
 
 Brief:
@@ -72,7 +72,7 @@ Constraints: <repository instructions and machine resource limits that apply>.
 
 **Waiting for input.** After sending input needed, keep handling other feedback; act on that item once the main thread forwards the user's answer.
 
-**Stop.** On `STOP` or PR closure, remove this thread's PR watch (a watch that already ended on closure is not a failure), send the final state, and retire this thread: rename it to `Retired babysitter for <owner>/<repo>#<number> (<merged|closed|stopped>)`, then settle or archive it if the host can. A later wake after a stop does nothing.
+**Stop.** On `STOP` or PR closure, remove this thread's PR watch (a watch that already ended on closure is not a failure), send the final state, and retire this thread: rename it to `Retired babysitter for <owner>/<repo>#<number> (<merged|closed|stopped>)`, then settle or archive it if the host can. Without rename, use the fallback in Host capabilities. A later wake after a stop does nothing.
 
 ## Boundaries
 
