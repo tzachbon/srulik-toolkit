@@ -244,6 +244,7 @@ pr_babysit_t3_contract = [
     "| Optional: settle | `t3_thread_organize` with `action: \"settle\"` |",
     "keep only a thread whose `title` matches exactly",
     "pass each response's `nextCursor` as `cursor` until it is `null`",
+    "`t3_thread_list` returns no error details, so for a `failed` thread read its activity with `t3_thread_read`",
     "Then retire this thread as in Retire, with no `threadId`",
     "Call `orchestrator_capabilities` for the runnable catalog",
     '{ "instanceId": "codex", "model": "gpt-6-luna" }',
