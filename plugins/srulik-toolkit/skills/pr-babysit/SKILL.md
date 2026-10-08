@@ -24,7 +24,7 @@ Settling or archiving a thread is optional. Before starting, read the reference 
 
 - T3 Code: [references/t3-code.md](references/t3-code.md)
 
-For another host, map each capability to its own tools and state the mapping. If capability 1, 2, 3, or 4 is missing, report which one and stop. Never substitute foreground maintenance, a polling loop, a sleep, or a new scheduler. If only capability 6 is missing, launch anyway and tell the user that startup is unverified. If capability 5 is missing, retire threads by settling or archiving them where the host's lookup skips those; otherwise tell the user which failed thread to remove by hand.
+For another host, map each capability to its own tools, show the user the mapping, say that this host has no tested reference, and launch only after the user confirms. If capability 1, 2, 3, or 4 is missing, report which one and stop. Never substitute foreground maintenance, a polling loop, a sleep, or a new scheduler. If only capability 6 is missing, launch anyway and tell the user that startup is unverified. If capability 5 is missing, retire threads by settling or archiving them where the host's lookup skips those; otherwise tell the user which failed thread to remove by hand.
 
 ## Main thread role
 
@@ -39,7 +39,8 @@ For another host, map each capability to its own tools and state the mapping. If
 4. Check startup once. A listed model can still be refused by the provider, and the host may not report a launched thread's failure back. Wait once, for up to 2 minutes, for the first run's outcome; a timeout does not cancel the babysitter. Wait only this once:
    - Failed: read the thread's error. On a model-access error, retire the thread and relaunch with the next model in the order above, then check that launch the same way. When every candidate has been refused, report the refusals to the user and stop. On any other failure, retire it and report the error to the user instead of relaunching.
    - Ended without running (cancelled, interrupted, or rolled back): the babysitter is not running. Retire it and report the status to the user instead of relaunching.
-   - Completed, still running, or the wait timed out: the babysitter started. Tell the user its thread, then end the turn.
+   - Completed, or running when the wait ends: the babysitter started. Tell the user its thread, then end the turn.
+   - Not yet running when the wait ends (still queued or preparing): startup is unverified. Tell the user its thread and that a later refusal goes unnoticed until the skill runs again for this PR, when step 2 replaces a refused babysitter. Then end the turn.
 
    Retire a thread that did not start so the lookup in step 2 no longer finds it: rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can. Renaming is the required step, because not every host can settle or archive a thread.
 5. Forward the user's later instructions for this PR to the babysitter: answers to its input-needed messages, merge authorization, or `STOP` when the user asks to stop. Deliver them even when the babysitter is idle between wakes.

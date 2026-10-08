@@ -34,7 +34,8 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 | --- | --- |
 | `failed` | Read the error with `t3_thread_read` (`view: "activity"`). The provider's model refusal reads like "There's an issue with the selected model (claude-haiku-5-5). It may not exist or you may not have access to it.", followed by the error item "Claude gave up after repeated API errors." |
 | `cancelled`, `interrupted`, `rolled_back` | Ended without running. |
-| `completed`, `running`, or `timedOut: true` | Started. |
+| `completed`, `running`, `waiting` | Started. `waiting` means the babysitter is blocked on an approval or question in its own thread. |
+| `idle`, `preparing`, `queued`, `starting` with `timedOut: true` | Not yet running: startup is unverified. |
 
 **Retire.** Call `t3_thread_update` with `threadId`, `action: "rename"`, and the retired title. Then call `t3_thread_organize` with `action: "settle"` if the harness exposes it. T3 Code's documented orchestrator tool set does not include `t3_thread_organize`, so a build may lack it; renaming works on every build.
 

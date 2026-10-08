@@ -23,7 +23,7 @@ Write a skill's `SKILL.md` in terms of capabilities, not one harness's tools: "l
 
 [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) is the model. Its core lists the host capabilities it needs and what to do when each is missing. [`references/t3-code.md`](plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md) maps them to T3 Code's tools and records what was observed live. To support another harness, add a reference beside it; do not edit the core to fit one host.
 
-When a required capability is missing, the skill reports which one and stops or degrades as its core describes. Never claim support for a harness that no reference documents or nobody has tested; say what is unverified.
+When a required capability is missing, the skill reports which one and stops or degrades as its core describes. On a harness with no reference, a skill shows its capability mapping, says it is untested, and acts only after the user confirms. Never claim support for a harness that no reference documents or nobody has tested; say what is unverified.
 
 Some older skills still name Claude Code or Codex directly. Move host-specific text into a reference when you next change such a skill, not as a separate sweep.
 

@@ -191,7 +191,7 @@ pr_babysit_contract = [
     "Give that thread a native PR watch",
     "Report a launched thread's first-run outcome, or wait for it with a time limit that does not cancel the run",
     "- T3 Code: [references/t3-code.md](references/t3-code.md)",
-    "For another host, map each capability to its own tools and state the mapping",
+    "For another host, map each capability to its own tools, show the user the mapping, say that this host has no tested reference, and launch only after the user confirms",
     "If capability 1, 2, 3, or 4 is missing, report which one and stop",
     "If only capability 6 is missing, launch anyway and tell the user that startup is unverified",
     "If capability 5 is missing, retire threads by settling or archiving them",
@@ -204,7 +204,9 @@ pr_babysit_contract = [
     "unless its only run failed with a model-access error",
     "with the model after the refused one",
     "Ended without running (cancelled, interrupted, or rolled back): the babysitter is not running. Retire it and report the status",
-    "Completed, still running, or the wait timed out: the babysitter started",
+    "Completed, or running when the wait ends: the babysitter started",
+    "Not yet running when the wait ends (still queued or preparing): startup is unverified",
+    "when step 2 replaces a refused babysitter",
     "rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can",
     "Renaming is the required step",
     "One babysitter per PR",
@@ -224,7 +226,7 @@ pr_babysit_core = pr_babysit.replace("- T3 Code: [references/t3-code.md](referen
 t3_only = re.findall(r"t3_[a-z_]+|_pull_request\b|orchestrator_capabilities|delegate_task|workspaceStrategy|modelSelection|startFromOrigin|instanceId|timeoutMs|runId|threadId|rolled_back|mode: \"|\bT3\b", pr_babysit_core)
 if t3_only:
     raise SystemExit(f"pr-babysit core must stay host-agnostic; move these to references/t3-code.md: {sorted(set(t3_only))}")
-for removed in ['mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread"]:
+for removed in ['mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread", "or the wait timed out: the babysitter started"]:
     if removed in pr_babysit:
         raise SystemExit(f"pr-babysit still contains a retired design: {removed}")
 pr_babysit_t3 = (skill_root / "pr-babysit" / "references" / "t3-code.md").read_text(encoding="utf-8")
@@ -247,7 +249,8 @@ pr_babysit_t3_contract = [
     "Call `t3_thread_wait` once with the launch's `threadId`, `runId`, and `timeoutMs: 120000`",
     "does not cancel the run",
     "| `cancelled`, `interrupted`, `rolled_back` | Ended without running. |",
-    "| `completed`, `running`, or `timedOut: true` | Started. |",
+    "| `completed`, `running`, `waiting` | Started.",
+    "| `idle`, `preparing`, `queued`, `starting` with `timedOut: true` | Not yet running: startup is unverified. |",
     "There's an issue with the selected model",
     "T3 Code's documented orchestrator tool set does not include `t3_thread_organize`",
     "renaming works on every build",
@@ -278,6 +281,7 @@ agents_contract = [
     "[`references/t3-code.md`](plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md)",
     "To support another harness, add a reference beside it; do not edit the core to fit one host",
     "Never claim support for a harness that no reference documents or nobody has tested",
+    "On a harness with no reference, a skill shows its capability mapping, says it is untested, and acts only after the user confirms",
     "Encode each skill's contract in `scripts/validate.sh`",
     "Break each new check once on purpose and confirm validation fails",
 ]
