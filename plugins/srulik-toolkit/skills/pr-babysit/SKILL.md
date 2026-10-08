@@ -14,37 +14,45 @@ The main thread never owns the PR watch and never runs maintenance passes. One d
 A thread here is an independent agent conversation the host runs in the background. This skill needs a host that can:
 
 1. Launch a thread with a chosen model, its own checkout, a title, and a first message.
-2. Give that thread a native PR watch that wakes it on new comments, reviews, check results, and conflicts.
+2. Give that thread a native PR watch that wakes it on new comments, reviews, check results, and conflicts, and let another thread check whether that watch is active.
 3. Send a message to another thread.
-4. List threads by title.
+4. List threads by exact title, across every page of results.
 5. Rename a thread.
-6. Report a launched thread's first-run outcome with its error details, or wait for it with a time limit that does not cancel the run.
+6. Report a thread's latest run status with its error details, and wait for a run with a time limit that does not cancel it.
 
 Settling or archiving a thread is optional. Before starting, read the reference for your host and use its mapping:
 
 - T3 Code: [references/t3-code.md](references/t3-code.md)
 
-For another host, map each capability to its own tools, show the user the mapping, say that this host has no tested reference, and launch only after the user confirms. If capability 1, 2, 3, 4, or 6 is missing, report which one and stop: without 6, a refused or dead babysitter cannot be detected at launch or later. Never substitute foreground maintenance, a polling loop, a sleep, or a new scheduler. If capability 5 is missing, retire threads by settling or archiving them where the host's lookup skips those; otherwise tell the user which failed thread to remove by hand and stop. Relaunch only on a later request, after the lookup in step 2 no longer finds that thread.
+For another host, map each capability to its own tools, show the user the mapping, say that this host has no tested reference, and launch only after the user confirms. If capability 1, 2, 3, 4, or 6 is missing, report which one and stop: without them, a babysitter that was refused, died, or never started watching cannot be detected. Never substitute foreground maintenance, a polling loop, a sleep, or a new scheduler. If capability 5 is missing, retire threads by settling or archiving them where the host's lookup skips those; otherwise tell the user which thread to remove by hand and stop. Relaunch only on a later request, after the lookup in step 2 no longer finds that thread.
+
+## Classify a babysitter
+
+A running thread is not a monitored PR. A babysitter has started only once its PR watch is active. Classify a babysitter by checking these rows in order and act on the first that matches:
+
+| Babysitter | Class | Action |
+| --- | --- | --- |
+| Its PR watch is active | Watching | It has started. Requests may be sent to it. |
+| Latest run failed with a confirmed model-access error | Refused | Retire it and launch again with the model after the refused one in the order of step 3. When every candidate has been refused, report the refusals to the user and stop. |
+| Latest run failed with any other error, ended without running (cancelled, interrupted, or rolled back), or completed without an active watch | Dead | Retire it and report the error or status to the user, then stop. A later request launches a fresh babysitter. |
+| Latest run is still queued, preparing, starting, running, or waiting on an approval or question | Pending | Startup is unverified. Send it nothing. |
+
+Send requests only to a Watching babysitter. Requests sent earlier queue behind an unconfirmed start and hide how it ended. Because of this rule, a babysitter that never started has only its launch run, and its latest run is the one to judge.
 
 ## Main thread role
 
 1. Resolve the supplied PR, or infer it from the current branch. If none exists, load [create-pr](../create-pr/SKILL.md) and continue only with the PR it read back from the provider.
-2. Look for an existing babysitter: list threads whose title is exactly `Babysit PR <owner>/<repo>#<number>`. Filter for the exact title, since a prefix search for #34 also matches #347 and other repositories reuse numbers, and read every page of results before concluding none exists. If an active one exists, check how its first run ended, since a startup check that timed out may have missed the result and later requests may have queued more runs behind it. If that run failed or ended without running, that babysitter never started: handle it with the outcomes in step 4, which retire it, and relaunch only after a model-access error, with the model after the refused one in the order of step 3. Otherwise send it the new request and stop. One babysitter per PR.
+2. Look for an existing babysitter: list threads whose title is exactly `Babysit PR <owner>/<repo>#<number>`. Filter for the exact title, since a prefix search for #34 also matches #347 and other repositories reuse numbers, and read every page of results before concluding none exists. If an active one exists, classify it. Watching: send it the new request and stop. Pending: tell the user it has not confirmed its PR watch, so the request was not delivered and should be repeated later; if it is waiting on an approval or question, they can answer in its thread. Then stop. Refused or Dead: act as the table says. One babysitter per PR.
 3. Otherwise launch one:
    - Title: `Babysit PR <owner>/<repo>#<number>` (base repository).
    - Model: a small, fast model. Try `gpt-6-luna`, then `claude-haiku-5-5`, then the cheapest other general-purpose model, taking the first that the host's runnable-model catalog lists. For that fallback, `node <plugin root>/scripts/models.js luna` and `--frontier` (the plugin root is two directories above this skill file) show intelligence for the price when `ARTIFICIAL_ANALYSIS_API_KEY` is set; prefer a runnable model with a similar score.
    - Checkout: a new worktree of the PR head on branch `babysit/pr-<number>`. For a fork PR, fetch the head ref from the fork first; it is not on `origin`. If the branch already exists, reuse its worktree.
    - First message: the brief below.
    If the launch result is uncertain, list threads before retrying; a second launch creates a duplicate babysitter.
-4. Check startup once. A listed model can still be refused by the provider, and the host may not report a launched thread's failure back. Wait once, for up to 2 minutes, for the first run's outcome; a timeout does not cancel the babysitter. Wait only this once:
-   - Failed: read the thread's error. On a model-access error, retire the thread and relaunch with the next model in the order above, then check that launch the same way. When every candidate has been refused, report the refusals to the user and stop. On any other failure, retire it and report the error to the user instead of relaunching.
-   - Ended without running (cancelled, interrupted, or rolled back): the babysitter is not running. Retire it and report the status to the user instead of relaunching.
-   - Completed, or running when the wait ends: the babysitter started. Tell the user its thread, then end the turn.
-   - Blocked on an approval or question in its own thread: startup is unverified, because the watch may not be registered yet. Tell the user its thread and that it needs their answer there, then end the turn.
-   - Not yet running when the wait ends (still queued or preparing): startup is unverified. Tell the user its thread and that a later refusal goes unnoticed until the skill runs again for this PR, when step 2 replaces a refused babysitter. Then end the turn.
+4. Check startup once. A listed model can still be refused by the provider, and the host may not report a launched thread's failure back. Wait once, for up to 2 minutes, for the launch run; a timeout does not cancel it. Wait only this once, then classify the babysitter. Watching: tell the user its thread, then end the turn. Pending: tell the user its thread and that startup is unverified, so a refusal or failure after this point is caught the next time the skill runs for this PR; if it is waiting on an approval or question, it needs their answer in its thread. Then end the turn. Refused or Dead: act as the table says, and check each relaunch the same way.
 
-   Retire a thread that did not start so the lookup in step 2 no longer finds it: rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can. Rename whenever the host can, because not every host can settle or archive a thread; without rename, use the fallback in Host capabilities.
-5. Forward the user's later instructions for this PR to the babysitter: answers to its input-needed messages, merge authorization, or `STOP` when the user asks to stop. Deliver them even when the babysitter is idle between wakes.
+   Retire a babysitter so the lookup in step 2 no longer finds it: rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can. Rename whenever the host can, because not every host can settle or archive a thread; without rename, use the fallback in Host capabilities.
+5. Treat the user's later instructions for this PR as new requests through step 2, so they reach only a Watching babysitter: answers to its input-needed messages, merge authorization, or `STOP` when the user asks to stop. Deliver them even when the babysitter is idle between wakes.
 
 Brief:
 
@@ -60,7 +68,7 @@ Constraints: <repository instructions and machine resource limits that apply>.
 
 ## Babysitter role
 
-**Start.** Read repository instructions and the host reference, then register this thread's PR watch and confirm it is active. Then run one pass. Events from before registration may never arrive, so this first pass is also the catch-up.
+**Start.** Read repository instructions and the host reference, then register this thread's PR watch and confirm it is active. If registration fails, send `MONITORING FAILED` and stop: without an active watch the main thread classifies this babysitter as Dead and does not send it requests. Then run one pass. Events from before registration may never arrive, so this first pass is also the catch-up.
 
 **Each wake.** Refresh live PR state first. If the only change is bot status noise, end the turn without a pass. Noise means: preview-link comments, review-tool status notices (review skipped, paused, or limit reached), and edits to bot summary comments that bring no new inline finding. A new inline review comment, a new review, a failed check, or a conflict is never noise. Process any other change with a pass.
 

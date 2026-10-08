@@ -181,8 +181,9 @@ for human review; a retrospective alone does not authorize environment changes.
 - `pr-babysit` requires a host that can launch a separate background thread and
   give it a native PR watch. The skill lists the capabilities it needs; T3 Code's
   tool mapping is in `skills/pr-babysit/references/t3-code.md`, and other hosts
-  map the same capabilities to their own tools. That thread owns the watch, so PR
-  events never wake the main conversation. Listening continues after green CI
+  map the same capabilities to their own tools after you confirm the mapping.
+  That thread owns the watch, so PR events never wake the main conversation, and
+  the main conversation sends requests to it only after its watch is active. Listening continues after green CI
   and quiet passes until the PR closes or you stop it. Hosts without that support
   report the limitation; the skill does not install a scheduler or substitute
   foreground waiting.

@@ -5,16 +5,16 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 | Capability | T3 Code |
 | --- | --- |
 | 1. Launch a thread | `t3_thread_launch` |
-| 2. Native PR watch | `link_pull_request`, `watch_pull_request`, `unwatch_pull_request` |
+| 2. Native PR watch | `link_pull_request`, `watch_pull_request`, `unwatch_pull_request`; another thread checks it with `list_thread_pull_requests` and `threadId` |
 | 3. Message a thread | `t3_thread_send` |
-| 4. List threads by title | `t3_thread_list` |
+| 4. List threads by title | `t3_thread_list`, paging with `cursor` |
 | 5. Rename a thread | `t3_thread_update` with `action: "rename"` |
-| 6. First-run outcome | `t3_thread_wait`, then `t3_thread_read` |
+| 6. Run status and errors | `status` from `t3_thread_list` or `t3_thread_wait`; errors from `t3_thread_read` |
 | Optional: settle | `t3_thread_organize` with `action: "settle"` |
 
 ## Main thread
 
-**Lookup (step 2).** Call `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"` and keep only a thread whose `title` matches exactly. Results are paginated: pass each response's `nextCursor` as `cursor` until it is `null`, so an exact match on a later page is not missed. An active babysitter is one that is not settled (`settled: false`). `t3_thread_list` returns neither runs nor error details, so read the thread with `t3_thread_read` (`view: "activity"`). Find its first run, `ordinal: 1` in `recentRuns` (raise `runLimit` if the thread has more runs than it returns). If that run's `status` is `failed`, `cancelled`, `interrupted`, or `rolled_back`, apply the startup status table below to it instead of sending, even when later runs exist; for `failed`, confirm a model-access refusal from the activity before retiring it and advancing past its `model`. Send the new request with `t3_thread_send` and `mode: "auto"`.
+**Lookup (step 2).** Call `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"` and keep only a thread whose `title` matches exactly. Results are paginated: pass each response's `nextCursor` as `cursor` until it is `null`, so an exact match on a later page is not missed. An active babysitter is one that is not settled (`settled: false`). Classify it as below, and send a request with `t3_thread_send` and `mode: "auto"` only when it is Watching.
 
 **Launch (step 3).** Call `orchestrator_capabilities` for the runnable catalog, then `t3_thread_launch`:
 
@@ -28,15 +28,18 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 
 `t3_thread_launch` has no retry key. If the result is lost, check `t3_thread_list` before launching again. Keep the returned `threadId` and `runId`.
 
-**Startup check (step 4).** T3 does not notify the launcher when a top-level thread's run ends. Call `t3_thread_wait` once with the launch's `threadId`, `runId`, and `timeoutMs: 120000`. A timeout returns `timedOut: true` with the latest status and does not cancel the run.
+**Startup check (step 4).** T3 does not notify the launcher when a top-level thread's run ends. Call `t3_thread_wait` once with the launch's `threadId`, `runId`, and `timeoutMs: 120000`. A timeout returns `timedOut: true` with the latest status and does not cancel the run. Then classify the babysitter.
 
-| `status` | Meaning |
+**Classify.** First call `list_thread_pull_requests` with the babysitter's `threadId`. If it lists this PR with `watching: true`, the babysitter is Watching, whatever its run status. Otherwise classify by the thread's `status`, which is its latest run's status, from `t3_thread_list` or the `t3_thread_wait` result:
+
+| Latest run `status`, watch not active | Class |
 | --- | --- |
-| `failed` | Read the error with `t3_thread_read` (`view: "activity"`). The provider's model refusal reads like "There's an issue with the selected model (claude-haiku-5-5). It may not exist or you may not have access to it.", followed by the error item "Claude gave up after repeated API errors." |
-| `cancelled`, `interrupted`, `rolled_back` | Ended without running. |
-| `completed`, `running` | Started. |
-| `waiting` | Blocked on an approval or question in its own thread: startup is unverified. |
-| `idle`, `preparing`, `queued`, `starting` with `timedOut: true` | Not yet running: startup is unverified. |
+| `failed` with the model refusal text in its activity | Refused |
+| `failed` with any other error | Dead |
+| `completed`, `cancelled`, `interrupted`, `rolled_back` | Dead |
+| `idle`, `preparing`, `queued`, `starting`, `running`, `waiting` | Pending |
+
+For `failed`, read the error with `t3_thread_read` (`view: "activity"`). The provider's model refusal reads like "There's an issue with the selected model (claude-haiku-5-5). It may not exist or you may not have access to it.", followed by the error item "Claude gave up after repeated API errors." `waiting` means the babysitter is blocked on an approval or question in its own thread.
 
 **Retire.** If the harness exposes `t3_thread_update`, call it with `threadId`, `action: "rename"`, and the retired title. Then call `t3_thread_organize` with `action: "settle"` if the harness exposes it. Check which tools this harness exposes before relying on either: T3 Code's documented orchestrator tool set includes `t3_thread_update` but not `t3_thread_organize`, and builds can differ. If rename is missing, follow the skill's fallback for a host without capability 5.
 
@@ -57,5 +60,6 @@ Observed on one T3 Code host on 2026-10-08 with controlled probe threads in a sc
 - Before retirement, the exact-title lookup found that failed, unsettled thread. After a rename alone, it found nothing.
 - A `gpt-6-luna` replacement under the same title completed, and the lookup then found only it.
 - A 3-second `t3_thread_wait` on a running `gpt-6-luna` thread returned `running` with `timedOut: true`. The run then completed.
+- `list_thread_pull_requests` with another thread's `threadId` returned that thread's PR list, empty for a probe thread that registered no PR.
 
-Not observed: a full babysitter following this skill on a real PR, and T3 builds without `t3_thread_organize` or `t3_thread_update`.
+Not observed: a full babysitter following this skill on a real PR, `watching: true` reported for a babysitter thread, and T3 builds without `t3_thread_organize` or `t3_thread_update`.
