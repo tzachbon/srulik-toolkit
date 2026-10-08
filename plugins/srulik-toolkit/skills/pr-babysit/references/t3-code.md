@@ -14,7 +14,7 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 
 ## Main thread
 
-**Lookup (step 2).** Call `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"` and keep only a thread whose `title` matches exactly. An active babysitter is one that is not settled (`settled: false`). Its `status` and `model` tell you whether its run failed and which model was refused. Send the new request with `t3_thread_send` and `mode: "auto"`.
+**Lookup (step 2).** Call `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"` and keep only a thread whose `title` matches exactly. Results are paginated: pass each response's `nextCursor` as `cursor` until it is `null`, so an exact match on a later page is not missed. An active babysitter is one that is not settled (`settled: false`). Its `status` and `model` tell you whether its run failed and which model was refused. Send the new request with `t3_thread_send` and `mode: "auto"`.
 
 **Launch (step 3).** Call `orchestrator_capabilities` for the runnable catalog, then `t3_thread_launch`:
 
@@ -45,7 +45,7 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 
 - **Start:** `link_pull_request` and `watch_pull_request` with the PR URL, then confirm with `list_thread_pull_requests`. Only a top-level thread can own a watch, which is why the babysitter is launched with `t3_thread_launch` and not `delegate_task`. A watch wakes the thread with an `Update on pull request #<number>` message only for comments posted after registration.
 - **Messages to the main thread:** `t3_thread_send` with the main thread's ID from the brief.
-- **Stop:** `unwatch_pull_request`, then `t3_thread_update` with `action: "rename"` and no `threadId` (it defaults to the calling thread), then `t3_thread_organize` with `action: "settle"` if available.
+- **Stop:** `unwatch_pull_request`. Then retire this thread as in Retire, with no `threadId` (both tools default to the calling thread): rename with `t3_thread_update` if the harness exposes it, settle with `t3_thread_organize` if available, and without rename follow the skill's fallback for a host without capability 5.
 - T3 Code also ends a watch when the PR merges or closes, when the thread settles or is archived, or after 8 consecutive read failures. Report an unexpected end as `MONITORING FAILED`.
 
 ## Verified behavior
