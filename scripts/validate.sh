@@ -185,8 +185,7 @@ if not all(token in readme for token in ['"smallest correct plan"', '"smallest c
 pr_babysit_contract = [
     "The main thread never owns the PR watch",
     "PR events never wake the main thread",
-    "claude-haiku-5-5",
-    "gpt-6-luna",
+    "Try `gpt-6-luna`, then `claude-haiku-5-5`",
     "model-access error",
     "t3_thread_launch",
     "watch_pull_request",
