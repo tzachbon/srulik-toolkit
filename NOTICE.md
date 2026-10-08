@@ -17,6 +17,11 @@ also adapted for this toolkit under the repository's MIT License. `research`
 was written for this toolkit using the public Claude Explore documentation as
 design input.
 
+`scripts/models.js` reads model benchmarks and prices from the
+[Artificial Analysis](https://artificialanalysis.ai/) data API with your own key.
+Its data is not bundled and remains subject to Artificial Analysis terms, which
+require attribution.
+
 CodeRabbit is an optional external tool mentioned by `review-pro-max`. It is
 not bundled with this repository and remains subject to its own terms.
 

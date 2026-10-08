@@ -184,6 +184,12 @@ for human review; a retrospective alone does not authorize environment changes.
   and quiet passes until the PR closes or you stop it. Hosts without that support
   report the limitation; the skill does not install a scheduler or substitute
   foreground waiting.
+- `agent-swarm` and `pr-babysit` can rank models by intelligence for the
+  price with `plugins/srulik-toolkit/scripts/models.js`. It reads the
+  [Artificial Analysis](https://artificialanalysis.ai/) data API, needs a free
+  `ARTIFICIAL_ANALYSIS_API_KEY`, and caches results for 24 hours. Without the
+  key, `pr-babysit` uses its fixed model order and `agent-swarm` uses a host
+  benchmark tool or its own judgment.
 - `to-project` can search public skill catalogs when you ask. It requires your
   approval before installing another skill.
 

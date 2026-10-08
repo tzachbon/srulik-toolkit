@@ -15,13 +15,14 @@ import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 import threading
+from urllib.parse import parse_qs, urlparse
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.4.0":
+if version != "1.4.1":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -185,7 +186,8 @@ if not all(token in readme for token in ['"smallest correct plan"', '"smallest c
 pr_babysit_contract = [
     "The main thread never owns the PR watch",
     "PR events never wake the main thread",
-    "claude-haiku-5-5",
+    "Try `gpt-6-luna`, then `claude-haiku-5-5`",
+    "model-access error",
     "t3_thread_launch",
     "watch_pull_request",
     "One babysitter per PR",
@@ -332,6 +334,46 @@ def stop_check(payload, disabled=False):
     if result.stderr:
         raise SystemExit(f"Stop hook wrote stderr: {result.stderr}")
     return result.stdout.strip()
+
+class ModelsHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.headers.get("x-api-key") != "test-key":
+            self.send_response(401); self.end_headers(); return
+        def model(slug, intelligence, price):
+            return {"slug": slug, "name": slug, "model_creator": {"name": "Lab"},
+                    "evaluations": {"artificial_analysis_intelligence_index": intelligence},
+                    "pricing": {"price_1m_input_tokens": price, "price_1m_output_tokens": price},
+                    "performance": {"median_output_tokens_per_second": 100}}
+        pages = {"1": [model("smart", 60, 10), model("cheap", 40, 0.2)],
+                 "2": [model("dominated", 39, 5), model("unpriced", 50, None)]}
+        page = parse_qs(urlparse(self.path).query).get("page", ["1"])[0]
+        body = json.dumps({"data": pages.get(page, []), "pagination": {"page": int(page), "has_more": page == "1"}}).encode()
+        self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers(); self.wfile.write(body)
+    def log_message(self, *_):
+        pass
+
+models_server = ThreadingHTTPServer(("127.0.0.1", 0), ModelsHandler)
+threading.Thread(target=models_server.serve_forever, daemon=True).start()
+
+def models(*args, key="test-key", data_root):
+    env = {k: v for k, v in os.environ.items() if k != "ARTIFICIAL_ANALYSIS_API_KEY"}
+    env |= {"PLUGIN_DATA": str(data_root), "ARTIFICIAL_ANALYSIS_URL": f"http://127.0.0.1:{models_server.server_port}/"}
+    if key:
+        env["ARTIFICIAL_ANALYSIS_API_KEY"] = key
+    return subprocess.run([node, str(plugin / "scripts" / "models.js"), *args], env=env, capture_output=True, text=True, timeout=30)
+
+with tempfile.TemporaryDirectory() as temporary:
+    if models(key=None, data_root=temporary).returncode != 2:
+        raise SystemExit("models.js must exit 2 without an API key")
+    ranked = json.loads(models(data_root=temporary).stdout)["models"]
+    if [m["slug"] for m in ranked] != ["smart", "cheap", "dominated"]:
+        raise SystemExit(f"models.js must rank priced models by intelligence: {ranked}")
+    frontier = [m["slug"] for m in json.loads(models("--frontier", data_root=temporary).stdout)["models"]]
+    if frontier != ["smart", "cheap"]:
+        raise SystemExit(f"models.js frontier must drop dominated models: {frontier}")
+    if [m["slug"] for m in json.loads(models("chea", data_root=temporary).stdout)["models"]] != ["cheap"]:
+        raise SystemExit("models.js must filter by name or slug")
+models_server.shutdown()
 
 stop_input = {"hook_event_name": "Stop", "stop_hook_active": False}
 for message in [
