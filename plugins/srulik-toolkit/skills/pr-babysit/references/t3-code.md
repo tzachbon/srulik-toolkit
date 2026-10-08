@@ -9,7 +9,7 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 | 3. Message a thread | `t3_thread_send` |
 | 4. List threads by title | `t3_thread_list`, paging with `cursor` |
 | 5. Rename a thread | `t3_thread_update` with `action: "rename"` |
-| 6. Run status and errors | `status` from `t3_thread_list` or `t3_thread_wait`; errors from `t3_thread_read` |
+| 6. Run status and errors | `status` from `t3_thread_list` or `t3_thread_wait`; errors from `t3_thread_read`; interrupt with `t3_thread_interrupt` |
 | Optional: settle | `t3_thread_organize` with `action: "settle"` |
 
 ## Main thread
@@ -43,7 +43,7 @@ For `failed`, read the error with `t3_thread_read` (`view: "activity"`). The pro
 
 **Retire.** If the harness exposes `t3_thread_update`, call it with `threadId`, `action: "rename"`, and the retired title. Then call `t3_thread_organize` with `action: "settle"` if the harness exposes it. Check which tools this harness exposes before relying on either: T3 Code's documented orchestrator tool set includes `t3_thread_update` but not `t3_thread_organize`, and builds can differ. If rename is missing, follow the skill's fallback for a host without capability 5.
 
-**Forward (step 5).** Use `t3_thread_send` with `mode: "auto"`. An idle babysitter has no active turn, and `steer` fails on it.
+**Forward (step 5).** Use `t3_thread_send` with `mode: "auto"`. An idle babysitter has no active turn, and `steer` fails on it. For `STOP` to a Pending babysitter, call `t3_thread_interrupt` with its `threadId`, then retire it as above.
 
 ## Babysitter
 
@@ -60,6 +60,7 @@ Observed on one T3 Code host on 2026-10-08 with controlled probe threads in a sc
 - Before retirement, the exact-title lookup found that failed, unsettled thread. After a rename alone, it found nothing.
 - A `gpt-6-luna` replacement under the same title completed, and the lookup then found only it.
 - A 3-second `t3_thread_wait` on a running `gpt-6-luna` thread returned `running` with `timedOut: true`. The run then completed.
+- `t3_thread_interrupt` on a running `gpt-6-luna` thread returned `interrupt_requested`, and the run then ended `interrupted`.
 - `list_thread_pull_requests` with another thread's `threadId` returned that thread's PR list, empty for a probe thread that registered no PR.
 
 Not observed: a full babysitter following this skill on a real PR, `watching: true` reported for a babysitter thread, and T3 builds without `t3_thread_organize` or `t3_thread_update`.

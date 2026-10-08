@@ -18,7 +18,7 @@ A thread here is an independent agent conversation the host runs in the backgrou
 3. Send a message to another thread.
 4. List threads by exact title, across every page of results.
 5. Rename a thread.
-6. Report a thread's latest run status with its error details, and wait for a run with a time limit that does not cancel it.
+6. Report a thread's latest run status with its error details, wait for a run with a time limit that does not cancel it, and interrupt a run.
 
 Settling or archiving a thread is optional. Before starting, read the reference for your host and use its mapping:
 
@@ -52,7 +52,7 @@ Send requests only to a Watching babysitter. Requests sent earlier queue behind 
 4. Check startup once. A listed model can still be refused by the provider, and the host may not report a launched thread's failure back. Wait once, for up to 2 minutes, for the launch run; a timeout does not cancel it. Wait only this once, then classify the babysitter. Watching: tell the user its thread, then end the turn. Pending: tell the user its thread and that startup is unverified, so a refusal or failure after this point is caught the next time the skill runs for this PR; if it is waiting on an approval or question, it needs their answer in its thread. Then end the turn. Refused or Dead: act as the table says, and check each relaunch the same way.
 
    Retire a babysitter so the lookup in step 2 no longer finds it: rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can. Rename whenever the host can, because not every host can settle or archive a thread; without rename, use the fallback in Host capabilities.
-5. Treat the user's later instructions for this PR as new requests through step 2, so they reach only a Watching babysitter: answers to its input-needed messages, merge authorization, or `STOP` when the user asks to stop. Deliver them even when the babysitter is idle between wakes.
+5. Treat the user's later instructions for this PR as new requests through step 2, so they reach only a Watching babysitter: answers to its input-needed messages, merge authorization, or `STOP` when the user asks to stop. Deliver them even when the babysitter is idle between wakes. `STOP` for a Pending babysitter is the exception: do not queue it behind an unconfirmed start. Interrupt its run, retire it, and tell the user monitoring stopped.
 
 Brief:
 
