@@ -261,6 +261,7 @@ pr_babysit_t3_contract = [
     "| `idle`, `preparing`, `queued`, `starting`, `running`, `waiting` | Pending |",
     "Then retire this thread as in Retire, with no `threadId`",
     "Call `orchestrator_capabilities` for the runnable catalog",
+    "so use only instances whose `constraints` list is empty",
     '{ "instanceId": "codex", "model": "gpt-6-luna" }',
     '"startFromOrigin": true',
     "use the fetched local ref or head SHA as `baseRef` with `startFromOrigin: false`",

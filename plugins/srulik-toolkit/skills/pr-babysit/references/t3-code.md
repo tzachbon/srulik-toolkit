@@ -16,7 +16,7 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 
 **Lookup (step 2).** Call `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"` and keep only a thread whose `title` matches exactly. Results are paginated: pass each response's `nextCursor` as `cursor` until it is `null`, so an exact match on a later page is not missed. An active babysitter is one that is not settled (`settled: false`). Classify it as below, and send a request with `t3_thread_send` and `mode: "auto"` only when it is Watching.
 
-**Launch (step 3).** Call `orchestrator_capabilities` for the runnable catalog, then `t3_thread_launch`:
+**Launch (step 3).** Call `orchestrator_capabilities` for the runnable catalog. It also lists disabled or uninstalled provider instances, some with models, so use only instances whose `constraints` list is empty. Then call `t3_thread_launch`:
 
 - `title`: `Babysit PR <owner>/<repo>#<number>`
 - `modelSelection`: the chosen model with its `instanceId`, for example `{ "instanceId": "codex", "model": "gpt-6-luna" }` or `{ "instanceId": "claudeAgent", "model": "claude-haiku-5-5" }`. Use the instance IDs the catalog lists on this host.
@@ -61,6 +61,7 @@ Observed on one T3 Code host on 2026-10-08 with controlled probe threads in a sc
 - A `gpt-6-luna` replacement under the same title completed, and the lookup then found only it.
 - A 3-second `t3_thread_wait` on a running `gpt-6-luna` thread returned `running` with `timedOut: true`. The run then completed.
 - `t3_thread_interrupt` on a running `gpt-6-luna` thread returned `interrupt_requested`, and the run then ended `interrupted`.
+- `orchestrator_capabilities` listed a disabled Grok instance with a `grok-build` model and non-empty `constraints`; the usable instances had empty `constraints`.
 - `list_thread_pull_requests` with another thread's `threadId` returned that thread's PR list, empty for a probe thread that registered no PR.
 
 Not observed: a full babysitter following this skill on a real PR, `watching: true` reported for a babysitter thread, and T3 builds without `t3_thread_organize` or `t3_thread_update`.
