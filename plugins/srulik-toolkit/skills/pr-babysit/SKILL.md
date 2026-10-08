@@ -12,14 +12,18 @@ The main thread never owns the PR watch and never runs maintenance passes. One d
 ## Main thread role
 
 1. Resolve the supplied PR, or infer it from the current branch. If none exists, load [create-pr](../create-pr/SKILL.md) and continue only with the PR it read back from the provider.
-2. Look for an existing babysitter: `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"`, keeping only a thread whose title is exactly `Babysit PR <owner>/<repo>#<number>` (#34 also matches #347, and other repositories reuse numbers). If an unsettled one exists, send it the new request with `t3_thread_send` and stop. One babysitter per PR.
+2. Look for an existing babysitter: `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"`, keeping only a thread whose title is exactly `Babysit PR <owner>/<repo>#<number>` (#34 also matches #347, and other repositories reuse numbers). If an unsettled one exists, send it the new request with `t3_thread_send` and stop, unless its only run failed with a model-access error: that babysitter never started, so retire it (step 4) and launch a new one. One babysitter per PR.
 3. Otherwise launch one with `t3_thread_launch`:
    - `title`: `Babysit PR <owner>/<repo>#<number>` (base repository)
    - `modelSelection`: a small, fast model. Try `gpt-6-luna`, then `claude-haiku-5-5`, then the cheapest other general-purpose model, taking the first that the live catalog (`orchestrator_capabilities`) lists. For that fallback, `node <plugin root>/scripts/models.js luna` and `--frontier` (the plugin root is two directories above this skill file) show intelligence for the price when `ARTIFICIAL_ANALYSIS_API_KEY` is set; prefer a runnable model with a similar score. Set its provider instance with it.
    - `workspaceStrategy`: a new worktree from the PR head (`branch: babysit/pr-<number>`). Same-repository PR: `baseRef` is the head branch, `startFromOrigin: true`. Fork PR: the head branch is not on `origin`, so first fetch it (`git fetch <fork remote> <head ref>`) and use the fetched local ref or head SHA as `baseRef` with `startFromOrigin: false`. If the branch already exists, bind its existing worktree from `t3_worktree_list` instead.
    - `message`: the brief below.
-   Launch has no retry key. If the result is uncertain, check `t3_thread_list` before retrying. A listed model can still be refused by the provider: if the babysitter's first turn fails with a model-access error, settle that thread and relaunch with the next model in the order above.
-4. Tell the user the babysitter's thread, then end the turn. Do not wait for it.
+   Launch has no retry key. If the result is uncertain, check `t3_thread_list` before retrying.
+4. Check startup once. A listed model can still be refused by the provider, and a launched thread does not report its failure back. Call `t3_thread_wait` with the launch's `threadId` and `runId` and `timeoutMs: 120000`; a timeout does not cancel the babysitter. Wait only this once:
+   - `failed`: read the thread with `t3_thread_read` (`view: "activity"`). On a model-access error (for example "There's an issue with the selected model… you may not have access to it"), retire the thread and relaunch with the next model in the order above, then check that launch the same way. On any other failure, retire it and report the error to the user instead of relaunching.
+   - Any other status, including a timeout: tell the user the babysitter's thread, then end the turn.
+
+   Retire a failed thread so the lookup in step 2 no longer finds it: rename it with `t3_thread_update` (`action: "rename"`) to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle it with `t3_thread_organize` if this harness has that tool. Renaming works on every T3 build; settling does not.
 5. Forward the user's later instructions for this PR to the babysitter with `t3_thread_send`: answers to its input-needed messages, merge authorization, or `STOP` (`mode: "auto"`, since an idle babysitter has no turn to steer) when the user asks to stop.
 
 If thread launch or PR watching is unavailable in this harness, report the missing capability and stop. Never substitute foreground maintenance, a polling loop, a sleep, or a new scheduler.
@@ -51,7 +55,7 @@ Constraints: <repository instructions and machine resource limits that apply>.
 
 **Waiting for input.** After sending input needed, keep handling other feedback; act on that item once the main thread forwards the user's answer.
 
-**Stop.** On `STOP` or PR closure, call `unwatch_pull_request` (a watch that already ended on closure is not a failure), send the final state, and settle this thread. A later wake after a stop does nothing.
+**Stop.** On `STOP` or PR closure, call `unwatch_pull_request` (a watch that already ended on closure is not a failure), send the final state, and retire this thread: rename it to `Retired babysitter for <owner>/<repo>#<number> (<merged|closed|stopped>)` with `t3_thread_update` (`action: "rename"`, no `threadId`), then settle it with `t3_thread_organize` if available. A later wake after a stop does nothing.
 
 ## Boundaries
 

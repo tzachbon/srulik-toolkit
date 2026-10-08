@@ -22,7 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.4.1":
+if version != "1.4.2":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -188,6 +188,15 @@ pr_babysit_contract = [
     "PR events never wake the main thread",
     "Try `gpt-6-luna`, then `claude-haiku-5-5`",
     "model-access error",
+    "Check startup once",
+    "`t3_thread_wait` with the launch's `threadId` and `runId` and `timeoutMs: 120000`",
+    "a timeout does not cancel the babysitter",
+    "retire the thread and relaunch with the next model in the order above",
+    "On any other failure, retire it and report the error to the user instead of relaunching",
+    "unless its only run failed with a model-access error",
+    "rename it with `t3_thread_update` (`action: \"rename\"`) to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`",
+    "Renaming works on every T3 build; settling does not",
+    "then settle it with `t3_thread_organize` if available",
     "t3_thread_launch",
     "watch_pull_request",
     "One babysitter per PR",
@@ -201,9 +210,9 @@ pr_babysit_contract = [
 ]
 if not all(token in pr_babysit for token in pr_babysit_contract):
     raise SystemExit("pr-babysit is missing its babysitter-thread contract")
-for removed in ['mode: "async"', "The parent owns the listener"]:
+for removed in ['mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread"]:
     if removed in pr_babysit:
-        raise SystemExit(f"pr-babysit still contains the parent-owned listener design: {removed}")
+        raise SystemExit(f"pr-babysit still contains a retired design: {removed}")
 if "Leave questions awaiting an answer open" in pr_babysit:
     raise SystemExit("pr-babysit must not leave review questions unresolved")
 star_contract = [
