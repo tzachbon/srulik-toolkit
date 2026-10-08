@@ -307,9 +307,11 @@ if not all(token in agents_guide for token in agents_contract):
 if "[AGENTS.md](AGENTS.md)" not in (root / "CONTRIBUTING.md").read_text(encoding="utf-8"):
     raise SystemExit("CONTRIBUTING.md must point contributors to AGENTS.md")
 # Lifecycle matrix: every T3 run status maps to exactly one class, and the core table defines every class.
-t3_rows = dict(re.findall(r"^\| ([^|]*`[a-z_]+`[^|]*) \| (Refused|Dead|Pending) \|$", pr_babysit_t3, re.MULTILINE))
+t3_rows = re.findall(r"^\| ([^|]*`[a-z_]+`[^|]*) \| (Refused|Dead|Pending) \|$", pr_babysit_t3, re.MULTILINE)
+if len({condition for condition, _ in t3_rows}) != len(t3_rows):
+    raise SystemExit(f"pr-babysit T3 classification has duplicate condition rows: {t3_rows}")
 t3_class = {}
-for statuses, klass in t3_rows.items():
+for statuses, klass in t3_rows:
     for status in re.findall(r"`([a-z_]+)`", statuses):
         t3_class.setdefault(status, set()).add(klass)
 expected_t3 = {"failed": {"Refused", "Dead"}, "completed": {"Dead"}, "cancelled": {"Dead"}, "interrupted": {"Dead"},
