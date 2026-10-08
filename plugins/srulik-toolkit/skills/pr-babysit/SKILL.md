@@ -24,7 +24,7 @@ Settling or archiving a thread is optional. Before starting, read the reference 
 
 - T3 Code: [references/t3-code.md](references/t3-code.md)
 
-For another host, map each capability to its own tools, show the user the mapping, say that this host has no tested reference, and launch only after the user confirms. If capability 1, 2, 3, or 4 is missing, report which one and stop. Never substitute foreground maintenance, a polling loop, a sleep, or a new scheduler. If only capability 6 is missing, launch anyway and tell the user that startup is unverified. If capability 5 is missing, retire threads by settling or archiving them where the host's lookup skips those; otherwise tell the user which failed thread to remove by hand.
+For another host, map each capability to its own tools, show the user the mapping, say that this host has no tested reference, and launch only after the user confirms. If capability 1, 2, 3, or 4 is missing, report which one and stop. Never substitute foreground maintenance, a polling loop, a sleep, or a new scheduler. If only capability 6 is missing, launch anyway and tell the user that startup is unverified. If capability 5 is missing, retire threads by settling or archiving them where the host's lookup skips those; otherwise tell the user which failed thread to remove by hand and stop. Relaunch only on a later request, after the lookup in step 2 no longer finds that thread.
 
 ## Main thread role
 

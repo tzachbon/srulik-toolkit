@@ -195,6 +195,7 @@ pr_babysit_contract = [
     "If capability 1, 2, 3, or 4 is missing, report which one and stop",
     "If only capability 6 is missing, launch anyway and tell the user that startup is unverified",
     "If capability 5 is missing, retire threads by settling or archiving them",
+    "Relaunch only on a later request, after the lookup in step 2 no longer finds that thread",
     "Try `gpt-6-luna`, then `claude-haiku-5-5`",
     "Check startup once",
     "Wait once, for up to 2 minutes, for the first run's outcome; a timeout does not cancel the babysitter",
