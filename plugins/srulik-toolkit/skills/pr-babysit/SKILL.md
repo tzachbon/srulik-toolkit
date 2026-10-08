@@ -13,7 +13,7 @@ The main thread never owns the PR watch and never runs maintenance passes. One d
 
 A thread here is an independent agent conversation the host runs in the background. This skill needs a host that can:
 
-1. Launch a thread with a chosen model, its own checkout, a title, and a first message.
+1. List the models it can run, and launch a thread with a chosen model, its own checkout, a title, and a first message.
 2. Give that thread a native PR watch that wakes it on new comments, reviews, check results, and conflicts, and let another thread check whether that watch is active.
 3. Send a message to another thread.
 4. List threads by exact title, across every page of results.

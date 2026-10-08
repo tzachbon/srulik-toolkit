@@ -187,7 +187,7 @@ pr_babysit_contract = [
     "The main thread never owns the PR watch",
     "PR events never wake the main thread",
     "## Host capabilities",
-    "Launch a thread with a chosen model, its own checkout, a title, and a first message",
+    "List the models it can run, and launch a thread with a chosen model, its own checkout, a title, and a first message",
     "Give that thread a native PR watch",
     "- T3 Code: [references/t3-code.md](references/t3-code.md)",
     "For another host, map each capability to its own tools, show the user the mapping, say that this host has no tested reference, and launch only after the user confirms",
@@ -242,7 +242,7 @@ for removed in ['mode: "async"', "The parent owns the listener", "Do not wait fo
         raise SystemExit(f"pr-babysit still contains a retired design: {removed}")
 pr_babysit_t3_contract = [
     "[host capability](../SKILL.md#host-capabilities)",
-    "| 1. Launch a thread | `t3_thread_launch` |",
+    "| 1. Runnable models and launch | `orchestrator_capabilities`, `t3_thread_launch` |",
     "| 2. Native PR watch | `link_pull_request`, `watch_pull_request`, `unwatch_pull_request`; another thread checks it with `list_thread_pull_requests` and `threadId` |",
     "| 3. Message a thread | `t3_thread_send` |",
     "| 4. List threads by title | `t3_thread_list`, paging with `cursor` |",

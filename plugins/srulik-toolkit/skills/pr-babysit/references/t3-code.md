@@ -4,7 +4,7 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 
 | Capability | T3 Code |
 | --- | --- |
-| 1. Launch a thread | `t3_thread_launch` |
+| 1. Runnable models and launch | `orchestrator_capabilities`, `t3_thread_launch` |
 | 2. Native PR watch | `link_pull_request`, `watch_pull_request`, `unwatch_pull_request`; another thread checks it with `list_thread_pull_requests` and `threadId` |
 | 3. Message a thread | `t3_thread_send` |
 | 4. List threads by title | `t3_thread_list`, paging with `cursor` |
