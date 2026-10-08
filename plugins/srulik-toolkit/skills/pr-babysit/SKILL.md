@@ -20,7 +20,7 @@ The main thread never owns the PR watch and never runs maintenance passes. One d
    - `message`: the brief below.
    Launch has no retry key. If the result is uncertain, check `t3_thread_list` before retrying.
 4. Check startup once. A listed model can still be refused by the provider, and a launched thread does not report its failure back. Call `t3_thread_wait` with the launch's `threadId` and `runId` and `timeoutMs: 120000`; a timeout does not cancel the babysitter. Wait only this once:
-   - `failed`: read the thread with `t3_thread_read` (`view: "activity"`). On a model-access error (for example "There's an issue with the selected model… you may not have access to it"), retire the thread and relaunch with the next model in the order above, then check that launch the same way. On any other failure, retire it and report the error to the user instead of relaunching.
+   - `failed`: read the thread with `t3_thread_read` (`view: "activity"`). On a model-access error (for example "There's an issue with the selected model… you may not have access to it"), retire the thread and relaunch with the next model in the order above, then check that launch the same way. When every candidate has been refused, report the refusals to the user and stop. On any other failure, retire it and report the error to the user instead of relaunching.
    - Any other status, including a timeout: tell the user the babysitter's thread, then end the turn.
 
    Retire a failed thread so the lookup in step 2 no longer finds it: rename it with `t3_thread_update` (`action: "rename"`) to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle it with `t3_thread_organize` if this harness has that tool. Renaming works on every T3 build; settling does not.

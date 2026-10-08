@@ -193,6 +193,7 @@ pr_babysit_contract = [
     "a timeout does not cancel the babysitter",
     "retire the thread and relaunch with the next model in the order above",
     "On any other failure, retire it and report the error to the user instead of relaunching",
+    "When every candidate has been refused, report the refusals to the user and stop",
     "unless its only run failed with a model-access error",
     "rename it with `t3_thread_update` (`action: \"rename\"`) to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`",
     "Renaming works on every T3 build; settling does not",
