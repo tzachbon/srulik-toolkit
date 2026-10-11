@@ -12,11 +12,17 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 | 6. Run status and errors | `status` from `t3_thread_list` or `t3_thread_wait`; errors from `t3_thread_read`; interrupt with `t3_thread_interrupt` |
 | Optional: settle | `t3_thread_organize` with `action: "settle"` |
 
+## Execution form
+
+Prefer a delegated subagent only when it can satisfy the core's independent watch and lifetime requirements. The current `watch_pull_request` tool explicitly says: "A subagent cannot watch: its parent thread owns the pull request." Although `delegate_task` can launch a child, it cannot give that child the required watch on this build. Do not substitute a parent-owned watch or event relay.
+
+Use `t3_thread_launch` for the separate top-level fallback only after the user explicitly authorizes a separate babysitter conversation. Without that authorization, report the subagent-watch limitation and ask before launching. If a future build supports child-owned persistent watches, verify every host capability and document/test its delegation lifecycle before claiming that path is supported. The mapping below describes the current top-level fallback.
+
 ## Main thread
 
-**Lookup (step 2).** Call `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"` and keep only a thread whose `title` matches exactly. Results are paginated: pass each response's `nextCursor` as `cursor` until it is `null`, so an exact match on a later page is not missed. An active babysitter is one that is not settled (`settled: false`). Classify it as below, and send a request with `t3_thread_send` and `mode: "auto"` only when it is Watching.
+**Lookup (step 2).** Call `t3_thread_list` with `titleContains: "Babysit PR <owner>/<repo>#<number>"`, `includeSubagents: true`, and keep only a thread whose `title` matches exactly. Results are paginated: pass each response's `nextCursor` as `cursor` until it is `null`, so an exact match on a later page is not missed. An active babysitter is one that is not settled (`settled: false`). Classify it as below, and send a request with `t3_thread_send` and `mode: "auto"` only when it is Watching.
 
-**Launch (step 3).** Call `orchestrator_capabilities` for the runnable catalog. It also lists disabled or uninstalled provider instances, some with models, so use only instances whose `constraints` list is empty. Then call `t3_thread_launch`:
+**Launch (step 3).** Confirm the fallback authorization above. Call `orchestrator_capabilities` for the runnable catalog. It also lists disabled or uninstalled provider instances, some with models, so use only instances whose `constraints` list is empty. Then call `t3_thread_launch`:
 
 - `title`: `Babysit PR <owner>/<repo>#<number>`
 - `modelSelection`: the chosen model with its `instanceId`, for example `{ "instanceId": "codex", "model": "gpt-6-luna" }` or `{ "instanceId": "claudeAgent", "model": "claude-haiku-5-5" }`. Use the instance IDs the catalog lists on this host.
@@ -65,3 +71,5 @@ Observed on one T3 Code host on 2026-10-08 with controlled probe threads in a sc
 - `list_thread_pull_requests` with another thread's `threadId` returned that thread's PR list, empty for a probe thread that registered no PR.
 
 Not observed: a full babysitter following this skill on a real PR, `watching: true` reported for a babysitter thread, and T3 builds without `t3_thread_organize` or `t3_thread_update`.
+
+Rechecked against the live T3 tool catalog on 2026-10-11: `delegate_task` is available, `t3_thread_list` accepts `includeSubagents`, and `watch_pull_request` still explicitly rejects subagent ownership. A child-owned persistent watch remains unsupported on that build; the preference does not claim otherwise.

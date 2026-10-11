@@ -22,7 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.4.2":
+if version != "1.4.3":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -184,6 +184,16 @@ if not all(token in technical_design_contract for token in [
 if not all(token in readme for token in ['"smallest correct plan"', '"smallest correct implementation"']):
     raise SystemExit("README is missing the keep-it-simple planning or implementation flow")
 pr_babysit_contract = [
+    "Prefer a delegated subagent when it meets every capability below",
+    "it owns its native PR watch, receives events independently, and keeps listening after its initial run and the main thread's turn end",
+    "Delegation alone does not prove persistent monitoring",
+    "use a separate top-level babysitter conversation only when the user explicitly authorizes that fallback",
+    "Otherwise report the missing capability and ask for that authorization before launching",
+    "The main thread still never owns the watch or forwards watch events to a child",
+    "Both forms use the same startup, lookup, forwarding, and retirement rules",
+    "including subagents and separate conversations",
+    "Execution: prefer a delegated subagent that meets Host capabilities; otherwise use the explicitly authorized separate-conversation fallback",
+    "Retain its task and conversation identifiers for status, follow-up requests, and cancellation",
     "The main thread never owns the PR watch",
     "PR events never wake the main thread",
     "## Host capabilities",
@@ -237,10 +247,18 @@ t3_only = re.findall(r"t3_[a-z_]+|_pull_request\b|orchestrator_capabilities|dele
 if t3_only:
     raise SystemExit(f"pr-babysit core must stay host-agnostic; move these to references/t3-code.md: {sorted(set(t3_only))}")
 pr_babysit_t3 = (skill_root / "pr-babysit" / "references" / "t3-code.md").read_text(encoding="utf-8")
-for removed in ['mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread", "or the wait timed out: the babysitter started", "Renaming is the required step", "If only capability 6 is missing, launch anyway", "A babysitter with more runs started", "the babysitter started", "ordinal: 1", "raise `runLimit`", "| `completed`, `running` | Started. |"]:
+for removed in ["A thread here is an independent agent conversation", 'mode: "async"', "The parent owns the listener", "Do not wait for it", "settle that thread", "and settle this thread", "or the wait timed out: the babysitter started", "Renaming is the required step", "If only capability 6 is missing, launch anyway", "A babysitter with more runs started", "the babysitter started", "ordinal: 1", "raise `runLimit`", "| `completed`, `running` | Started. |"]:
     if removed in pr_babysit + pr_babysit_t3:
         raise SystemExit(f"pr-babysit still contains a retired design: {removed}")
 pr_babysit_t3_contract = [
+    "A subagent cannot watch: its parent thread owns the pull request",
+    "Although `delegate_task` can launch a child, it cannot give that child the required watch on this build",
+    "Do not substitute a parent-owned watch or event relay",
+    "only after the user explicitly authorizes a separate babysitter conversation",
+    "Without that authorization, report the subagent-watch limitation and ask before launching",
+    "verify every host capability and document/test its delegation lifecycle before claiming that path is supported",
+    "`includeSubagents: true`",
+    "Confirm the fallback authorization above",
     "[host capability](../SKILL.md#host-capabilities)",
     "| 1. Runnable models and launch | `orchestrator_capabilities`, `t3_thread_launch` |",
     "| 2. Native PR watch | `link_pull_request`, `watch_pull_request`, `unwatch_pull_request`; another thread checks it with `list_thread_pull_requests` and `threadId` |",
@@ -284,6 +302,12 @@ pr_babysit_t3_contract = [
 if not all(token in pr_babysit_t3 for token in pr_babysit_t3_contract):
     missing = [token for token in pr_babysit_t3_contract if token not in pr_babysit_t3]
     raise SystemExit(f"pr-babysit T3 Code reference is missing its implementation contract: {missing}")
+if not all(token in readme for token in [
+    "`pr-babysit` prefers a delegated subagent",
+    "with your explicit authorization. T3 Code currently requires this fallback",
+    "because subagents cannot own PR watches",
+]):
+    raise SystemExit("README is missing the pr-babysit preference and fallback contract")
 agents_guide = (root / "AGENTS.md").read_text(encoding="utf-8")
 for link in re.findall(r"\]\(([^)#]+)", agents_guide):
     if not (root / link).exists():
