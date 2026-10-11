@@ -90,7 +90,7 @@ and trust the new `Stop` hook through `/hooks` after updating the plugin.
 | [`tour`](plugins/srulik-toolkit/skills/tour/SKILL.md) | Research a topic's history and current flow as a sourced visual narrative. |
 | [`show-me`](plugins/srulik-toolkit/skills/show-me/SKILL.md) | Explain the current topic with concise diagrams and focused visual artifacts. |
 | [`stop-slop`](plugins/srulik-toolkit/skills/stop-slop/SKILL.md) | Edit prose for direct language while preserving facts and uncertainty. |
-| [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Hand a pull request to a dedicated low-cost babysitter thread that fixes conflicts, review feedback, and CI until closure, messaging you only when needed. |
+| [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Hand a pull request to a dedicated low-cost babysitter, preferably a subagent, that fixes conflicts, review feedback, and CI until closure, messaging you only when needed. |
 | [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
 | [`fix-ci`](plugins/srulik-toolkit/skills/fix-ci/SKILL.md) | Diagnose failing checks, apply the smallest repair, and verify the result. |
 | [`retro`](plugins/srulik-toolkit/skills/retro/SKILL.md) | Learn from a coding session and propose evidence-backed improvements to the agent's environment. Adapted from Matt Pocock. |
@@ -178,8 +178,11 @@ for human review; a retrospective alone does not authorize environment changes.
 - `create-pr`, `pr-babysit`, and `fix-ci` can use an authenticated GitHub CLI
   or an equivalent connector for checks, logs, and pull requests. Local checks
   use the project toolchain.
-- `pr-babysit` requires a host that can launch a separate background thread and
-  give it a native PR watch. The skill lists the capabilities it needs; T3 Code's
+- `pr-babysit` prefers a delegated subagent that owns a persistent native PR
+  watch and keeps listening after its initial run and the parent turn end.
+  When that is unavailable, it uses a separate babysitter conversation only
+  with your explicit authorization. T3 Code currently requires this fallback
+  because subagents cannot own PR watches. The skill lists the capabilities it needs; T3 Code's
   tool mapping is in
   [`plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md`](plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md),
   and other hosts

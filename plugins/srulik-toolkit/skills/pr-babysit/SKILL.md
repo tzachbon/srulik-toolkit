@@ -1,6 +1,6 @@
 ---
 name: pr-babysit
-description: Babysit a pull request from a dedicated low-cost background thread that owns the PR watch and resolves compatible conflicts, review feedback, and PR-caused CI failures, messaging the main thread only when needed. Use when asked to babysit or monitor a PR through CI and review, including new feedback after checks pass.
+description: Babysit a pull request with a dedicated low-cost background agent, preferably a subagent, that owns the PR watch and resolves compatible conflicts, review feedback, and PR-caused CI failures, messaging the main thread only when needed. Use when asked to babysit or monitor a PR through CI and review, including new feedback after checks pass.
 ---
 
 # Babysit a pull request
@@ -11,7 +11,11 @@ The main thread never owns the PR watch and never runs maintenance passes. One d
 
 ## Host capabilities
 
-A thread here is an independent agent conversation the host runs in the background. This skill needs a host that can:
+A thread here is an agent conversation the host runs in the background, either a delegated subagent or a separate top-level conversation. Prefer a delegated subagent when it meets every capability below: it owns its native PR watch, receives events independently, and keeps listening after its initial run and the main thread's turn end. Delegation alone does not prove persistent monitoring.
+
+If a subagent cannot meet those requirements, use a separate top-level babysitter conversation only when the user explicitly authorizes that fallback. Otherwise report the missing capability and ask for that authorization before launching. The main thread still never owns the watch or forwards watch events to a child. Both forms use the same startup, lookup, forwarding, and retirement rules.
+
+This skill needs a host that can:
 
 1. List the models it can run, and launch a thread with a chosen model, its own checkout, a title, and a first message.
 2. Give that thread a native PR watch that wakes it on new comments, reviews, check results, and conflicts, and let another thread check whether that watch is active.
@@ -42,8 +46,9 @@ Send requests only to a Watching babysitter. Requests sent earlier queue behind 
 ## Main thread role
 
 1. Resolve the supplied PR, or infer it from the current branch. If none exists, load [create-pr](../create-pr/SKILL.md) and continue only with the PR it read back from the provider.
-2. Look for an existing babysitter: list threads whose title is exactly `Babysit PR <owner>/<repo>#<number>`. Filter for the exact title, since a prefix search for #34 also matches #347 and other repositories reuse numbers, and read every page of results before concluding none exists. If an active one exists, classify it. Watching: send it the new request and stop. Pending: tell the user it has not confirmed its PR watch, so the request was not delivered and should be repeated later; if it is waiting on an approval or question, they can answer in its thread. Then stop. Refused or Dead: act as the table says. One babysitter per PR.
+2. Look for an existing babysitter: list threads whose title is exactly `Babysit PR <owner>/<repo>#<number>`, including subagents and separate conversations. Filter for the exact title, since a prefix search for #34 also matches #347 and other repositories reuse numbers, and read every page of results before concluding none exists. If an active one exists, classify it. Watching: send it the new request and stop. Pending: tell the user it has not confirmed its PR watch, so the request was not delivered and should be repeated later; if it is waiting on an approval or question, they can answer in its thread. Then stop. Refused or Dead: act as the table says. One babysitter per PR.
 3. Otherwise launch one:
+   - Execution: prefer a delegated subagent that meets Host capabilities; otherwise use the explicitly authorized separate-conversation fallback. Retain its task and conversation identifiers for status, follow-up requests, and cancellation.
    - Title: `Babysit PR <owner>/<repo>#<number>` (base repository).
    - Model: a small, fast model. Try `gpt-6-luna`, then `claude-haiku-5-5`, then the cheapest other general-purpose model, taking the first that the host's runnable-model catalog lists. For that fallback, `node <plugin root>/scripts/models.js luna` and `--frontier` (the plugin root is two directories above this skill file) show intelligence for the price when `ARTIFICIAL_ANALYSIS_API_KEY` is set; prefer a runnable model with a similar score.
    - Checkout: a new worktree of the PR head on branch `babysit/pr-<number>`. For a fork PR, fetch the head ref from the fork first; it is not on `origin`. If the branch already exists, reuse its worktree.
