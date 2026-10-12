@@ -16,15 +16,25 @@ do not launch a separate top-level conversation.
    owner records cannot be inspected, block instead of assuming there is no owner.
 2. For each verified PR-dedicated owner, check stop authority and narrower limits.
    Send a scoped `STOP` using `t3_thread_send` with `mode: "auto"`, covering both
-   maintenance and merging. For an unconfirmed pending launch, interrupt its run
+   maintenance and merging. Require the owning thread to cancel its verified
+   PR-specific delegated writers with `task_cancel` and verify with `task_status`.
+   Both tools are parent-scoped; the new main must not use the prior owner's
+   task IDs with them. The owner must return task IDs, child thread IDs, terminal
+   task status and `hasPendingChildRuns: false` evidence before retirement.
+   If the owner cannot cancel its writers or supply verifiable evidence, block;
+   interrupting or retiring the parent alone does not prove its children stopped.
+   For an unconfirmed pending launch, interrupt its run
    with `t3_thread_interrupt` instead of queuing STOP behind startup. Remove any
    remaining watch with `unwatch_pull_request` and that owner's explicit
-   `threadId`; cancel its verified delegated writer tasks with `task_cancel`.
+   `threadId`.
    Never interrupt a mixed-purpose thread or discard its dirty/unpublished work.
 3. Wait once with `t3_thread_wait`, the retained `runId` and `timeoutMs: 60000`.
    A timeout or `interrupt_requested` is not retirement. Re-read `t3_thread_read`
-   and task status: require no `activeRunId`, no queued/pending writer work, and
-   ended writer tasks. Retire the dedicated owner through verified rename and
+   for the owner and each reported child: verify `parentThreadId` associations,
+   require no `activeRunId`, no queued/pending writer work, and ended writer tasks.
+   Check owner-provided task evidence against these cross-thread reads; missing
+   or inaccessible child state blocks handoff. Retire the dedicated owner through
+   verified rename and
    settlement or archive capabilities; if retirement cannot prevent further
    automatic wakes, block. A renamed thread alone does not prove it stopped.
 4. Refresh discovery and verify each former owner's watch is absent/inactive with

@@ -134,9 +134,20 @@ for token in [
     "previous merge authority is not transferred",
     "Do not register the main watch or write to the PR while this gate is blocked",
     "Only after the ownership handoff passes",
+    "Require the owning thread to cancel its verified",
+    "PR-specific delegated writers with `task_cancel` and verify with `task_status`",
+    "Both tools are parent-scoped; the new main must not use the prior owner's",
+    "task IDs, child thread IDs, terminal",
+    "`hasPendingChildRuns: false` evidence before retirement",
+    "If the owner cannot cancel its writers or supply verifiable evidence, block",
+    "verify `parentThreadId` associations",
+    "Check owner-provided task evidence against these cross-thread reads",
+    "or inaccessible child state blocks handoff",
 ]:
     if token not in end_to_end_t3:
         raise SystemExit(f"end-to-end host contract missing: {token}")
+if "cancel its verified delegated writer tasks with `task_cancel`" in end_to_end_t3:
+    raise SystemExit("end-to-end handoff must not cancel another parent's delegated tasks directly")
 for text in [end_to_end, end_to_end_t3]:
     if "BLOCKED: ownership handoff unverified" not in text:
         raise SystemExit("end-to-end ownership handoff must block on unverified retirement")
