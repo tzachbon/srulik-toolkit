@@ -93,8 +93,10 @@ for token in [
     if token not in end_to_end:
         raise SystemExit(f"end-to-end completion contract missing: {token}")
 for dependency in ["create-plan", "create-pr", "pr-babysit"]:
-    if f"../{dependency}/SKILL.md" not in end_to_end:
-        raise SystemExit(f"end-to-end workflow must link {dependency}")
+    if f"$srulik-toolkit:{dependency}" not in end_to_end:
+        raise SystemExit(f"end-to-end workflow must invoke {dependency} by name")
+if re.search(r"\]\(\.\./[^)]+/SKILL\.md\)", end_to_end):
+    raise SystemExit("end-to-end workflow must use skill invocation names instead of relative links")
 for token in ["T3 Code", "Codex", "Claude", "Luna", "watch_pull_request", "delegate_task", "clientRequestId", "task_cancel", "Keep listening until closure or user STOP"]:
     if token in end_to_end:
         raise SystemExit(f"host-specific or obsolete end-to-end core instruction: {token}")
