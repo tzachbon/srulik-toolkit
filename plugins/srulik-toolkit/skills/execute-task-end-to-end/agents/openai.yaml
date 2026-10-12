@@ -1,0 +1,5 @@
+interface:
+  display_name: "Execute Task End to End"
+  short_description: "Drive a task's PR to MERGE READY or authorized MERGED"
+policy:
+  allow_implicit_invocation: false
