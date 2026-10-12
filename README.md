@@ -9,7 +9,7 @@
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Eighteen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
+**Nineteen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
@@ -49,7 +49,7 @@ installation or a hook change; installing the plugin alone does not grant it.
 
 ## Startup hint
 
-On a new session, the plugin writes the eighteen skill names and a short routing
+On a new session, the plugin writes the nineteen skill names and a short routing
 instruction to model context. It uses the default `hooks/hooks.json` location
 and runs only for `SessionStart` with the `startup` matcher. It does not run on
 each prompt or skill invocation.
@@ -81,6 +81,7 @@ and trust the new `Stop` hook through `/hooks` after updating the plugin.
 | [`create-plan`](plugins/srulik-toolkit/skills/create-plan/SKILL.md) | Research and pressure-test a task, then write a detailed plan with concrete steps, rationale, requirement traceability, and verification. |
 | [`implement-plan`](plugins/srulik-toolkit/skills/implement-plan/SKILL.md) | Execute an approved engineering plan, integrate dependency-ready tasks, and verify the complete outcome. |
 | [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request with review evidence, merge danger, and blast radius. |
+| [`execute-task-end-to-end`](plugins/srulik-toolkit/skills/execute-task-end-to-end/SKILL.md) | Explicitly request the full workflow: plan, issue, implementation, and a PR driven to `MERGE READY`, or verified `MERGED` when authorized. |
 | [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a local diff, branch, or pull request without changing it. |
 | [`stay-in-scope`](plugins/srulik-toolkit/skills/stay-in-scope/SKILL.md) | Re-establish the requested boundary when work starts to drift. |
 | [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. |
@@ -101,6 +102,7 @@ Example prompts:
 $can-you-help Here is a Slack thread. Can you help?
 $create-plan Add offline support to this app
 $implement-plan Execute the approved plan in docs/offline-plan.md
+$execute-task-end-to-end Add offline support and drive its PR to MERGE READY
 $create-pr Open a pull request for the current changes
 $review-pro-max Review the changes on my current branch
 $tdd Implement expiration for cached sessions
@@ -113,6 +115,7 @@ $retro Review this session and suggest environment improvements
 
 Claude Code may expose skills as slash commands. Codex uses `$skill-name`.
 Plain-language requests can trigger a matching skill in either tool.
+`execute-task-end-to-end` requires explicit invocation.
 
 ## How the toolkit fits together
 
@@ -134,6 +137,16 @@ flowchart LR
     K["tour"] --> L["research"]
     K --> M["show-me"]
 ```
+
+`execute-task-end-to-end` makes PR creation and verified readiness its primary
+Definition of Done. A plan, local changes, PR creation, or green CI alone is
+intermediate progress. The main agent owns monitoring and fixes; a read-only
+child filters event batches. Without merge authority, completion is `MERGE READY`
+with current-head evidence and monitoring stopped. Explicit merge authority
+requires verified `MERGED` and linked issue closure. Pending checks, missing
+approvals and inaccessible evidence remain incomplete. This workflow overrides
+`pr-babysit`'s default ownership and stop conditions; it creates no separate
+top-level babysitter. Full end-to-end runtime behavior remains unverified.
 
 `create-plan` checks installed skills first. For every non-trivial plan, it runs
 one external search per material discipline even when an installed skill covers

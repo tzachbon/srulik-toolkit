@@ -22,7 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.4.3":
+if version != "1.5.0":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -31,6 +31,7 @@ expected = {
     "create-plan",
     "implement-plan",
     "create-pr",
+    "execute-task-end-to-end",
     "stay-in-scope",
     "agent-swarm",
     "tdd",
@@ -66,6 +67,52 @@ for skill_name in sorted(expected):
         raise SystemExit(f"wrong skill name: {skill_file.relative_to(root)}")
     if not re.search(r"^description:\s*\S", match.group(1), re.MULTILINE):
         raise SystemExit(f"missing skill description: {skill_file.relative_to(root)}")
+
+end_to_end = (skill_root / "execute-task-end-to-end" / "SKILL.md").read_text(encoding="utf-8")
+end_to_end_t3 = (skill_root / "execute-task-end-to-end" / "references" / "t3-code.md").read_text(encoding="utf-8")
+end_to_end_ui = (skill_root / "execute-task-end-to-end" / "agents" / "openai.yaml").read_text(encoding="utf-8")
+for token in [
+    "Creating a PR and driving it to the terminal Definition of Done",
+    "**`MERGE READY` without merge authority:**",
+    "**`MERGED` with explicit merge authority:**",
+    "acceptance criteria pass at the current head",
+    "successful required checks, satisfied review requirements, zero unresolved review conversations",
+    "no unaddressed actionable human or bot findings",
+    "`MERGE READY` is intermediate progress when merging is authorized",
+    "These states do not satisfy the Definition of Done",
+    "Carry the primary Definition of Done above into the plan",
+    "continue immediately to maintenance",
+    "the main agent owns the native watch and all fixes",
+    "a read-only child filters bounded event batches and never edits or merges",
+    "Without merge authority, clean up monitoring and hand back `MERGE READY`",
+    "With merge authority, continue immediately to step 6",
+    "Recheck every `MERGE READY` condition immediately before merging",
+    "Never force-push, bypass checks, or enable auto-merge",
+    "on an undocumented host show the capability mapping, label it untested and obtain confirmation",
+]:
+    if token not in end_to_end:
+        raise SystemExit(f"end-to-end completion contract missing: {token}")
+for dependency in ["create-plan", "create-pr", "pr-babysit"]:
+    if f"../{dependency}/SKILL.md" not in end_to_end:
+        raise SystemExit(f"end-to-end workflow must link {dependency}")
+for token in ["T3 Code", "Codex", "Claude", "Luna", "watch_pull_request", "delegate_task", "clientRequestId", "task_cancel", "Keep listening until closure or user STOP"]:
+    if token in end_to_end:
+        raise SystemExit(f"host-specific or obsolete end-to-end core instruction: {token}")
+if "disable-model-invocation: true" not in end_to_end or "allow_implicit_invocation: false" not in end_to_end_ui:
+    raise SystemExit("end-to-end execution must require explicit invocation")
+for token in [
+    "verify `watching: true`",
+    "one stable `clientRequestId` per batch",
+    "never edit, push, reply or merge",
+    "Keep one active child per PR",
+    "it is not persistent child monitoring",
+    "`unwatch_pull_request`",
+    "`task_cancel`",
+    "verify watch/task state",
+    "has not been exercised in a fresh session",
+]:
+    if token not in end_to_end_t3:
+        raise SystemExit(f"end-to-end host contract missing: {token}")
 
 create_plan = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
 engineering_plan = (skill_root / "create-plan" / "references" / "engineering.md").read_text(encoding="utf-8")
@@ -432,7 +479,7 @@ for harness in ["claude", "codex"]:
     manifest = manifests[f"plugins/srulik-toolkit/.{harness}-plugin/plugin.json"]
     if manifest.get("version") != version or manifest.get("license") != "MIT":
         raise SystemExit(f"wrong {harness} plugin version or license")
-    if not manifest.get("description", "").startswith("Eighteen "):
+    if not manifest.get("description", "").startswith("Nineteen "):
         raise SystemExit(f"stale {harness} plugin skill count")
 if manifests["plugins/srulik-toolkit/.codex-plugin/plugin.json"].get("skills") != "./skills/":
     raise SystemExit("wrong Codex skill discovery path")
@@ -699,8 +746,8 @@ if not all(token in tour for token in tour_contract):
 for skill_name in expected:
     if f"skills/{skill_name}/SKILL.md" not in readme:
         raise SystemExit(f"README is missing skill: {skill_name}")
-if "Eighteen focused skills" not in readme or "/hooks" not in readme:
-    raise SystemExit("README must document eighteen skills and Codex hook trust")
+if "Nineteen focused skills" not in readme or "/hooks" not in readme:
+    raise SystemExit("README must document nineteen skills and Codex hook trust")
 
 outcome_dod_contract = "Outcome and Definition of Done gate"
 create_plan_text = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
