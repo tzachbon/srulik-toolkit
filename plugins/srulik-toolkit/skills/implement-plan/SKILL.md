@@ -92,11 +92,11 @@ evidence.
 
 1. Pin the integrated revision or local snapshot and original review base. Give
    the reviewer the approved plan, scope, acceptance evidence, and prior comments
-   with their dispositions and, after the first round, the previous reviewed
-   snapshot. Review the whole integrated diff in the first round. In later rounds,
-   focus on changes since the previous review and unresolved findings while
-   checking the full plan, original diff, surrounding code, callers, contracts, and
-   tests for their effects.
+   with their dispositions and the last complete reviewed snapshot, if one exists.
+   Until a complete review exists, review the whole integrated diff.
+   In later rounds, focus on changes since the last complete review and unresolved
+   findings while checking the full plan, original diff, surrounding code, callers,
+   contracts, and tests for their effects.
    Broaden back to a full review when changes invalidate earlier coverage. A
    focused round is complete only when it covers those changes, their wider
    effects, and every unresolved actionable comment. Use a fresh independent
