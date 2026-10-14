@@ -50,7 +50,7 @@ Send requests only to a Watching babysitter. Requests sent earlier queue behind 
 3. Otherwise launch one:
    - Execution: prefer a delegated subagent that meets Host capabilities; otherwise use the explicitly authorized separate-conversation fallback. Retain its task and conversation identifiers for status, follow-up requests, and cancellation.
    - Title: `Babysit PR <owner>/<repo>#<number>` (base repository).
-   - Model: a small, fast model. Try `gpt-6-luna`, then `claude-haiku-5-5`, then the cheapest other general-purpose model, taking the first that the host's runnable-model catalog lists. For that fallback, `node <plugin root>/scripts/models.js luna` and `--frontier` (the plugin root is two directories above this skill file) show intelligence for the price from the public Artificial Analysis dataset without an API key; prefer a runnable model with a similar score.
+   - Model: a small, fast model. Try `gpt-6-luna`, then `claude-haiku-5-5`, then the cheapest other general-purpose model, taking the first that the host's runnable-model catalog lists. For fallback comparisons, run `node <plugin root>/scripts/models.js --frontier`; use `node <plugin root>/scripts/models.js luna` only to inspect Luna matches. The plugin root is two directories above this skill file. Both read the public Artificial Analysis dataset without an API key; prefer a runnable model with a similar score.
    - Checkout: a new worktree of the PR head on branch `babysit/pr-<number>`. For a fork PR, fetch the head ref from the fork first; it is not on `origin`. If the branch already exists, reuse its worktree.
    - First message: the brief below.
    If the launch result is uncertain, list threads before retrying; a second launch creates a duplicate babysitter.

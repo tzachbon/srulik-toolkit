@@ -115,8 +115,9 @@ report that constraint instead of substituting another model.
 Run `node <plugin root>/scripts/models.js` before selecting a model; the plugin
 root is two directories above this skill file. It reads the public Artificial
 Analysis dataset without an API key, with a 24-hour cache and background refresh.
-`list --provider <name>` filters creators; `usage` reads the host's `aa-models usage`
-when available, otherwise quota remains unknown. On a fetch failure, use a host
+`list --provider <name>` filters creators; `usage` reads the host's quota adapter
+when available, otherwise quota remains unknown; see [Host usage](references/host-usage.md).
+On a fetch failure, use a host
 benchmark tool or disclose the missing score evidence and use judgment. Check data freshness and
 match scores to the actual reasoning effort, not the family's best score.
 

@@ -4,7 +4,7 @@ const { createDecipheriv, createHash } = require('node:crypto');
 const { gunzipSync } = require('node:zlib');
 const { closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } = require('node:fs');
 const { tmpdir, userInfo } = require('node:os');
-const { dirname, join } = require('node:path');
+const { dirname, isAbsolute, join } = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
 
 const SOURCE = 'https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index';
@@ -223,6 +223,7 @@ async function main() {
   } else if (!updating && args.some(a => a.startsWith('-'))) throw new Error('Unknown option; use --help.');
   const queries = listing || updating ? [] : args;
   selectModels([], queries); // Reject invalid queries before any network request.
+  if (!isAbsolute(path)) throw new Error('Model cache path must be absolute.');
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   if (!providedData && !process.env.AA_MODELS_CACHE) {
     const info = lstatSync(dataRoot);

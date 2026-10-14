@@ -82,21 +82,35 @@ supported in-scope defects under implementation authority, and repeat review and
 fixes until the latest complete review of the current integrated state reports
 zero actionable comments:
 
+Use a default cap of three review rounds per invocation; a user-specified cap
+must be a positive whole number. Record the cap and count every launched review
+attempt, including failed, stale, or timed-out attempts. Preserve the count across
+resumes; fixes do not reset it. At the cap without a clean verdict, stop, report
+incomplete with remaining findings and unreviewed changes, and ask whether to
+continue. Only explicit user continuation grants another budget; retain prior
+evidence.
+
 1. Pin the integrated revision or local snapshot and original review base. Give
    the reviewer the approved plan, scope, acceptance evidence, and prior comments
-   with their dispositions. Review the whole integrated diff, including fixes,
-   rather than only previously flagged lines. Use a fresh independent reviewer
-   per round when available; otherwise disclose the self-review limitation.
+   with their dispositions and, after the first round, the previous reviewed
+   snapshot. Review the whole integrated diff in the first round. In later rounds,
+   focus on changes since the previous review and unresolved findings while
+   checking the full plan, original diff, surrounding code, callers, contracts, and
+   tests for their effects.
+   Broaden back to a full review when changes invalidate earlier coverage. A
+   focused round is complete only when it covers those changes, their wider
+   effects, and every unresolved actionable comment. Use a fresh independent
+   reviewer per round when available; otherwise disclose the self-review limitation.
 2. Separate actionable comments from optional suggestions. Track each actionable
    comment and its resolution. Fix supported in-scope defects; carry evidence for
    disputed findings into the next review. Keep broader proposals separate and
    obtain user authority before expanding scope. An out-of-scope defect that
    prevents acceptance remains a blocker, not an optional suggestion.
 3. After fixes, repeat affected checks and the final acceptance workflow, then
-   request a new complete review of the current integrated state. Continue until
-   zero actionable comments remain. Optional suggestions may remain and do not
-   authorize extra work. Substantive edits after a clean review require another
-   review.
+   request another review within the remaining cap using the coverage rules above.
+   Continue until zero actionable comments remain. Optional suggestions may remain
+   and do not authorize extra work. Substantive edits after a clean review require
+   another review.
 
 A timeout, failed or stale review, unresolved disagreement, missing authority,
 or stalled loop remains incomplete. Report remaining comments and the blocker;

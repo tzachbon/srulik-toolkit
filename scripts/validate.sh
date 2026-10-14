@@ -180,6 +180,9 @@ review_iteration_contracts = {
         "### 10. Run plan QA and iterate review",
         "Gate 11 in `references/quality-gates.md`",
         "latest complete review of the current plan reports zero actionable comments",
+        "three-round default cap and full-context review rules",
+        "review the whole plan first, then focus on revisions and unresolved findings",
+        "at the cap without a clean verdict, report incomplete and ask whether to continue",
         "Optional suggestions may remain",
         "they do not authorize scope expansion",
         "Deliver only after this review gate passes",
@@ -193,13 +196,17 @@ review_iteration_contracts = {
         "read-only reviewer",
         "Use an independent reviewer when available",
         "fresh self-review and disclose that limit",
-        "Review the whole current plan",
+        "Review the whole current plan against Gates 1–10 in the first round",
+        "In later rounds, focus on changes since the previous review and unresolved findings",
+        "checking the full plan, dependencies, and acceptance criteria for their effects",
+        "Broaden back to a full review when changes invalidate earlier coverage",
+        "A focused round is complete only when it covers those changes, their wider effects, and every unresolved actionable comment",
         "Track each actionable comment and its resolution",
         "carry that response into the next review",
         "requires user authority before expanding scope",
         "a blocker, not an optional suggestion",
         "Re-run affected quality gates after fixes",
-        "Request a new complete review of the revised plan",
+        "Request another review within the remaining cap using the coverage rules above",
         "zero actionable comments",
         "Optional suggestions may remain",
         "round count, comment dispositions, final verdict",
@@ -211,7 +218,11 @@ review_iteration_contracts = {
         "../agent-swarm/SKILL.md#model-selection",
         "task complexity and consequences, then remaining usage and cost",
         "original review base",
-        "Review the whole integrated diff, including fixes",
+        "Review the whole integrated diff in the first round",
+        "In later rounds, focus on changes since the previous review and unresolved findings",
+        "checking the full plan, original diff, surrounding code, callers, contracts, and tests for their effects",
+        "Broaden back to a full review when changes invalidate earlier coverage",
+        "focused round is complete only when it covers those changes, their wider effects, and every unresolved actionable comment",
         "fresh independent reviewer per round when available",
         "disclose the self-review limitation",
         "Track each actionable comment and its resolution",
@@ -219,7 +230,7 @@ review_iteration_contracts = {
         "obtain user authority before expanding scope",
         "a blocker, not an optional suggestion",
         "repeat affected checks and the final acceptance workflow",
-        "request a new complete review of the current integrated state",
+        "request another review within the remaining cap using the coverage rules above",
         "zero actionable comments remain",
         "Optional suggestions may remain",
         "Substantive edits after a clean review require another review",
@@ -230,12 +241,18 @@ review_iteration_contracts = {
     "create-plan launcher": (create_plan_openai, [
         "Repeat plan review and revision",
         "zero actionable comments; optional suggestions may remain",
+        "Default to three review rounds unless the user sets another cap",
+        "Review the full plan first; focus later rounds on revisions and unresolved findings while checking full context",
+        "At the cap without a clean verdict, report incomplete and ask whether to continue",
         "Keep fixes within the agreed scope",
         "report unresolved blockers rather than claiming completion",
     ]),
     "implement-plan launcher": (implement_plan_openai, [
         "Repeat implementation review and fixes",
         "zero actionable comments; optional suggestions may remain",
+        "Default to three review rounds unless the user sets another cap",
+        "Review the full change first; focus later rounds on revisions and unresolved findings while checking full context",
+        "At the cap without a clean verdict, report incomplete and ask whether to continue",
         "Keep fixes within the agreed scope",
         "report unresolved blockers rather than claiming completion",
     ]),
@@ -245,6 +262,11 @@ review_iteration_contracts = {
         "Optional suggestions may remain",
         "they do not authorize scope expansion",
         "never count as a clean pass",
+        "Each skill defaults to three review rounds",
+        "Failed attempts count, and fixes or resumes do not reset the budget",
+        "stop, report incomplete with remaining findings, and ask whether to continue",
+        "Later rounds focus on revisions and unresolved findings while checking the full context and wider effects",
+        "changes that invalidate prior coverage require another full review",
         "reasoning effort, task complexity and consequences, remaining usage, then cost",
     ]),
     "task-aware model selection": (agent_swarm, [
@@ -257,7 +279,8 @@ review_iteration_contracts = {
         "Analysis dataset without an API key",
         "24-hour cache and background refresh",
         "`list --provider <name>`",
-        "host's `aa-models usage`",
+        "host's quota adapter",
+        "[Host usage](references/host-usage.md)",
         "otherwise quota remains unknown",
         "match scores to the actual reasoning effort",
         "Choose by task fit, then remaining usage, then cost",
@@ -269,6 +292,10 @@ review_iteration_contracts = {
         "Reassess the choice when review findings reveal greater complexity or usage limits change",
         "report that constraint rather than silently lowering the quality bar",
         "Record the selected model and effort, score evidence, usage limits, and rationale",
+    ]),
+    "host usage reference": ((skill_root / "agent-swarm" / "references" / "host-usage.md").read_text(encoding="utf-8"), [
+        "optional `aa-models usage` command",
+        "When missing or unsuccessful, quota remains unknown",
     ]),
     "keyless model README": (readme, [
         "dataset without an API key",
@@ -291,13 +318,22 @@ review_iteration_contracts = {
         "label it untested, and obtain confirmation",
     ]),
 }
+for surface_name in ["plan quality gates", "implement-plan"]:
+    review_iteration_contracts[surface_name][1].extend([
+        "Use a default cap of three review rounds per invocation",
+        "a user-specified cap must be a positive whole number",
+        "count every launched review attempt, including failed, stale, or timed-out attempts",
+        "Preserve the count across resumes; fixes do not reset it",
+        "At the cap without a clean verdict, stop, report incomplete with remaining findings and unreviewed changes, and ask whether to continue",
+        "Only explicit user continuation grants another budget; retain prior evidence",
+    ])
 for surface_name, (surface, phrases) in review_iteration_contracts.items():
     normalized_surface = " ".join(surface.split())
     for phrase in phrases:
         if phrase not in normalized_surface:
             raise SystemExit(f"{surface_name} is missing review iteration contract: {phrase}")
 for surface_name, surface in [("create-plan", create_plan), ("implement-plan", implement_plan), ("agent-swarm", agent_swarm)]:
-    for token in ["Codex", "Claude", "T3 Code", "delegate_task", "clientRequestId", "<proposed_plan>"]:
+    for token in ["Codex", "Claude", "T3 Code", "delegate_task", "clientRequestId", "<proposed_plan>", "aa-models"]:
         if token in surface:
             raise SystemExit(f"host-specific instruction in {surface_name} core: {token}")
 
@@ -419,6 +455,8 @@ pr_babysit_contract = [
     "If capability 5 is missing, retire threads by settling or archiving them",
     "Relaunch only on a later request, after the lookup in step 2 no longer finds that thread",
     "Try `gpt-6-luna`, then `claude-haiku-5-5`",
+    "For fallback comparisons, run `node <plugin root>/scripts/models.js --frontier`",
+    "use `node <plugin root>/scripts/models.js luna` only to inspect Luna matches",
     "Check startup once",
     "When every candidate has been refused, report the refusals to the user and stop",
     "rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can",

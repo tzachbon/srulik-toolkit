@@ -3,7 +3,7 @@
 const assert = require('node:assert/strict');
 const { createCipheriv, createHash } = require('node:crypto');
 const { execFile } = require('node:child_process');
-const { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, existsSync, rmSync, statSync, symlinkSync } = require('node:fs');
+const { chmodSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync, existsSync, rmSync, statSync, symlinkSync } = require('node:fs');
 const { tmpdir, userInfo } = require('node:os');
 const { delimiter, join, resolve } = require('node:path');
 const { promisify } = require('node:util');
@@ -221,6 +221,19 @@ async function main() {
   const alternate = join(directory, 'alternate', 'models.json');
   await json(['--frontier'], { AA_MODELS_CACHE: alternate });
   assert.deepEqual(models.readCache(alternate).models, normalized);
+  const beforeRelative = fetchCount();
+  for (const cwd of [join(directory, 'caller-a'), join(directory, 'caller-b')]) {
+    mkdirSync(cwd);
+    for (const overrides of [
+      { AA_MODELS_CACHE: join('relative', 'models.json') },
+      { PLUGIN_DATA: 'relative', CLAUDE_PLUGIN_DATA: '' },
+      { PLUGIN_DATA: '', CLAUDE_PLUGIN_DATA: 'relative' },
+    ]) {
+      await assert.rejects(cli(['--frontier'], { TEST_CWD: cwd, ...overrides }), /must be absolute/);
+    }
+    assert.deepEqual(readdirSync(cwd), [], 'relative cache paths must not write to the calling repository');
+  }
+  assert.equal(fetchCount(), beforeRelative, 'relative cache paths must be rejected before downloads');
   const defaults = { PLUGIN_DATA: '', CLAUDE_PLUGIN_DATA: '', TEST_TMPDIR: directory };
   const privateDirectory = join(directory, `srulik-toolkit-${process.getuid?.() ?? userInfo().username}`);
   await json(['--frontier'], defaults);
