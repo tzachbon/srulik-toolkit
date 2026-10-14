@@ -78,8 +78,8 @@ and trust the new `Stop` hook through `/hooks` after updating the plugin.
 | --- | --- |
 | [`can-you-help`](plugins/srulik-toolkit/skills/can-you-help/SKILL.md) | Make sense of a supplied request, handle clear work, or decide together what help is needed. |
 | [`to-project`](plugins/srulik-toolkit/skills/to-project/SKILL.md) | Turn an idea or an existing folder into a project with durable context. |
-| [`create-plan`](plugins/srulik-toolkit/skills/create-plan/SKILL.md) | Research and pressure-test a task, then write a detailed plan with concrete steps, rationale, requirement traceability, and verification. |
-| [`implement-plan`](plugins/srulik-toolkit/skills/implement-plan/SKILL.md) | Execute an approved engineering plan, integrate dependency-ready tasks, and verify the complete outcome. |
+| [`create-plan`](plugins/srulik-toolkit/skills/create-plan/SKILL.md) | Research, draft, review, and revise an execution-ready plan until no actionable comments remain. |
+| [`implement-plan`](plugins/srulik-toolkit/skills/implement-plan/SKILL.md) | Execute an approved plan, integrate and verify tasks, then repeat review and fixes until no actionable comments remain. |
 | [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request with review evidence, merge danger, and blast radius. |
 | [`execute-task-end-to-end`](plugins/srulik-toolkit/skills/execute-task-end-to-end/SKILL.md) | Explicitly request the full workflow: plan, issue, implementation, and a PR driven to `MERGE READY`, or verified `MERGED` when authorized. |
 | [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a local diff, branch, or pull request without changing it. |
@@ -170,6 +170,24 @@ Dependencies advance only after verified integration. Final acceptance and revie
 cover the integrated outcome; publication requires the user's authorization.
 It creates no scheduler and installs no execution framework.
 
+Both skills repeat review and fixes until the latest complete review of the current
+plan or implementation reports zero actionable comments. Optional suggestions may
+remain; they do not authorize scope expansion. Unresolved blockers and incomplete
+reviews are reported explicitly and never count as a clean pass.
+Each skill defaults to three review rounds; the user can set a different positive
+whole-number cap. Failed attempts count, and fixes or resumes do not reset the
+budget. At the cap without a clean verdict, stop, report incomplete with remaining
+findings, and ask whether to continue. Until a complete review exists, each
+attempt reviews the whole plan or change. Later rounds focus on changes since
+the last complete review and unresolved findings while checking the full context
+and wider effects; changes that invalidate prior coverage require another full
+review.
+
+Executor and reviewer selection uses script-provided scores for the actual
+reasoning effort, task complexity and consequences, remaining usage, then cost.
+There is no universal score cutoff; user model exclusions and task-specific score
+floors still apply.
+
 `create-pr` respects repository templates while explaining the changed behavior,
 before/after evidence, whether recovery is a two-way or one-way door, and the
 affected users, callers, or data. A small diagram is included when it helps review.
@@ -205,12 +223,16 @@ for human review; a retrospective alone does not authorize environment changes.
   and quiet passes until the PR closes or you stop it. Hosts without that support
   report the limitation; the skill does not install a scheduler or substitute
   foreground waiting.
-- `agent-swarm` and `pr-babysit` can rank models by intelligence for the
-  price with `plugins/srulik-toolkit/scripts/models.js`. It reads the
-  [Artificial Analysis](https://artificialanalysis.ai/) data API, needs a free
-  `ARTIFICIAL_ANALYSIS_API_KEY`, and caches results for 24 hours. Without the
-  key, `pr-babysit` uses its fixed model order and `agent-swarm` uses a host
-  benchmark tool or its own judgment.
+- `agent-swarm` and `pr-babysit` use
+  `plugins/srulik-toolkit/scripts/models.js` for model facts from the public
+  [Artificial Analysis](https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index)
+  dataset without an API key. Like `aa-models`, it lists effort variants, prices
+  and benchmarks, filters by provider or model name, and caches for 24 hours
+  with background refresh. `list` includes usage from the host's `aa-models usage`
+  command when available; otherwise quota remains unknown. `--frontier` keeps
+  existing price/intelligence comparisons working. The host's runnable-model
+  catalog determines availability. If model data is unavailable, use a host
+  benchmark tool or disclose the gap and use judgment.
 - `to-project` can search public skill catalogs when you ask. It requires your
   approval before installing another skill.
 

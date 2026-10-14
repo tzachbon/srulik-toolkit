@@ -12,6 +12,7 @@
 - Skill handoff quality
 - Detail without filler
 - Final adversarial read
+- Review iteration
 
 Use these gates before finalizing any plan. The goal is to detect plans that sound complete but still force the executor to rediscover requirements, sequencing, decisions, or validation.
 
@@ -172,3 +173,18 @@ Ask:
 - What work adds cost without moving an outcome?
 
 If either role finds a material gap, re-enter research and grilling.
+
+## Gate 11: review iteration
+
+Repeat draft, review, and revision before delivering the plan:
+
+Choose reviewers using [agent-swarm's model selection](../../agent-swarm/SKILL.md#model-selection): assess task complexity and consequences, then remaining usage and cost. Apply it again when findings change the difficulty or quota changes.
+
+Use a default cap of three review rounds per invocation; a user-specified cap must be a positive whole number. Record the cap and count every launched review attempt, including failed, stale, or timed-out attempts. Preserve the count across resumes; fixes do not reset it. At the cap without a clean verdict, stop, report incomplete with remaining findings and unreviewed changes, and ask whether to continue. Only explicit user continuation grants another budget; retain prior evidence.
+
+1. Pin the current plan revision and the last complete reviewed revision, if one exists. Give a read-only reviewer the complete plan, agreed outcome and scope, acceptance criteria, relevant evidence, and prior comments with their dispositions. Use an independent reviewer when available; otherwise perform a fresh self-review and disclose that limit. Until a complete review exists, review the whole current plan against Gates 1–10. In later rounds, focus on changes since the last complete review and unresolved findings while checking the full plan, dependencies, and acceptance criteria for their effects. Broaden back to a full review when changes invalidate earlier coverage. A focused round is complete only when it covers those changes, their wider effects, and every unresolved actionable comment.
+2. Separate actionable comments from optional suggestions. Track each actionable comment and its resolution. Revise the plan for supported in-scope findings; give evidence for disputed findings and carry that response into the next review. A broader proposal stays separate and requires user authority before expanding scope. An out-of-scope defect that prevents the agreed outcome is a blocker, not an optional suggestion.
+3. Re-run affected quality gates after fixes. Return to research and grilling when findings expose missing facts or consequential decisions. Request another review within the remaining cap using the coverage rules above, carrying prior comments and responses forward; checking only the old comments is insufficient.
+4. Continue until the latest complete review of the current plan reports zero actionable comments. Optional suggestions may remain and do not authorize extra work. Retain the reviewed revision, round count, comment dispositions, final verdict, and remaining suggestions with the planning evidence.
+
+A timeout, failed or stale review, unresolved disagreement, missing authority, or stalled loop is incomplete coverage, never a clean pass. Report the blocker and remaining comments instead of claiming completion. A round limit is not a passing criterion. Substantive edits after a clean review require another review.

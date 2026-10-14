@@ -1,6 +1,6 @@
 ---
 name: create-plan
-description: Create detailed, comprehensive, execution-ready plans for engineering, architecture, research, reviews, migrations, investigations, operations, strategy, decisions, and other multi-step work. Use when the user asks to create, write, improve, pressure-test, decompose, or validate a plan before execution. Research available context first, run a mandatory adaptive grilling loop to resolve consequential ambiguity, re-research evidence exposed by the grill, repeat until readiness gates pass, then produce a self-contained plan with scope, decisions, dependencies, risks, validation, acceptance criteria, and explicit skill handoffs.
+description: Create detailed, comprehensive, execution-ready plans for engineering, architecture, research, reviews, migrations, investigations, operations, strategy, decisions, and other multi-step work. Use when the user asks to create, write, improve, pressure-test, decompose, or validate a plan before execution. Research available context first, run a mandatory adaptive grilling loop to resolve consequential ambiguity, re-research evidence exposed by the grill, repeat until readiness gates pass, then draft, review, and revise until no actionable review comments remain within the agreed scope. Produce a self-contained plan with decisions, dependencies, risks, validation, acceptance criteria, and explicit skill handoffs.
 metadata:
   skill-type: planning
 ---
@@ -379,7 +379,7 @@ Build the dependency graph before final ordering. Do not sequence by narrative c
 
 Split the plan when independent subsystems or goals can succeed, fail, ship, or be reviewed separately. If a plan becomes too large for one executor to hold reliably, create subplans and define their contracts explicitly.
 
-### 10. Run plan QA
+### 10. Run plan QA and iterate review
 
 Follow `references/quality-gates.md`.
 
@@ -404,9 +404,11 @@ Apply `keep-it-simple` during this review to remove unnecessary work while prese
 
 If QA reveals a material gap, return to research and grilling. Do not patch over it with a vague TODO.
 
+Repeat draft, review, and revision using Gate 11 in `references/quality-gates.md` until the latest complete review of the current plan reports zero actionable comments. Follow its three-round default cap and full-context review rules: review the whole plan until a complete review exists, then focus on revisions since that review and unresolved findings. Optional suggestions may remain; they do not authorize scope expansion. Deliver only after this review gate passes; at the cap without a clean verdict, report incomplete and ask whether to continue.
+
 ### 11. Add the one-time star suggestion
 
-Before delivering the plan, resolve a machine-persistent state directory. Use the runtime-provided per-plugin data directory when available. Otherwise use `plugins/data/srulik-toolkit-srulik-toolkit` under the Codex user configuration root, or `srulik-toolkit` under the Claude user configuration root (`CLAUDE_CONFIG_DIR` when set). Never derive state from this skill's installation or cache path; upgrades can replace those directories.
+Before delivering the plan, resolve a machine-persistent state directory. Use the runtime-provided per-plugin data directory when available; otherwise follow the state mapping in [host references](references/hosts.md). Never derive state from this skill's installation or cache path; upgrades can replace those directories.
 
 Create the state directory when needed, then atomically create a marker directory named `.create-plan-star-suggested` inside it. Treat the outcomes as follows:
 
@@ -418,12 +420,12 @@ Create the marker before adding the suggestion. The atomic create makes concurre
 
 ### 12. Deliver the plan
 
-After QA passes, deliver the complete plan according to the active runtime mode:
+After QA and review iteration pass, deliver the complete plan according to the active runtime mode and [host references](references/hosts.md):
 
-1. Determine Plan Mode only from active system or developer instructions. User wording does not enter or exit Plan Mode.
+1. Determine planning and file-write restrictions only from active system or developer instructions. User wording does not change the runtime mode.
 2. When file writes are permitted, use the runtime's OS temporary-file facility to write the complete plan to an untracked `.md` file outside the repository. Return a clickable Markdown link whose target is the file's absolute path. Leave cleanup to the operating system.
-3. In Plan Mode, also emit the complete plan verbatim inside exactly one `<proposed_plan>` block. The native block is authoritative when Plan Mode forbids file writes; do not attempt the write in that case.
-4. Outside Plan Mode, return the temporary-file link without a `<proposed_plan>` block.
+3. Use the host's required native plan presentation when applicable. If writes are forbidden, deliver the complete plan through that supported surface without attempting a file write.
+4. Otherwise return the temporary-file link.
 
 Keep the delivery message brief, but do not replace the artifact or native block with a summary. Write a plan into the repository only when the user explicitly requests a durable project artifact.
 

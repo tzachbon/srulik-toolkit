@@ -1,6 +1,6 @@
 ---
 name: implement-plan
-description: Execute an approved engineering plan through verified tasks, dependency-aware delegation, integration, and review. Use when the user asks to implement a plan or carry out its tasks. Planning alone does not trigger execution.
+description: Execute an approved engineering plan through verified tasks, dependency-aware delegation, integration, and repeated review and fixes until no actionable comments remain. Use when the user asks to implement a plan or carry out its tasks. Planning alone does not trigger execution.
 ---
 
 # Implement a plan
@@ -39,6 +39,9 @@ and blocked work, with the commit and evidence that justify each transition.
 
 Invoke [agent-swarm](../agent-swarm/SKILL.md) when work benefits from children.
 Use its live capability discovery, bounded briefs, isolation, and return contract.
+Follow its [model selection](../agent-swarm/SKILL.md#model-selection) for executors
+and reviewers: assess task complexity and consequences, then remaining usage and
+cost. Reassess when findings change the difficulty or quota changes.
 For parallel writers, use separate worktrees or writable paths and an integration
 branch off the agreed base. Verify each child's actual workspace binding before
 dispatch; a path in its prompt does not change the harness's workspace binding.
@@ -75,7 +78,44 @@ Only then unblock dependents and dispatch the next ready frontier.
 When all tasks are integrated, run the plan's final acceptance workflow and required
 repository checks. Local task passes alone do not prove the complete outcome.
 Invoke [review-pro-max](../review-pro-max/SKILL.md) on the integrated diff, fix
-supported in-scope defects under implementation authority, and repeat affected checks.
+supported in-scope defects under implementation authority, and repeat review and
+fixes until the latest complete review of the current integrated state reports
+zero actionable comments:
+
+Use a default cap of three review rounds per invocation; a user-specified cap
+must be a positive whole number. Record the cap and count every launched review
+attempt, including failed, stale, or timed-out attempts. Preserve the count across
+resumes; fixes do not reset it. At the cap without a clean verdict, stop, report
+incomplete with remaining findings and unreviewed changes, and ask whether to
+continue. Only explicit user continuation grants another budget; retain prior
+evidence.
+
+1. Pin the integrated revision or local snapshot and original review base. Give
+   the reviewer the approved plan, scope, acceptance evidence, and prior comments
+   with their dispositions and the last complete reviewed snapshot, if one exists.
+   Until a complete review exists, review the whole integrated diff.
+   In later rounds, focus on changes since the last complete review and unresolved
+   findings while checking the full plan, original diff, surrounding code, callers,
+   contracts, and tests for their effects.
+   Broaden back to a full review when changes invalidate earlier coverage. A
+   focused round is complete only when it covers those changes, their wider
+   effects, and every unresolved actionable comment. Use a fresh independent
+   reviewer per round when available; otherwise disclose the self-review limitation.
+2. Separate actionable comments from optional suggestions. Track each actionable
+   comment and its resolution. Fix supported in-scope defects; carry evidence for
+   disputed findings into the next review. Keep broader proposals separate and
+   obtain user authority before expanding scope. An out-of-scope defect that
+   prevents acceptance remains a blocker, not an optional suggestion.
+3. After fixes, repeat affected checks and the final acceptance workflow, then
+   request another review within the remaining cap using the coverage rules above.
+   Continue until zero actionable comments remain. Optional suggestions may remain
+   and do not authorize extra work. Substantive edits after a clean review require
+   another review.
+
+A timeout, failed or stale review, unresolved disagreement, missing authority,
+or stalled loop remains incomplete. Report remaining comments and the blocker;
+a round limit is not a passing criterion. Retain the reviewed state, round count,
+comment dispositions, final verdict, and remaining suggestions with the evidence.
 
 Publish through [create-pr](../create-pr/SKILL.md) only when the user separately
 authorizes a push and PR, including explicit publication authority already granted

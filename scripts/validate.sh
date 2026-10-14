@@ -15,14 +15,13 @@ import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 import threading
-from urllib.parse import parse_qs, urlparse
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.5.0":
+if version != "1.5.2":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -164,6 +163,9 @@ skill_routing = (skill_root / "create-plan" / "references" / "skill-routing.md")
 create_plan_openai = (skill_root / "create-plan" / "agents" / "openai.yaml").read_text(encoding="utf-8")
 readme = (root / "README.md").read_text(encoding="utf-8")
 implement_plan = (skill_root / "implement-plan" / "SKILL.md").read_text(encoding="utf-8")
+implement_plan_openai = (skill_root / "implement-plan" / "agents" / "openai.yaml").read_text(encoding="utf-8")
+agent_swarm = (skill_root / "agent-swarm" / "SKILL.md").read_text(encoding="utf-8")
+plan_hosts = (skill_root / "create-plan" / "references" / "hosts.md").read_text(encoding="utf-8")
 for dependency in ["create-plan", "agent-swarm", "keep-it-simple", "tdd", "resolving-merge-conflicts", "review-pro-max", "create-pr"]:
     if f"../{dependency}/SKILL.md" not in implement_plan:
         raise SystemExit(f"implement-plan is missing its {dependency} handoff")
@@ -172,6 +174,171 @@ for boundary in ["Reject missing dependencies and cycles", "verified and integra
         raise SystemExit(f"implement-plan is missing execution boundary: {boundary}")
 if "../../implement-plan/SKILL.md" not in skill_routing:
     raise SystemExit("create-plan is missing its implement-plan handoff")
+
+review_iteration_contracts = {
+    "create-plan": (create_plan, [
+        "### 10. Run plan QA and iterate review",
+        "Gate 11 in `references/quality-gates.md`",
+        "latest complete review of the current plan reports zero actionable comments",
+        "three-round default cap and full-context review rules",
+        "review the whole plan until a complete review exists, then focus on revisions since that review and unresolved findings",
+        "at the cap without a clean verdict, report incomplete and ask whether to continue",
+        "Optional suggestions may remain",
+        "they do not authorize scope expansion",
+        "Deliver only after this review gate passes",
+        "[host references](references/hosts.md)",
+    ]),
+    "plan quality gates": (quality_gates, [
+        "## Gate 11: review iteration",
+        "../../agent-swarm/SKILL.md#model-selection",
+        "task complexity and consequences, then remaining usage and cost",
+        "Pin the current plan revision",
+        "read-only reviewer",
+        "Use an independent reviewer when available",
+        "fresh self-review and disclose that limit",
+        "last complete reviewed revision, if one exists",
+        "Until a complete review exists, review the whole current plan against Gates 1–10",
+        "In later rounds, focus on changes since the last complete review and unresolved findings",
+        "checking the full plan, dependencies, and acceptance criteria for their effects",
+        "Broaden back to a full review when changes invalidate earlier coverage",
+        "A focused round is complete only when it covers those changes, their wider effects, and every unresolved actionable comment",
+        "Track each actionable comment and its resolution",
+        "carry that response into the next review",
+        "requires user authority before expanding scope",
+        "a blocker, not an optional suggestion",
+        "Re-run affected quality gates after fixes",
+        "Request another review within the remaining cap using the coverage rules above",
+        "zero actionable comments",
+        "Optional suggestions may remain",
+        "round count, comment dispositions, final verdict",
+        "timeout, failed or stale review, unresolved disagreement, missing authority, or stalled loop",
+        "A round limit is not a passing criterion",
+        "Substantive edits after a clean review require another review",
+    ]),
+    "implement-plan": (implement_plan, [
+        "../agent-swarm/SKILL.md#model-selection",
+        "task complexity and consequences, then remaining usage and cost",
+        "original review base",
+        "last complete reviewed snapshot, if one exists",
+        "Until a complete review exists, review the whole integrated diff",
+        "In later rounds, focus on changes since the last complete review and unresolved findings",
+        "checking the full plan, original diff, surrounding code, callers, contracts, and tests for their effects",
+        "Broaden back to a full review when changes invalidate earlier coverage",
+        "focused round is complete only when it covers those changes, their wider effects, and every unresolved actionable comment",
+        "fresh independent reviewer per round when available",
+        "disclose the self-review limitation",
+        "Track each actionable comment and its resolution",
+        "carry evidence for disputed findings into the next review",
+        "obtain user authority before expanding scope",
+        "a blocker, not an optional suggestion",
+        "repeat affected checks and the final acceptance workflow",
+        "request another review within the remaining cap using the coverage rules above",
+        "zero actionable comments remain",
+        "Optional suggestions may remain",
+        "Substantive edits after a clean review require another review",
+        "timeout, failed or stale review, unresolved disagreement, missing authority, or stalled loop",
+        "a round limit is not a passing criterion",
+        "round count, comment dispositions, final verdict",
+    ]),
+    "create-plan launcher": (create_plan_openai, [
+        "Repeat plan review and revision",
+        "zero actionable comments; optional suggestions may remain",
+        "Default to three review rounds unless the user sets another cap",
+        "Review the full plan until a complete review exists; focus later rounds on revisions since that review and unresolved findings while checking full context",
+        "At the cap without a clean verdict, report incomplete and ask whether to continue",
+        "Keep fixes within the agreed scope",
+        "report unresolved blockers rather than claiming completion",
+    ]),
+    "implement-plan launcher": (implement_plan_openai, [
+        "Repeat implementation review and fixes",
+        "zero actionable comments; optional suggestions may remain",
+        "Default to three review rounds unless the user sets another cap",
+        "Review the full change until a complete review exists; focus later rounds on revisions since that review and unresolved findings while checking full context",
+        "At the cap without a clean verdict, report incomplete and ask whether to continue",
+        "Keep fixes within the agreed scope",
+        "report unresolved blockers rather than claiming completion",
+    ]),
+    "review iteration README": (readme, [
+        "Both skills repeat review and fixes",
+        "zero actionable comments",
+        "Optional suggestions may remain",
+        "they do not authorize scope expansion",
+        "never count as a clean pass",
+        "Each skill defaults to three review rounds",
+        "Failed attempts count, and fixes or resumes do not reset the budget",
+        "stop, report incomplete with remaining findings, and ask whether to continue",
+        "Until a complete review exists, each attempt reviews the whole plan or change",
+        "Later rounds focus on changes since the last complete review and unresolved findings while checking the full context and wider effects",
+        "changes that invalidate prior coverage require another full review",
+        "reasoning effort, task complexity and consequences, remaining usage, then cost",
+    ]),
+    "task-aware model selection": (agent_swarm, [
+        "[Model selection](#model-selection) for each executor and reviewer",
+        "### Model selection",
+        "An explicit user choice or active routing rule takes precedence",
+        "ranking below only to choices they leave open",
+        "If a required model is unavailable, report that constraint instead of substituting another model",
+        "Run `node <plugin root>/scripts/models.js` before selecting a model",
+        "Analysis dataset without an API key",
+        "24-hour cache and background refresh",
+        "`list --provider <name>`",
+        "host's quota adapter",
+        "[Host usage](references/host-usage.md)",
+        "otherwise quota remains unknown",
+        "match scores to the actual reasoning effort",
+        "Choose by task fit, then remaining usage, then cost",
+        "there is no universal score cutoff",
+        "user's model exclusions and task-specific score floors",
+        "Compare only runnable candidates",
+        "Read remaining usage and reset times",
+        "unknown quota stays unknown",
+        "Reassess the choice when review findings reveal greater complexity or usage limits change",
+        "report that constraint rather than silently lowering the quality bar",
+        "Record the selected model and effort, score evidence, usage limits, and rationale",
+    ]),
+    "host usage reference": ((skill_root / "agent-swarm" / "references" / "host-usage.md").read_text(encoding="utf-8"), [
+        "optional `aa-models usage` command",
+        "When missing or unsuccessful, quota remains unknown",
+    ]),
+    "keyless model README": (readme, [
+        "dataset without an API key",
+        "lists effort variants, prices and benchmarks",
+        "caches for 24 hours with background refresh",
+        "host's `aa-models usage`",
+        "otherwise quota remains unknown",
+        "host's runnable-model catalog determines availability",
+    ]),
+    "planning host references": (plan_hosts, [
+        "Codex, including Codex in T3 Code",
+        "plugins/data/srulik-toolkit-srulik-toolkit",
+        "<proposed_plan>",
+        "Outside Plan Mode",
+        "`delegate_task` again for every round",
+        "distinct `clientRequestId` per round, stable across retries",
+        "`childThreadId` is storage, not the target for another review round",
+        "Claude Code",
+        "CLAUDE_CONFIG_DIR",
+        "label it untested, and obtain confirmation",
+    ]),
+}
+for surface_name in ["plan quality gates", "implement-plan"]:
+    review_iteration_contracts[surface_name][1].extend([
+        "Use a default cap of three review rounds per invocation",
+        "a user-specified cap must be a positive whole number",
+        "count every launched review attempt, including failed, stale, or timed-out attempts",
+        "Preserve the count across resumes; fixes do not reset it",
+        "At the cap without a clean verdict, stop, report incomplete with remaining findings and unreviewed changes, and ask whether to continue",
+        "Only explicit user continuation grants another budget; retain prior evidence",
+    ])
+for surface_name, (surface, phrases) in review_iteration_contracts.items():
+    normalized_surface = " ".join(surface.split())
+    for phrase in phrases:
+        if phrase not in normalized_surface:
+            raise SystemExit(f"{surface_name} is missing review iteration contract: {phrase}")
+for surface_name, surface in [("create-plan", create_plan), ("implement-plan", implement_plan), ("agent-swarm", agent_swarm)]:
+    for token in ["Codex", "Claude", "T3 Code", "delegate_task", "clientRequestId", "<proposed_plan>", "aa-models"]:
+        if token in surface:
+            raise SystemExit(f"host-specific instruction in {surface_name} core: {token}")
 
 glossary_format = skill_root / "to-project" / "GLOSSARY-FORMAT.md"
 if not glossary_format.is_file() or (skill_root / "to-project" / "CONTEXT-FORMAT.md").exists():
@@ -291,6 +458,8 @@ pr_babysit_contract = [
     "If capability 5 is missing, retire threads by settling or archiving them",
     "Relaunch only on a later request, after the lookup in step 2 no longer finds that thread",
     "Try `gpt-6-luna`, then `claude-haiku-5-5`",
+    "For fallback comparisons, run `node <plugin root>/scripts/models.js --frontier`",
+    "use `node <plugin root>/scripts/models.js luna` only to inspect Luna matches",
     "Check startup once",
     "When every candidate has been refused, report the refusals to the user and stop",
     "rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can",
@@ -445,7 +614,6 @@ star_contract = [
     "https://github.com/tzachbon/srulik-toolkit",
     "Optional:",
     "machine-persistent state directory",
-    "plugins/data/srulik-toolkit-srulik-toolkit",
     "Never derive state from this skill's installation or cache path",
     "Create the marker before adding the suggestion",
     "Already exists: deliver the plan without the suggestion",
@@ -569,45 +737,18 @@ def stop_check(payload, disabled=False):
         raise SystemExit(f"Stop hook wrote stderr: {result.stderr}")
     return result.stdout.strip()
 
-class ModelsHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.headers.get("x-api-key") != "test-key":
-            self.send_response(401); self.end_headers(); return
-        def model(slug, intelligence, price):
-            return {"slug": slug, "name": slug, "model_creator": {"name": "Lab"},
-                    "evaluations": {"artificial_analysis_intelligence_index": intelligence},
-                    "pricing": {"price_1m_input_tokens": price, "price_1m_output_tokens": price},
-                    "performance": {"median_output_tokens_per_second": 100}}
-        pages = {"1": [model("smart", 60, 10), model("cheap", 40, 0.2)],
-                 "2": [model("dominated", 39, 5), model("unpriced", 50, None)]}
-        page = parse_qs(urlparse(self.path).query).get("page", ["1"])[0]
-        body = json.dumps({"data": pages.get(page, []), "pagination": {"page": int(page), "has_more": page == "1"}}).encode()
-        self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers(); self.wfile.write(body)
-    def log_message(self, *_):
-        pass
-
-models_server = ThreadingHTTPServer(("127.0.0.1", 0), ModelsHandler)
-threading.Thread(target=models_server.serve_forever, daemon=True).start()
-
-def models(*args, key="test-key", data_root):
-    env = {k: v for k, v in os.environ.items() if k != "ARTIFICIAL_ANALYSIS_API_KEY"}
-    env |= {"PLUGIN_DATA": str(data_root), "ARTIFICIAL_ANALYSIS_URL": f"http://127.0.0.1:{models_server.server_port}/"}
-    if key:
-        env["ARTIFICIAL_ANALYSIS_API_KEY"] = key
-    return subprocess.run([node, str(plugin / "scripts" / "models.js"), *args], env=env, capture_output=True, text=True, timeout=30)
-
-with tempfile.TemporaryDirectory() as temporary:
-    if models(key=None, data_root=temporary).returncode != 2:
-        raise SystemExit("models.js must exit 2 without an API key")
-    ranked = json.loads(models(data_root=temporary).stdout)["models"]
-    if [m["slug"] for m in ranked] != ["smart", "cheap", "dominated"]:
-        raise SystemExit(f"models.js must rank priced models by intelligence: {ranked}")
-    frontier = [m["slug"] for m in json.loads(models("--frontier", data_root=temporary).stdout)["models"]]
-    if frontier != ["smart", "cheap"]:
-        raise SystemExit(f"models.js frontier must drop dominated models: {frontier}")
-    if [m["slug"] for m in json.loads(models("chea", data_root=temporary).stdout)["models"]] != ["cheap"]:
-        raise SystemExit("models.js must filter by name or slug")
-models_server.shutdown()
+for surface_name, surface in {
+    "models.js": (plugin / "scripts" / "models.js").read_text(encoding="utf-8"),
+    "agent-swarm": agent_swarm, "pr-babysit": pr_babysit, "README": readme,
+    "NOTICE": (root / "NOTICE.md").read_text(encoding="utf-8"),
+}.items():
+    if "ARTIFICIAL_ANALYSIS_API_KEY" in surface or "artificialanalysis.ai/api/" in surface:
+        raise SystemExit(f"{surface_name} must use the public dataset without an API key")
+if "dataset without an API key" not in (root / "NOTICE.md").read_text(encoding="utf-8"):
+    raise SystemExit("NOTICE must attribute the keyless public dataset")
+if "public Artificial Analysis dataset without an API key" not in pr_babysit:
+    raise SystemExit("pr-babysit must use the keyless public dataset")
+subprocess.run([node, str(root / "scripts" / "test-models.js")], check=True, timeout=90)
 
 stop_input = {"hook_event_name": "Stop", "stop_hook_active": False}
 for message in [
