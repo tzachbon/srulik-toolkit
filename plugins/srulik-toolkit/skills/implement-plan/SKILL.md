@@ -1,6 +1,6 @@
 ---
 name: implement-plan
-description: Execute an approved engineering plan through verified tasks, dependency-aware delegation, integration, and review. Use when the user asks to implement a plan or carry out its tasks. Planning alone does not trigger execution.
+description: Execute an approved engineering plan through verified tasks, dependency-aware delegation, integration, and repeated review and fixes until no actionable comments remain. Use when the user asks to implement a plan or carry out its tasks. Planning alone does not trigger execution.
 ---
 
 # Implement a plan
@@ -39,6 +39,9 @@ and blocked work, with the commit and evidence that justify each transition.
 
 Invoke [agent-swarm](../agent-swarm/SKILL.md) when work benefits from children.
 Use its live capability discovery, bounded briefs, isolation, and return contract.
+Follow its [model selection](../agent-swarm/SKILL.md#model-selection) for executors
+and reviewers: assess task complexity and consequences, then remaining usage and
+cost. Reassess when findings change the difficulty or quota changes.
 For parallel writers, use separate worktrees or writable paths and an integration
 branch off the agreed base. Verify each child's actual workspace binding before
 dispatch; a path in its prompt does not change the harness's workspace binding.
@@ -75,7 +78,30 @@ Only then unblock dependents and dispatch the next ready frontier.
 When all tasks are integrated, run the plan's final acceptance workflow and required
 repository checks. Local task passes alone do not prove the complete outcome.
 Invoke [review-pro-max](../review-pro-max/SKILL.md) on the integrated diff, fix
-supported in-scope defects under implementation authority, and repeat affected checks.
+supported in-scope defects under implementation authority, and repeat review and
+fixes until the latest complete review of the current integrated state reports
+zero actionable comments:
+
+1. Pin the integrated revision or local snapshot and original review base. Give
+   the reviewer the approved plan, scope, acceptance evidence, and prior comments
+   with their dispositions. Review the whole integrated diff, including fixes,
+   rather than only previously flagged lines. Use a fresh independent reviewer
+   per round when available; otherwise disclose the self-review limitation.
+2. Separate actionable comments from optional suggestions. Track each actionable
+   comment and its resolution. Fix supported in-scope defects; carry evidence for
+   disputed findings into the next review. Keep broader proposals separate and
+   obtain user authority before expanding scope. An out-of-scope defect that
+   prevents acceptance remains a blocker, not an optional suggestion.
+3. After fixes, repeat affected checks and the final acceptance workflow, then
+   request a new complete review of the current integrated state. Continue until
+   zero actionable comments remain. Optional suggestions may remain and do not
+   authorize extra work. Substantive edits after a clean review require another
+   review.
+
+A timeout, failed or stale review, unresolved disagreement, missing authority,
+or stalled loop remains incomplete. Report remaining comments and the blocker;
+a round limit is not a passing criterion. Retain the reviewed state, round count,
+comment dispositions, final verdict, and remaining suggestions with the evidence.
 
 Publish through [create-pr](../create-pr/SKILL.md) only when the user separately
 authorizes a push and PR, including explicit publication authority already granted

@@ -98,17 +98,43 @@ or acceptance.
 
 1. Split work into independent, self-contained tasks.
 2. Classify each task by cost, complexity, risk, and tool needs.
-3. Choose a supported model and effort from active routing rules and live
-   inventory. Set them explicitly when the transport accepts them. Otherwise,
-   record the harness default. When no rule picks the model, weigh intelligence
-   against price: run `node <plugin root>/scripts/models.js --frontier` (the plugin root is two directories above this skill file) and prefer the
-   cheapest runnable model whose score fits the task. Without its
-   `ARTIFICIAL_ANALYSIS_API_KEY` it exits 2; fall back to a host benchmark tool
-   or your own judgment.
+3. Follow [Model selection](#model-selection) for each executor and reviewer.
+   Set the provider, model, and effort explicitly when the transport accepts them;
+   otherwise record the harness default and its limits.
 4. Dispatch all ready independent tasks in the same tool turn, bounded by live
    capacity.
 5. Record each child, task, transport, model or default, state, and return
    handle in the ledger.
+
+### Model selection
+
+An explicit user choice or active routing rule takes precedence; apply the
+ranking below only to choices they leave open. If a required model is unavailable,
+report that constraint instead of substituting another model.
+
+Run `node <plugin root>/scripts/models.js` before selecting a model; the plugin
+root is two directories above this skill file. It reads the public Artificial
+Analysis dataset without an API key, with a 24-hour cache and background refresh.
+`list --provider <name>` filters creators; `usage` reads the host's `aa-models usage`
+when available, otherwise quota remains unknown. On a fetch failure, use a host
+benchmark tool or disclose the missing score evidence and use judgment. Check data freshness and
+match scores to the actual reasoning effort, not the family's best score.
+
+Choose by task fit, then remaining usage, then cost. Assess complexity, ambiguity,
+dependencies, and consequences of a wrong result. Bounded mechanical work can use
+a cheaper model; architectural decisions, security boundaries, and difficult
+reviews need stronger reasoning. Diff size alone does not establish difficulty.
+Scores inform this assessment; there is no universal score cutoff. Honor the
+user's model exclusions and task-specific score floors.
+
+Compare only runnable candidates. Read remaining usage and reset times when the
+host exposes them; unknown quota stays unknown. Prefer a suitable provider with
+more headroom before optimizing price. Reassess the choice when review findings
+reveal greater complexity or usage limits change. If no available model fits the
+task, report that constraint rather than silently lowering the quality bar.
+Record the selected model and effort, score evidence, usage limits, and rationale.
+
+### Child brief
 
 Every child brief contains six parts:
 

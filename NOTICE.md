@@ -17,8 +17,9 @@ also adapted for this toolkit under the repository's MIT License. `research`
 was written for this toolkit using the public Claude Explore documentation as
 design input.
 
-`scripts/models.js` reads model benchmarks and prices from the
-[Artificial Analysis](https://artificialanalysis.ai/) data API with your own key.
+`scripts/models.js` reads model benchmarks and prices from the public
+[Artificial Analysis](https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index)
+dataset without an API key, following the `aa-models` reader.
 Its data is not bundled and remains subject to Artificial Analysis terms, which
 require attribution.
 

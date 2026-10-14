@@ -37,7 +37,7 @@ Some older skills still name Claude Code or Codex directly. Move host-specific t
 
 Prefer extending an existing skill over adding a new one. A new skill needs a distinct trigger, a handoff to its neighbors in this flow, and a row in the README's skill table.
 
-Utilities in `plugins/srulik-toolkit/scripts/` use only the Node.js standard library. Resolve paths from the plugin root, never the caller's working directory. Read state from `PLUGIN_DATA`, falling back to `CLAUDE_PLUGIN_DATA`, then a temporary directory. An optional external service needs a user-supplied key: exit with code 2 when it is missing so callers fall back, and add attribution to [NOTICE.md](NOTICE.md).
+Utilities in `plugins/srulik-toolkit/scripts/` use only the Node.js standard library. Resolve paths from the plugin root, never the caller's working directory. Read state from `PLUGIN_DATA`, falling back to `CLAUDE_PLUGIN_DATA`, then a temporary directory. An optional external service needs a user-supplied key only when it requires authentication: exit with code 2 when a required key is missing so callers fall back. Add attribution to [NOTICE.md](NOTICE.md).
 
 ## Keeping the boundaries
 
