@@ -57,7 +57,9 @@ const fs = require('node:fs');
 const cp = require('node:child_process');
 if (process.env.TEST_TMPDIR) require('node:os').tmpdir = () => process.env.TEST_TMPDIR;
 const originalSpawn = cp.spawnSync;
-cp.spawnSync = (command, args, options) => ['aa-models', 'aa-models usage'].includes(command) && !process.env.TEST_REAL_USAGE
+cp.spawnSync = (command, args, options) => args.includes('--update') && process.env.TEST_REFRESH_FAILURE
+  ? JSON.parse(process.env.TEST_REFRESH_FAILURE)
+  : ['aa-models', 'aa-models usage'].includes(command) && !process.env.TEST_REAL_USAGE
   ? { status: 0, stdout: process.env.TEST_USAGE || 'invalid JSON' }
   : originalSpawn(command, args, options);
 if (process.env.TEST_NO_FLOCK) {
@@ -91,6 +93,7 @@ delete env.AA_MODELS_CACHE;
 delete env.SRULIK_MODELS_USAGE_CHILD;
 delete env.TEST_USAGE;
 delete env.TEST_REAL_USAGE;
+delete env.TEST_REFRESH_FAILURE;
 async function cli(args = [], overrides = {}) {
   return runFile(process.execPath, [script, ...args], { cwd: overrides.TEST_CWD || directory,
     env: { ...env, ...overrides }, timeout: 15000, maxBuffer: 1024 * 1024 });
@@ -214,6 +217,22 @@ async function main() {
   await assert.rejects(cli(['--frontier']), /Initial fetch failed/);
   assert.equal(models.readCache(cache), null);
   assert.match(readFileSync(`${cache}.refresh.log`, 'utf8'), /HTTP 503/);
+  const beforeLaunchFailures = fetchCount();
+  for (const [result, reason] of [
+    [{ error: { message: 'spawnSync ETIMEDOUT' }, status: null }, 'spawnSync ETIMEDOUT'],
+    [{ error: { message: 'spawnSync ENOENT' }, status: null }, 'spawnSync ENOENT'],
+    [{ status: 1 }, 'exit status 1'], [{ status: null, signal: 'SIGTERM' }, 'SIGTERM'],
+  ]) {
+    rmSync(`${cache}.refresh.log`);
+    await assert.rejects(cli(['--frontier'], { TEST_REFRESH_FAILURE: JSON.stringify(result) }), error => {
+      assert.ok(error.stderr.includes(`Initial fetch failed (${reason})`));
+      assert.ok(error.stderr.includes(`${cache}.refresh.log`));
+      return true;
+    });
+    assert.equal(models.readCache(cache), null);
+    assert.equal(readFileSync(`${cache}.refresh.log`, 'utf8'), '');
+  }
+  assert.equal(fetchCount(), beforeLaunchFailures, 'launcher failures must not download model data');
   setFixture();
   writeFileSync(cache, 'not JSON');
   assert.equal(models.readCache(cache), null);

@@ -246,7 +246,10 @@ async function main() {
     try {
       if (blocking) {
         const result = spawnSync(executable, command, { stdio: ['ignore', 'ignore', log], timeout: 55000 });
-        if (result.error || result.status !== 0) throw new Error(`Initial fetch failed; inspect ${path}.refresh.log.`);
+        if (result.error || result.status !== 0) {
+          const reason = result.error?.message ?? result.signal ?? `exit status ${result.status}`;
+          throw new Error(`Initial fetch failed (${reason}); inspect ${path}.refresh.log.`);
+        }
       } else {
         const child = spawn(executable, command, { detached: true, stdio: ['ignore', 'ignore', log] });
         child.on('error', error => console.error(`Background refresh could not start: ${error.message}`));
