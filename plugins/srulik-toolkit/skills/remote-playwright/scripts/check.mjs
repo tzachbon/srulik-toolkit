@@ -140,7 +140,9 @@ if (cmd === 'run') { fs.writeFileSync(${JSON.stringify(path.join('TMPDIR_PLACEHO
 if (cmd === 'export') {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'fake-depot-'));
   fs.mkdirSync(path.join(d, '.rp')); fs.writeFileSync(path.join(d, '.rp', 'status'), String(env.FAKE_STATUS || 0)); fs.writeFileSync(path.join(d, '.rp', 'setup.log'), 'setup');
-  process.exit(spawnSync('tar', ['-czf', opt('--out'), '-C', d, '.rp']).status);
+  const t = spawnSync('tar', ['-czf', 'a.tgz', '.rp'], { cwd: d }).status;
+  if (t === 0) fs.copyFileSync(path.join(d, 'a.tgz'), opt('--out'));
+  process.exit(t);
 }
 `.replace('TMPDIR_PLACEHOLDER', tmp.replaceAll('\\', '/')));
   const fakeDepot = JSON.stringify([process.execPath, fakeScript]);

@@ -294,7 +294,8 @@ async function depot(opts, cwd, args) {
     try { const j = JSON.parse(exp.out); if (j.path) file = j.path; } catch { /* root export writes --out */ }
     const dest = path.join(cwd, 'test-results', `depot-${stamp}`);
     fs.mkdirSync(dest, { recursive: true });
-    if (spawnSync('tar', ['-xzf', file, '-C', dest, '--no-same-owner']).status !== 0) throw new Fail(EXIT.depot, 'Could not extract Depot artifacts');
+    // Run from dest with a relative archive path: tar on Windows can read "C:..." as a remote host.
+    if (spawnSync('tar', ['-xzf', path.relative(dest, file).split(path.sep).join('/'), '--no-same-owner'], { cwd: dest }).status !== 0) throw new Fail(EXIT.depot, 'Could not extract Depot artifacts');
     const status = Number(fs.readFileSync(path.join(dest, '.rp', 'status'), 'utf8'));
     console.error(`Depot artifacts: ${dest}`);
     if (status === 100) throw new Fail(EXIT.setup, `Depot setup failed; see ${path.join(dest, '.rp', 'setup.log')}`);
