@@ -153,6 +153,12 @@ one external search per material discipline even when an installed skill covers
 the work. Loading a discovered skill is optional, and installation remains a
 separate execution step that requires your approval.
 
+It also verifies prior art for every plan, including trivial plans: check internal
+precedents and run a focused external search, then inspect relevant sources. Start
+briefly; a credible lead that could change the decision triggers deeper research.
+Plans record findings, reuse decisions, research depth, stopping reasons, and
+evidence gaps separately from skill discovery.
+
 Plans make intended impact and blast radius explicit, classify consequential
 steps as one-way or two-way doors with recovery limits, and include a “What can
 go wrong” assessment with detection, prevention, stop conditions, and recovery

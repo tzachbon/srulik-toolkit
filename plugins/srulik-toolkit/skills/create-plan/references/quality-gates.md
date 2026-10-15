@@ -61,6 +61,8 @@ Do not fabricate specificity. Unknown-but-required detail becomes an explicit di
 
 ## Gate 4: decision integrity
 
+Verify that `Context and evidence` records prior-art verification under step 2's Verify prior art protocol, including the depth and stopping reason. Fail the gate if the check is absent or a material lead or evidence gap remains unresolved.
+
 Inspect every major choice:
 
 - Is the decision actually settled?
