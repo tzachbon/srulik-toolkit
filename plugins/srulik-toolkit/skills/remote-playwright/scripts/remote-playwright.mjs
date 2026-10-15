@@ -160,7 +160,8 @@ function stateDir(opts) {
 function readState(dir) {
   const file = path.join(dir, 'endpoint.json');
   if (!fs.existsSync(file)) return null;
-  if ((fs.statSync(file).mode & 0o077) !== 0) throw new Fail(EXIT.refused, `${file} must be private (mode 0600)`);
+  // POSIX only: Windows reports 0o666 for every file and protects the profile directory by ACL instead.
+  if (process.platform !== 'win32' && (fs.statSync(file).mode & 0o077) !== 0) throw new Fail(EXIT.refused, `${file} must be private (mode 0600)`);
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 

@@ -198,7 +198,7 @@ fs.mkdirSync('artifacts/deep',{recursive:true});fs.writeFileSync('artifacts/deep
       process.stdout.write = c => { printed += c; return true; };
       process.env.REMOTE_PLAYWRIGHT_TEST_CMD = JSON.stringify([process.execPath, fakePw]);
       let code;
-      try { code = await run({ 'windows-exec': adapter(good), state, arg: [] }, repo, []); }
+      try { code = await run({ 'windows-exec': adapter(good), state, arg: [], fallback: 'none' }, repo, []); }
       finally { process.stdout.write = write; delete process.env.REMOTE_PLAYWRIGHT_TEST_CMD; }
       assert.equal(code, EXIT.leak);
       assert.ok(!printed.includes(tok) && printed.includes('[redacted]'));
