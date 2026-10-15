@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.5.3":
+if version != "1.5.4":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -43,6 +43,7 @@ expected = {
     "resolving-merge-conflicts",
     "fix-ci",
     "retro",
+    "remote-playwright",
 }
 
 skill_root = plugin / "skills"
@@ -716,7 +717,7 @@ for harness in ["claude", "codex"]:
     manifest = manifests[f"plugins/srulik-toolkit/.{harness}-plugin/plugin.json"]
     if manifest.get("version") != version or manifest.get("license") != "MIT":
         raise SystemExit(f"wrong {harness} plugin version or license")
-    if not manifest.get("description", "").startswith("Nineteen "):
+    if not manifest.get("description", "").startswith("Twenty "):
         raise SystemExit(f"stale {harness} plugin skill count")
 if manifests["plugins/srulik-toolkit/.codex-plugin/plugin.json"].get("skills") != "./skills/":
     raise SystemExit("wrong Codex skill discovery path")
@@ -953,11 +954,40 @@ tour_contract = [
 if not all(token in tour for token in tour_contract):
     raise SystemExit("tour is missing its research, grilling, visualization, or delivery contract")
 
+remote_root = skill_root / "remote-playwright"
+remote_text = (remote_root / "SKILL.md").read_text(encoding="utf-8")
+for token in [
+    "explicitly asks",
+    "PW_TEST_CONNECT_WS_ENDPOINT",
+    "PW_TEST_CONNECT_EXPOSE_NETWORK=<loopback>",
+    "--workers=1",
+    "Never retry a test that failed on the Windows browser on another host",
+    "removes only what `start` created",
+    "Never point it at a personal browser profile",
+    "needs the user's approval first",
+    "references/windows-desktop-mcp.md",
+    "references/depot.md",
+    "references/openclaw.md",
+]:
+    if token not in remote_text:
+        raise SystemExit(f"remote-playwright is missing its contract phrase: {token}")
+remote_forbidden = re.compile(r"\b100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+\b|tzach|srv1630226|openclaw-nzlm|/root/|/var/lib/t3-claude|mcp__|connectOverCDP|launchServer\(|ts\.net", re.IGNORECASE)
+for path in sorted(remote_root.rglob("*")):
+    if path.is_file():
+        found = remote_forbidden.search(path.read_text(encoding="utf-8"))
+        if found:
+            raise SystemExit(f"remote-playwright must not contain private or banned text {found.group(0)!r}: {path.relative_to(root)}")
+if not node:
+    raise SystemExit("node is required to run the remote-playwright self-test")
+remote_check = subprocess.run([node, str(remote_root / "scripts" / "remote-playwright.mjs"), "check"], cwd=tempfile.gettempdir(), capture_output=True, text=True, timeout=180)
+if remote_check.returncode != 0:
+    raise SystemExit(f"remote-playwright self-test failed: {remote_check.stdout[-2000:]}{remote_check.stderr[-2000:]}")
+
 for skill_name in expected:
     if f"skills/{skill_name}/SKILL.md" not in readme:
         raise SystemExit(f"README is missing skill: {skill_name}")
-if "Nineteen focused skills" not in readme or "/hooks" not in readme:
-    raise SystemExit("README must document nineteen skills and Codex hook trust")
+if "Twenty focused skills" not in readme or "/hooks" not in readme:
+    raise SystemExit("README must document twenty skills and Codex hook trust")
 
 outcome_dod_contract = "Outcome and Definition of Done gate"
 create_plan_text = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")

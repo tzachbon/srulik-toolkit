@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remote Playwright"
+  short_description: "Run Playwright tests here with Chromium on a Windows PC"
+  default_prompt: "Use $remote-playwright to run this repository's Playwright tests with the browser on my Windows PC."
