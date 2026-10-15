@@ -9,7 +9,7 @@
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Twenty focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
+**Nineteen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
@@ -49,7 +49,7 @@ installation or a hook change; installing the plugin alone does not grant it.
 
 ## Startup hint
 
-On a new session, the plugin writes the twenty skill names and a short routing
+On a new session, the plugin writes the nineteen skill names and a short routing
 instruction to model context. It uses the default `hooks/hooks.json` location
 and runs only for `SessionStart` with the `startup` matcher. It does not run on
 each prompt or skill invocation.
@@ -94,7 +94,6 @@ and trust the new `Stop` hook through `/hooks` after updating the plugin.
 | [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Hand a pull request to a dedicated low-cost babysitter, preferably a subagent, that fixes conflicts, review feedback, and CI until closure, messaging you only when needed. |
 | [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
 | [`fix-ci`](plugins/srulik-toolkit/skills/fix-ci/SKILL.md) | Diagnose failing checks, apply the smallest repair, and verify the result. |
-| [`remote-playwright`](plugins/srulik-toolkit/skills/remote-playwright/SKILL.md) | Run a repository's Playwright tests locally with Chromium on a separate Windows PC, falling back to a cloud workspace when the PC is busy. Explicit opt-in. |
 | [`retro`](plugins/srulik-toolkit/skills/retro/SKILL.md) | Learn from a coding session and propose evidence-backed improvements to the agent's environment. Adapted from Matt Pocock. |
 
 Example prompts:
