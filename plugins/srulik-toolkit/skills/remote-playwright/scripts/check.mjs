@@ -170,7 +170,7 @@ if (cmd === 'export') {
   try {
     for (const [name, json] of [['adapter failure', null], ['missing telemetry', { cpu: [] }], ['ineligible', probe({ cpu: [90] })], ['no server started', good], ['malformed reply', 'garbage']]) {
       const r = await attempt(json, { FAKE_STATUS: '0' });
-      assert.equal(r.code, 0, name);
+      assert.equal(r.code, 0, `${name}: ${r.error ?? ''}`);
       assert.deepEqual(r.calls.map(c => c.split(' ')[0]), ['up', 'run', 'export', 'stop'], name);
       assert.match(r.calls[0], /^up rp-\d{14}-[0-9a-f]{6}$/, name);
     }

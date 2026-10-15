@@ -275,12 +275,11 @@ async function depot(opts, cwd, args) {
   const owner = `rp-${new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)}-${randomBytes(3).toString('hex')}`;
   const call = (...a) => {
     const r = spawnSync(bin[0], [...bin.slice(1), ...a], { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'inherit'] });
-    if (r.error) console.error(`depot-workspace ${a[0]}: ${r.error.message}`);
-    return { status: r.status, out: r.stdout ?? '' };
+    return { status: r.status, out: r.stdout ?? '', why: r.error?.message ?? `exit ${r.status}` };
   };
   console.error(`Falling back to Depot workspace ${owner} (${opts['depot-minutes'] ?? 30}-minute lease).`);
   const up = call('up', '--owner', owner, '--repo', cwd, '--minutes', String(opts['depot-minutes'] ?? 30));
-  if (up.status !== 0) throw new Fail(EXIT.depot, 'Depot up failed');
+  if (up.status !== 0) throw new Fail(EXIT.depot, `Depot up failed (${up.why})`);
   let parsed; try { parsed = JSON.parse(up.out); } catch { parsed = {}; }
   if (parsed.reused) throw new Fail(EXIT.depot, `Depot reused an existing workspace for ${owner}; left untouched`);
   try {
