@@ -275,6 +275,7 @@ async function depot(opts, cwd, args) {
   const owner = `rp-${new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)}-${randomBytes(3).toString('hex')}`;
   const call = (...a) => {
     const r = spawnSync(bin[0], [...bin.slice(1), ...a], { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'inherit'] });
+    if (r.error) console.error(`depot-workspace ${a[0]}: ${r.error.message}`);
     return { status: r.status, out: r.stdout ?? '' };
   };
   console.error(`Falling back to Depot workspace ${owner} (${opts['depot-minutes'] ?? 30}-minute lease).`);

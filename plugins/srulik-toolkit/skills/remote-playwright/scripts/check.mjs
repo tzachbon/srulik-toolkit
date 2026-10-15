@@ -133,10 +133,10 @@ async function fallbackCases(tmp) {
   fs.writeFileSync(fakeScript, `const fs = require('fs'), path = require('path'), os = require('os'), { spawnSync } = require('child_process');
 const [cmd, ...rest] = process.argv.slice(2);
 const opt = k => rest[rest.indexOf(k) + 1];
-fs.appendFileSync(${JSON.stringify(log)}, cmd + ' ' + opt('--owner') + '\\n');
+fs.appendFileSync(process.env.FAKE_LOG, cmd + ' ' + opt('--owner') + '\\n');
 const env = process.env;
 if (cmd === 'up') console.log(env.FAKE_REUSED ? '{"reused":true}' : '{}');
-if (cmd === 'run') { fs.writeFileSync(${JSON.stringify(path.join('TMPDIR_PLACEHOLDER', 'depot-cmd'))}, opt('--command')); process.exit(Number(env.FAKE_RUN || 0)); }
+if (cmd === 'run') { fs.writeFileSync(process.env.FAKE_CMD, opt('--command')); process.exit(Number(env.FAKE_RUN || 0)); }
 if (cmd === 'export') {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'fake-depot-'));
   fs.mkdirSync(path.join(d, '.rp')); fs.writeFileSync(path.join(d, '.rp', 'status'), String(env.FAKE_STATUS || 0)); fs.writeFileSync(path.join(d, '.rp', 'setup.log'), 'setup');
@@ -144,8 +144,10 @@ if (cmd === 'export') {
   if (t === 0) fs.copyFileSync(path.join(d, 'a.tgz'), opt('--out'));
   process.exit(t);
 }
-`.replace('TMPDIR_PLACEHOLDER', tmp.replaceAll('\\', '/')));
+`);
   const fakeDepot = JSON.stringify([process.execPath, fakeScript]);
+  process.env.FAKE_LOG = log;
+  process.env.FAKE_CMD = path.join(tmp, 'depot-cmd');
   // A tiny Node adapter keeps this test portable: no shell script, works with the platform shell on any OS.
   const adapter = json => {
     const f = path.join(tmp, `adapter-${Math.random().toString(36).slice(2)}.cjs`);
