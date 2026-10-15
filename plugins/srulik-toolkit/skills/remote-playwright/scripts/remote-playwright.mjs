@@ -137,9 +137,28 @@ export function findConfig(cwd, args) {
   throw new Fail(EXIT.refused, 'No Playwright config found; pass --config after --');
 }
 
-export function depotCommand(args) {
-  const pw = ['npx', 'playwright', 'test', '--workers=1', ...args, '--output=.rp/out'].map(shQuote).join(' ');
-  return 'mkdir -p .rp; (npm ci && npx playwright install --with-deps chromium) > .rp/setup.log 2>&1; s=$?; '
+// The repository's own package manager, from its lockfile (or packageManager): frozen install and its runner.
+export function packageManager(cwd) {
+  const has = f => fs.existsSync(path.join(cwd, f));
+  let declared = '';
+  try { declared = String(JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8')).packageManager ?? '').split('@')[0]; } catch { /* no package.json */ }
+  const pick = name => ({
+    pnpm: { install: 'corepack enable && pnpm install --frozen-lockfile', exec: ['pnpm', 'exec'] },
+    yarn: { install: 'corepack enable && yarn install --immutable', exec: ['yarn'] },
+    bun: { install: 'bun install --frozen-lockfile', exec: ['bunx'] },
+    npm: { install: has('package-lock.json') || has('npm-shrinkwrap.json') ? 'npm ci' : 'npm install', exec: ['npx'] },
+  })[name];
+  if (pick(declared)) return pick(declared);
+  if (has('pnpm-lock.yaml')) return pick('pnpm');
+  if (has('yarn.lock')) return pick('yarn');
+  if (has('bun.lockb') || has('bun.lock')) return pick('bun');
+  return pick('npm');
+}
+
+export function depotCommand(args, pm = packageManager(process.cwd())) {
+  const pw = [...pm.exec, 'playwright', 'test', '--workers=1', ...args, '--output=.rp/out'].map(shQuote).join(' ');
+  const install = [...pm.exec, 'playwright', 'install', '--with-deps', 'chromium'].map(shQuote).join(' ');
+  return `mkdir -p .rp; (${pm.install} && ${install}) > .rp/setup.log 2>&1; s=$?; `
     + `if [ $s -eq 0 ]; then ${pw}; s=$?; else s=100; fi; echo $s > .rp/status; `
     + 'tar -czf .rp/artifacts.tgz .rp/status .rp/setup.log $( [ -d .rp/out ] && echo .rp/out ) $( [ -d playwright-report ] && echo playwright-report ) || exit 101; exit 0';
 }
@@ -284,7 +303,7 @@ async function depot(opts, cwd, args) {
   let parsed; try { parsed = JSON.parse(up.out); } catch { parsed = {}; }
   if (parsed.reused) throw new Fail(EXIT.depot, `Depot reused an existing workspace for ${owner}; left untouched`);
   try {
-    const run = call('run', '--owner', owner, '--seconds', String(opts['depot-seconds'] ?? 1500), '--command', depotCommand(args));
+    const run = call('run', '--owner', owner, '--seconds', String(opts['depot-seconds'] ?? 1500), '--command', depotCommand(args, packageManager(cwd)));
     if (run.status !== 0) throw new Fail(EXIT.depot, 'Depot run failed (remote command or archive)');
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const local = path.join(cwd, 'test-results', `depot-${stamp}.tgz`);

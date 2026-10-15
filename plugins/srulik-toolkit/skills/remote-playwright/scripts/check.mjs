@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { eligibility, gpuMax, redactor, scanReports, refuseArgs, parseArgs, captureConfig, depotCommand, run, EXIT, Fail } from './remote-playwright.mjs';
+import { eligibility, gpuMax, redactor, scanReports, refuseArgs, parseArgs, captureConfig, depotCommand, packageManager, run, EXIT, Fail } from './remote-playwright.mjs';
 import { psStart, psStop, psProbe, parseResult } from './windows.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -260,4 +260,17 @@ export async function check() {
   return 0;
 }
 
-assert.ok(Fail && depotCommand('x').includes("'npx' 'playwright' 'test' '--workers=1' 'x'"));
+assert.ok(Fail && depotCommand(['x'], { install: 'npm ci', exec: ['npx'] }).includes("'npx' 'playwright' 'test' '--workers=1' 'x'"));
+{
+  // The fallback installs and runs with the repository's own package manager.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rp-pm-'));
+  const pm = (files, pkg) => { fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir); for (const f of files) fs.writeFileSync(path.join(dir, f), ''); if (pkg) fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(pkg)); return packageManager(dir); };
+  assert.equal(pm(['package-lock.json']).install, 'npm ci');
+  assert.equal(pm([]).install, 'npm install');
+  assert.deepEqual(pm(['pnpm-lock.yaml']).exec, ['pnpm', 'exec']);
+  assert.match(pm(['yarn.lock']).install, /yarn install --immutable/);
+  assert.deepEqual(pm(['bun.lock']).exec, ['bunx']);
+  assert.deepEqual(pm(['package-lock.json'], { packageManager: 'pnpm@9.1.0' }).exec, ['pnpm', 'exec']);
+  assert.match(depotCommand(['t'], pm(['pnpm-lock.yaml'])), /^mkdir -p \.rp; \(corepack enable && pnpm install --frozen-lockfile && 'pnpm' 'exec' 'playwright' 'install'/);
+  fs.rmSync(dir, { recursive: true, force: true });
+}
