@@ -41,6 +41,8 @@ try {
   if((Get-Content (Join-Path $core 'package.json') -Raw | ConvertFrom-Json).version -ne ${ps(version)}){ Out @{error='stage';detail='staged playwright-core version differs'}; exit 0 }
   & node (Join-Path $core 'cli.js') install chromium 2>&1 | Out-Null
   if($LASTEXITCODE -ne 0){ Out @{error='stage';detail='Chromium install failed'}; exit 0 }
+  # A run directory without owner.json is left from an interrupted start; its proxy, if alive, is unrecorded.
+  if(Test-Path $run){ Out @{error='conflict';detail="an interrupted start left $run without an owner record; end its node proxy, delete the directory, then start again"}; exit 0 }
   New-Item -ItemType Directory -Force $run | Out-Null; $created.run=$true
   & icacls $run /inheritance:r /grant:r "$($env:USERNAME):(OI)(CI)F" | Out-Null
   [IO.File]::WriteAllText((Join-Path $run 'proxy.cjs'),[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(${ps(Buffer.from(proxySource).toString('base64'))})))

@@ -140,11 +140,13 @@ export function findConfig(cwd, args) {
 // The repository's own package manager, from its lockfile (or packageManager): frozen install and its runner.
 export function packageManager(cwd) {
   const has = f => fs.existsSync(path.join(cwd, f));
-  let declared = '';
-  try { declared = String(JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8')).packageManager ?? '').split('@')[0]; } catch { /* no package.json */ }
+  let declared = '', major = 0;
+  try { [declared, major] = String(JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8')).packageManager ?? '').split('@'); } catch { /* no package.json */ }
+  // Yarn Classic (1.x, or a yarn.lock with no declared version) only knows --frozen-lockfile.
+  const yarnClassic = declared === 'yarn' ? parseInt(major, 10) < 2 : !has('.yarnrc.yml');
   const pick = name => ({
     pnpm: { install: 'corepack enable && pnpm install --frozen-lockfile', exec: ['pnpm', 'exec'] },
-    yarn: { install: 'corepack enable && yarn install --immutable', exec: ['yarn'] },
+    yarn: { install: yarnClassic ? 'corepack enable && yarn install --frozen-lockfile' : 'corepack enable && yarn install --immutable', exec: ['yarn'] },
     bun: { install: 'bun install --frozen-lockfile', exec: ['bunx'] },
     npm: { install: has('package-lock.json') || has('npm-shrinkwrap.json') ? 'npm ci' : 'npm install', exec: ['npx'] },
   })[name];
@@ -273,15 +275,25 @@ async function stop(opts) {
   console.log('Stopped: browser server, its Serve route and its token removed.');
 }
 
+// The repository's own Playwright test CLI, run with node directly: no npx, no .cmd shim, no shell on Windows.
+// @playwright/test first, then playwright, resolved from the repository so non-hoisted layouts work.
+function playwrightCli(cwd) {
+  const req = createRequire(path.join(cwd, 'noop.js'));
+  for (const pkg of ['@playwright/test', 'playwright']) {
+    try { return path.join(path.dirname(req.resolve(`${pkg}/package.json`)), 'cli.js'); } catch { /* try the next */ }
+  }
+  throw new Fail(EXIT.version, 'This repository has no installed @playwright/test or playwright; install its dependencies first');
+}
+
 function runPlaywright(cwd, args, env, secrets) {
   return new Promise((resolve, reject) => {
     // REMOTE_PLAYWRIGHT_TEST_CMD (JSON argv) lets the self-test stand in for Playwright.
     const cmd = process.env.REMOTE_PLAYWRIGHT_TEST_CMD ? JSON.parse(process.env.REMOTE_PLAYWRIGHT_TEST_CMD)
-      : process.platform === 'win32' ? ['npx.cmd', 'playwright', 'test'] : ['nice', '-n', '10', 'npx', 'playwright', 'test'];
+      : [...(process.platform === 'win32' ? [] : ['nice', '-n', '10']), process.execPath, playwrightCli(cwd), 'test'];
     const child = spawn(cmd[0], [...cmd.slice(1), '--workers=1', ...args], { cwd, env, stdio: ['inherit', 'pipe', 'pipe'] });
     const out = redactor(secrets, t => process.stdout.write(t)), err = redactor(secrets, t => process.stderr.write(t));
-    child.stdout.on('data', d => out.push(String(d)));
-    child.stderr.on('data', d => err.push(String(d)));
+    child.stdout.setEncoding('utf8').on('data', d => out.push(d));
+    child.stderr.setEncoding('utf8').on('data', d => err.push(d));
     child.on('error', reject);
     child.on('close', code => { out.end(); err.end(); resolve(code ?? 1); });
   });
@@ -321,7 +333,8 @@ async function depot(opts, cwd, args) {
     if (status === 100) throw new Fail(EXIT.setup, `Depot setup failed; see ${path.join(dest, '.rp', 'setup.log')}`);
     return status;
   } finally {
-    call('stop', '--owner', owner);
+    const stopped = call('stop', '--owner', owner);
+    if (stopped.status !== 0) console.error(`Warning: could not stop Depot workspace ${owner} (${stopped.why}); stop it with depot-workspace stop --owner ${owner} before its lease ends.`);
   }
 }
 

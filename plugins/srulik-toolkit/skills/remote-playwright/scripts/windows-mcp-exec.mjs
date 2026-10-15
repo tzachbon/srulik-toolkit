@@ -5,7 +5,7 @@
 import http from 'node:http';
 import https from 'node:https';
 
-function post(url, body, session, method = 'POST') {
+function post(url, body, session, method = 'POST', seconds = 30) {
   const u = new URL(url);
   const headers = { 'content-type': 'application/json', accept: 'application/json, text/event-stream' };
   if (session) headers['mcp-session-id'] = session;
@@ -15,6 +15,8 @@ function post(url, body, session, method = 'POST') {
       let text = '';
       res.setEncoding('utf8').on('data', d => { text += d; }).on('end', () => resolve({ session: res.headers['mcp-session-id'], status: res.statusCode, text }));
     });
+    // Every request has a deadline, so start and stop never block on a server that leaves a response open.
+    req.setTimeout(seconds * 1000, () => req.destroy(Error(`MCP request timed out after ${seconds}s`)));
     req.on('error', reject);
     req.end(body === undefined ? undefined : JSON.stringify(body));
   });
@@ -36,7 +38,7 @@ async function main() {
   if (init.status !== 200 || !init.session) throw Error(`MCP initialize failed (HTTP ${init.status})`);
   try {
     await post(opts.url, { jsonrpc: '2.0', method: 'notifications/initialized' }, init.session);
-    const call = await post(opts.url, { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: opts.tool, arguments: { command: script, timeout: Number(opts.timeout) } } }, init.session);
+    const call = await post(opts.url, { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: opts.tool, arguments: { command: script, timeout: Number(opts.timeout) } } }, init.session, 'POST', Number(opts.timeout) + 30);
     const msg = message(call.text);
     if (msg.error) throw Error(`MCP error: ${msg.error.message}`);
     const result = msg.result?.structuredContent?.result ?? msg.result?.content?.find(c => c.type === 'text')?.text ?? '';

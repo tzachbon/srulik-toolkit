@@ -33,7 +33,7 @@ $RP stop  --windows-exec "<adapter>"
 
 ## Fallback
 
-If anything fails before the tests start, `run` moves the whole job to a fresh cloud workspace that this run owns, using a 30-minute lease within the existing budget. That covers an adapter error, missing telemetry, an ineligible PC, no started server, a version mismatch, or a failed loopback probe. It installs dependencies there, runs the same tests with one worker, brings the artifacts back as one archive, and stops the workspace. Never retry a test that failed on the Windows browser on another host: once tests have started, a failure is a real result.
+If one of `run`'s pre-test checks fails, `run` moves the whole job to a fresh cloud workspace that this run owns, using a 30-minute lease within the existing budget. The checks that fall back are an adapter or transport error, unreadable or missing telemetry, an ineligible PC, no started server, a version mismatch, and a failed loopback probe. Argument refusals, a run already in progress, and local setup errors stop with an error instead. It installs dependencies there, runs the same tests with one worker, brings the artifacts back as one archive, and stops the workspace. Never retry a test that failed on the Windows browser on another host: once tests have started, a failure is a real result.
 
 ## Safety
 
