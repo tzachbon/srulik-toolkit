@@ -440,7 +440,10 @@ prior_art_contracts = {
         "Material gaps block dependent decisions",
         "- Prior-art verification:",
     ]),
-    "quality gates": (quality_gates, ["prior-art verification", "Verify prior art", "Context and evidence"]),
+    "quality gates": (quality_gates, [
+        "prior-art verification", "Verify prior art", "Context and evidence",
+        "Fail the gate if the check is absent or a material lead or evidence gap remains unresolved.",
+    ]),
     "create-plan launcher": (create_plan_openai, ["verify prior art for every plan", "deepen research", "decision-relevant"]),
     "README": (readme, ["prior art for every plan", "internal precedents", "external search", "credible lead", "deeper research"]),
 }
