@@ -1,21 +1,14 @@
 # Srulik Toolkit agent guide
 
-Read this before changing the toolkit. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, versioning, and pull requests; this file covers what the toolkit is for and where new work belongs.
+Before changing a skill, utility, hook, manifest or validation contract, read [CODING_STANDARDS.md](CODING_STANDARDS.md) and follow this guide. Before opening a PR, read [CONTRIBUTING.md](CONTRIBUTING.md) for validation, versions and evidence.
+
+Edit skill sources under `plugins/srulik-toolkit/skills/` in this repository. Installed plugin caches are runtime copies; verify their version separately when investigating installed behavior.
 
 ## Purpose
 
-1. **Generic across providers and agent harnesses.** A skill describes behavior an agent can follow on any model and in any harness that offers the capabilities it needs. Claude Code and Codex are the packaged targets today; other harnesses are supported only where a skill documents and tests them.
-2. **A streamlined path from request to merged change.** Skills turn a request into a plan, carry the plan out, and verify the result, with each step handing off to the next.
-3. **Reusable skills and utilities.** Each skill works on its own and stays small. Shared helpers live in one place and degrade gracefully when an optional dependency is missing.
-
-## Layout
-
-- `plugins/srulik-toolkit/skills/<name>/SKILL.md`: one skill per directory. Supporting files sit beside it, usually in `references/`.
-- `plugins/srulik-toolkit/scripts/`: utilities skills call, such as [`models.js`](plugins/srulik-toolkit/scripts/models.js).
-- `plugins/srulik-toolkit/hooks/`: session hooks.
-- `.claude-plugin/`, `.agents/plugins/`, and `plugins/srulik-toolkit/.{claude,codex}-plugin/`: marketplace and plugin manifests.
-- `scripts/validate.sh`: the repository's single check, run by CI on Linux, macOS, and Windows.
-- `research/`: dated research notes behind past decisions.
+- Generic across providers and agent harnesses.
+- A streamlined path from request to merged change.
+- Reusable skills and utilities.
 
 ## Generic core, host-specific references
 
@@ -24,8 +17,6 @@ Write a skill's `SKILL.md` in terms of capabilities, not one harness's tools: "l
 [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) is the model. Its core lists the host capabilities it needs and what to do when each is missing. [`references/t3-code.md`](plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md) maps them to T3 Code's tools and records what was observed live. To support another harness, add a reference beside it; do not edit the core to fit one host.
 
 When a required capability is missing, the skill reports which one and stops or degrades as its core describes. On a harness with no reference, a skill shows its capability mapping, says it is untested, and acts only after the user confirms. Never claim support for a harness that no reference documents or nobody has tested; say what is unverified.
-
-Some older skills still name Claude Code or Codex directly. Move host-specific text into a reference when you next change such a skill, not as a separate sweep.
 
 ## Where new work fits
 
@@ -37,11 +28,7 @@ Some older skills still name Claude Code or Codex directly. Move host-specific t
 
 Prefer extending an existing skill over adding a new one. A new skill needs a distinct trigger, a handoff to its neighbors in this flow, and a row in the README's skill table.
 
-Utilities in `plugins/srulik-toolkit/scripts/` use only the Node.js standard library. Resolve paths from the plugin root, never the caller's working directory. Read state from `PLUGIN_DATA`, falling back to `CLAUDE_PLUGIN_DATA`, then a temporary directory. An optional external service needs a user-supplied key only when it requires authentication: exit with code 2 when a required key is missing so callers fall back. Add attribution to [NOTICE.md](NOTICE.md).
-
 ## Keeping the boundaries
 
 - Encode each skill's contract in `scripts/validate.sh`: the phrases that carry its behavior, the phrases it must no longer contain, and, for a generic core, the host-specific names it must not mention. A reference gets its own contract.
 - Break each new check once on purpose and confirm validation fails.
-- Test utilities in `scripts/validate.sh` against local fakes, never live paid services.
-- Before opening a pull request, run `./scripts/validate.sh` and `git diff --check`, then follow [CONTRIBUTING.md](CONTRIBUTING.md) for versions and evidence.
