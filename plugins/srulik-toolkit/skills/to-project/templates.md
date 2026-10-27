@@ -49,7 +49,7 @@ Assume other agents and the user work this repo at the same time.
 
 ## Skills (bundled)
 
-Three skills live in `.agents/skills/`; `.claude/skills` is a relative alias to
+Two skills live in `.agents/skills/`; `.claude/skills` is a relative alias to
 that directory. Use them in normal work:
 
 - **`capture-to-project`**: when a decision, term, durable fact, or actionable

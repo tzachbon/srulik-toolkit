@@ -95,12 +95,14 @@ for token in [
     "Be concise by default",
     "- **Goal:**", "- **Done:**", "- **Now:**", "- **Next:**",
     "## Write it like I'm five", "Write the whole recap in plain words",
-    "explain around them", "## Show it", "The visual is the heart of the recap", "in the style of `show-me`",
+    "explain around them", "## Show it", "The visual is the heart of the recap; place it right after **Goal**", "in the style of `show-me`",
     "hand off to `retro`",
     "If the session is new and has no history, recap the project instead",
 ]:
     if token not in recap:
         raise SystemExit(f"recap skill missing contract: {token!r}")
+if "Two skills live in `.agents/skills/`" not in (skill_root / "to-project" / "templates.md").read_text(encoding="utf-8"):
+    raise SystemExit("to-project template must describe its two bundled skills")
 if (skill_root / "to-project" / "base-skills" / "recap-project").exists():
     raise SystemExit("recap-project is deprecated; the recap skill replaces it")
 if "7. **Close with `$srulik-toolkit:recap`.**" not in end_to_end or "Run it for `WAITING`, `BLOCKED`, and `STOPPED` handoffs too" not in end_to_end:
