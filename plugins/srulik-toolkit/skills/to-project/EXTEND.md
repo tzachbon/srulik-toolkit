@@ -48,12 +48,13 @@ new or refined terms to `GLOSSARY.md`, new hard-to-reverse trade-offs to a new A
   a row to `sources.md`. ADR and glossary entries derived from it cite it.
 - **`AGENTS.md`**: update "what this is" or the index only if the project's shape
   changed (a new type-dir, a new related project). Otherwise leave it.
-- **Base skills**: if `.agents/skills/` is missing any of `capture-to-project`,
-  `tidy-project`, `recap-project` (an older project predating them), copy them
+- **Base skills**: if `.agents/skills/` is missing `capture-to-project` or
+  `tidy-project` (an older project predating them), copy them
   from to-project's `base-skills/`, stamp `installed`/`source`, ensure
   `.claude/skills` is a relative alias to `../.agents/skills`, and add the Skills
   section to `AGENTS.md`. Do not link to a global or source installation. Skip
-  cleanly when already present.
+  cleanly when already present. Leave an existing `recap-project` copy in place;
+  the toolkit's `recap` skill replaces it and new scaffolds no longer include it.
 - **memory index** (`docs/memory/MEMORY.md`): append a pointer for any durable
   fact that emerged.
 

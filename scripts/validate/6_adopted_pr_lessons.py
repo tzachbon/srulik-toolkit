@@ -82,3 +82,30 @@ for surface_name, surface in [("pr-babysit", pr_babysit), ("end-to-end", end_to_
             raise SystemExit(f"{surface_name} still forbids lease-protected rebases: {retired}")
 if re.search(r"AskUserQuestion|request_user_input|\bSol\b|gh api|GraphQL|CodeRabbit", end_to_end + pr_babysit):
     raise SystemExit("question tools and model names belong in host references, not skill cores")
+
+# recap: read-only, plain-language session catch-up in general or focused mode.
+recap = " ".join((skill_root / "recap" / "SKILL.md").read_text(encoding="utf-8").split())
+for token in [
+    "name: recap",
+    "from the first user message to now",
+    "a recap does not authorize edits",
+    "label it \"as of the last message\"",
+    "- **General:** the user gives no topic", "organized around the goal",
+    "- **Focused:** the user adds a topic", "Leave out the rest",
+    "Be concise by default",
+    "- **Goal:**", "- **Done:**", "- **Now:**", "- **Next:**",
+    "## Write it like I'm five", "Write the whole recap in plain words",
+    "explain around them", "## Show it", "The visual is the heart of the recap; place it right after **Goal**", "in the style of `show-me`",
+    "hand off to `retro`",
+    "If the session is new and has no history, recap the project instead",
+]:
+    if token not in recap:
+        raise SystemExit(f"recap skill missing contract: {token!r}")
+if "Two skills live in `.agents/skills/`" not in (skill_root / "to-project" / "templates.md").read_text(encoding="utf-8"):
+    raise SystemExit("to-project template must describe its two bundled skills")
+if (skill_root / "to-project" / "base-skills" / "recap-project").exists():
+    raise SystemExit("recap-project is deprecated; the recap skill replaces it")
+if "7. **Close with `$srulik-toolkit:recap`.**" not in end_to_end or "Run it for `WAITING`, `BLOCKED`, and `STOPPED` handoffs too" not in end_to_end:
+    raise SystemExit("end-to-end workflow must close with a recap")
+if re.search(r"t3_[a-z_]+|\bT3\b|Bash\(", recap):
+    raise SystemExit("recap core must stay host-agnostic")

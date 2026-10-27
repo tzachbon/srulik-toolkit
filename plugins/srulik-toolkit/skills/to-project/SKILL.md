@@ -119,8 +119,8 @@ Write from templates.md:
 - **Provenance**: copy the source artifact into `assets/` with a dated name, log
   it in `assets/sources.md`; ADRs and glossary terms that came from it cite it. A
   typed-only idea with no file goes to `assets/origin.md`.
-- **Base skills**: copy the three bundled base skills into the project. For
-  each of `capture-to-project`, `tidy-project`, `recap-project`, copy this skill's
+- **Base skills**: copy the two bundled base skills into the project. For
+  each of `capture-to-project` and `tidy-project`, copy this skill's
   `base-skills/<name>/` to the project's `.agents/skills/<name>/` and append
   `installed: <YYYY-MM-DD>` and `source: to-project` to the copied SKILL.md
   frontmatter. Create `.claude/skills` as a relative symlink to
@@ -160,6 +160,6 @@ steering instructions instead of overwriting it.
 
 ## Files
 templates.md (scaffold file bodies), EXTEND.md (extend mode), GLOSSARY-FORMAT.md and
-ADR-FORMAT.md (formats for step 4), base-skills/ (capture-to-project, tidy-project,
-recap-project, copied into each scaffold). Additional skill discovery is optional
+ADR-FORMAT.md (formats for step 4), base-skills/ (capture-to-project and tidy-project,
+copied into each scaffold). Additional skill discovery is optional
 and runs only when the user requests it.

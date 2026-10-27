@@ -96,7 +96,6 @@ for relative in [
     "skills/to-project/GLOSSARY-FORMAT.md",
     "skills/to-project/templates.md",
     "skills/to-project/base-skills/capture-to-project/SKILL.md",
-    "skills/to-project/base-skills/recap-project/SKILL.md",
     "skills/to-project/base-skills/tidy-project/SKILL.md",
     "skills/review-pro-max/code-reviewer.md",
     "skills/tdd/tests.md",
@@ -176,8 +175,8 @@ if not all(token in tour for token in tour_contract):
 for skill_name in expected:
     if f"skills/{skill_name}/SKILL.md" not in readme:
         raise SystemExit(f"README is missing skill: {skill_name}")
-if "Nineteen focused skills" not in readme or "/hooks" not in readme:
-    raise SystemExit("README must document nineteen skills and Codex hook trust")
+if "Twenty focused skills" not in readme or "/hooks" not in readme:
+    raise SystemExit("README must document twenty skills and Codex hook trust")
 
 outcome_dod_contract = "Outcome and Definition of Done gate"
 create_plan_text = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")

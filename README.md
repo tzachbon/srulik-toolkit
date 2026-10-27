@@ -9,7 +9,7 @@
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Nineteen focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
+**Twenty focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
@@ -18,7 +18,7 @@
 Srulik Toolkit packages the workflows I use to make sense of incoming requests, turn loose ideas into projects,
 investigate questions, explain topics visually, give guided tours, write and implement plans, review changes, keep work in scope, delegate
 suitable tasks, work test-first, and maintain pull requests. It also covers prose
-editing, merge conflicts, CI failures, and session retrospectives.
+editing, merge conflicts, CI failures, session recaps, and session retrospectives.
 
 Each skill works on its own. Install one plugin, then invoke the skill you need
 by name or describe the task in plain language.
@@ -49,7 +49,7 @@ installation or a hook change; installing the plugin alone does not grant it.
 
 ## Startup hint
 
-On a new session, the plugin writes the nineteen skill names and a short routing
+On a new session, the plugin writes the twenty skill names and a short routing
 instruction to model context. It uses the default `hooks/hooks.json` location
 and runs only for `SessionStart` with the `startup` matcher. It does not run on
 each prompt or skill invocation.
@@ -81,7 +81,7 @@ and trust the new `Stop` hook through `/hooks` after updating the plugin.
 | [`create-plan`](plugins/srulik-toolkit/skills/create-plan/SKILL.md) | Research, draft, review, and revise an execution-ready plan until no actionable comments remain. |
 | [`implement-plan`](plugins/srulik-toolkit/skills/implement-plan/SKILL.md) | Execute an approved plan, integrate and verify tasks, then repeat review and fixes until no actionable comments remain. |
 | [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request with review evidence, merge danger, and blast radius. |
-| [`execute-task-end-to-end`](plugins/srulik-toolkit/skills/execute-task-end-to-end/SKILL.md) | Explicitly request the full workflow: plan, issue, implementation, and a PR driven to `MERGE READY`, or verified `MERGED` when authorized. |
+| [`execute-task-end-to-end`](plugins/srulik-toolkit/skills/execute-task-end-to-end/SKILL.md) | Explicitly request the full workflow: plan, issue, implementation, and a PR driven to `MERGE READY`, or verified `MERGED` when authorized, closing with a `recap`. |
 | [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a local diff, branch, or pull request without changing it. |
 | [`stay-in-scope`](plugins/srulik-toolkit/skills/stay-in-scope/SKILL.md) | Re-establish the requested boundary when work starts to drift. |
 | [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. |
@@ -94,6 +94,7 @@ and trust the new `Stop` hook through `/hooks` after updating the plugin.
 | [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Hand a pull request to a dedicated low-cost babysitter, preferably a subagent, that fixes conflicts, review feedback, and CI until closure, messaging you only when needed. |
 | [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
 | [`fix-ci`](plugins/srulik-toolkit/skills/fix-ci/SKILL.md) | Diagnose failing checks, apply the smallest repair, and verify the result. |
+| [`recap`](plugins/srulik-toolkit/skills/recap/SKILL.md) | Get a short, plain-language catch-up on a session: the whole thread around its goal, or focused on a topic you add. |
 | [`retro`](plugins/srulik-toolkit/skills/retro/SKILL.md) | Learn from a coding session and propose evidence-backed improvements to the agent's environment. Adapted from Matt Pocock. |
 
 Example prompts:
@@ -110,6 +111,7 @@ $research Trace how this repository handles retries
 $tour How did this repository's PR review workflow evolve?
 $show-me Explain the current request flow
 $fix-ci Diagnose and fix the failing checks on this pull request
+$recap Catch me up on this thread from the beginning
 $retro Review this session and suggest environment improvements
 ```
 
@@ -208,7 +210,7 @@ before/after evidence, whether recovery is a two-way or one-way door, and the
 affected users, callers, or data. A small diagram is included when it helps review.
 
 `to-project` now writes domain vocabulary to `GLOSSARY.md` in new projects.
-Existing `CONTEXT.md` and `CONTEXT-MAP.md` remain supported. Capture, recap, and TDD
+Existing `CONTEXT.md` and `CONTEXT-MAP.md` remain supported. Capture and TDD
 follow the project's selected vocabulary file; no existing project files are
 renamed automatically. When both files exist, the glossary owns terms and context
 retains background. `retro` continues to propose evidence-backed improvements

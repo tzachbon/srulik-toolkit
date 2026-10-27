@@ -49,7 +49,7 @@ Assume other agents and the user work this repo at the same time.
 
 ## Skills (bundled)
 
-Three skills live in `.agents/skills/`; `.claude/skills` is a relative alias to
+Two skills live in `.agents/skills/`; `.claude/skills` is a relative alias to
 that directory. Use them in normal work:
 
 - **`capture-to-project`**: when a decision, term, durable fact, or actionable
@@ -58,8 +58,6 @@ that directory. Use them in normal work:
 - **`tidy-project`**: occasionally (session start, or after a batch of changes),
   run it to clear junk, fix stale tasks and index drift, then commit. It auto-fixes
   safe items and proposes anything destructive.
-- **`recap-project`**: re-entering cold? run it for a read-only "where we are,
-  what is next" brief.
 
 ## Index: where things live
 
@@ -68,7 +66,7 @@ Code.
 
 - **`AGENTS.md`** (this file): steering instructions and directory map.
 - **`TASKS.md`**: task board. Read first, update as you work.
-- **`.agents/skills/`**: bundled project skills (capture/tidy/recap).
+- **`.agents/skills/`**: bundled project skills (capture/tidy).
   `.claude/skills` is a relative alias for Claude Code; neither path points to a
   global installation.
 - **`assets/`**: all provided raw inputs (transcripts, images, scripts, the
