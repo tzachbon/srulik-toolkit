@@ -194,6 +194,15 @@ reasoning effort, task complexity and consequences, remaining usage, then cost.
 There is no universal score cutoff; user model exclusions and task-specific score
 floors still apply.
 
+`create-pr`, `pr-babysit`, and `execute-task-end-to-end` rebase their own branch
+onto the base and push it with `--force-with-lease`; they never force-push another
+branch. `pr-babysit` triages old or inherited PRs (modernize, rework, or close)
+before rebasing them, keeps contributor credit, labels comments it posts for you,
+and declines review findings that would only grow the PR. `execute-task-end-to-end`
+assumes nobody is watching: it proves each change with evidence from the session,
+may run the app and browser checks without asking first, and asks blocking
+questions through the host's question tool.
+
 `create-pr` respects repository templates while explaining the changed behavior,
 before/after evidence, whether recovery is a two-way or one-way door, and the
 affected users, callers, or data. A small diagram is included when it helps review.

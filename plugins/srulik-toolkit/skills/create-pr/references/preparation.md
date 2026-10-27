@@ -22,9 +22,9 @@ Stop and ask when:
 - a Git operation is already active;
 - the requested PR would expose a security issue that belongs in the repository's private reporting route;
 - authentication or required push/create permission is unavailable;
-- local and remote history require rewriting or discarding work.
+- local and remote history diverge in a way that would discard work or rewrite commits this change does not own.
 
-Do not ask for permission to force-push, weaken checks, or publish sensitive data. Those are outside this workflow.
+Do not ask for permission to force-push another branch, weaken checks, or publish sensitive data. Those are outside this workflow.
 
 ## Branch state
 
@@ -32,7 +32,7 @@ Do not ask for permission to force-push, weaken checks, or publish sensitive dat
 - On the base branch with intended changes, create a feature branch before committing.
 - On a detached HEAD with clear intended changes, create a feature branch at the current commit; this preserves the checkout and changes.
 - If the current branch already has an open PR for the intended base, do not create another. Continue to provider read-back.
-- If the branch has published commits, preserve history. Bring in a changed base only when needed and authorized, using the repository's established non-rewriting approach.
+- Bring in a changed base after committing, as publication describes, not on a dirty worktree. Never rewrite a branch other people push to.
 
 ## Readiness record
 

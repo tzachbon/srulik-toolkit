@@ -56,6 +56,8 @@ For `failed`, read the error with `t3_thread_read` (`view: "activity"`). The pro
 - **Start:** `link_pull_request` and `watch_pull_request` with the PR URL, then confirm with `list_thread_pull_requests`. Only a top-level thread can own a watch, which is why the babysitter is launched with `t3_thread_launch` and not `delegate_task`. A watch wakes the thread with an `Update on pull request #<number>` message only for comments posted after registration.
 - **Messages to the main thread:** `t3_thread_send` with the main thread's ID from the brief.
 - **Stop:** `unwatch_pull_request`. Then retire this thread as in Retire, with no `threadId` (both tools default to the calling thread): rename with `t3_thread_update` if the harness exposes it, settle with `t3_thread_organize` if available, and without rename follow the skill's fallback for a host without capability 5.
+- `watch_pull_request` reports conflicts but not a branch that fell behind its base. Check the merge state yourself before `READY`.
+- "Stopped watching, could not read it" usually means the GitHub GraphQL quota is used up. Check `gh api --hostname <host> rate_limit --jq .resources.graphql`; if `remaining` is near 0, wait for `reset` with one background command, then watch again. Never re-watch in a tight loop.
 - T3 Code also ends a watch when the PR merges or closes, when the thread settles or is archived, or after 8 consecutive read failures. Report an unexpected end as `MONITORING FAILED`.
 
 ## Verified behavior

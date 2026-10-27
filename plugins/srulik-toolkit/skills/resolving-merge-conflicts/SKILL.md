@@ -25,4 +25,4 @@ Inspect the complete staged and unstaged diff for the affected paths. Check for 
 
 Stage only the resolved files intended for this operation. Complete the merge commit or continue the rebase when the authorized resolution passes verification. If another replayed commit conflicts, repeat the intent and verification steps for that conflict. Do not use blanket staging or discard unrelated changes.
 
-Verify that Git reports no active operation or unmerged paths and inspect the resulting history and diff. Report the preserved behaviors, checks and results, resulting commit, and any remaining limitation. If a caller will push, hand back the result and remind it that a rebase may require a prohibited history rewrite; do not force-push to finish.
+Verify that Git reports no active operation or unmerged paths and inspect the resulting history and diff. Report the preserved behaviors, checks and results, resulting commit, and any remaining limitation. If a caller will push, hand back the result and remind it that a rebased published branch needs a force push with a lease, which only that caller's authority allows; do not push to finish.
