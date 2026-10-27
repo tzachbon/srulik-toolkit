@@ -88,4 +88,4 @@ file checks and contract tests do not establish runtime verification.
 
 - A watched thread stays in Working and out of the user's inbox. Before asking the user anything or handing off, call `unwatch_pull_request`, then ask with the harness's question tool (`AskUserQuestion` in Claude Code, `request_user_input` in Codex).
 - `watch_pull_request` reports conflicts but not a branch that fell behind its base. Check the merge state yourself before `MERGE READY`.
-- A watch that ends with "Stopped watching, could not read it" usually means the GitHub GraphQL quota is used up. Check `gh api rate_limit --jq .resources.graphql`; if `remaining` is near 0, wait for `reset` with one background command, then watch again. Never re-watch in a tight loop.
+- A watch that ends with "Stopped watching, could not read it" usually means the GitHub GraphQL quota is used up. Check `gh api --hostname <host> rate_limit --jq .resources.graphql`; if `remaining` is near 0, wait for `reset` with one background command, then watch again. Never re-watch in a tight loop.

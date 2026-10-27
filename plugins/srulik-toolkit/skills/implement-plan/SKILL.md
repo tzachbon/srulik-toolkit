@@ -107,8 +107,9 @@ evidence.
    obtain user authority before expanding scope. An out-of-scope defect that
    prevents acceptance remains a blocker, not an optional suggestion. Review
    loops grow a change one cheap-looking fix at a time: treat findings about
-   other paths, rare cases, small costs, or extra tests and guards as optional,
-   decline them with a reason, and list them as follow-ups. If a round grew the
+   other paths, rare cases, small costs, or extra tests and guards as optional
+   unless evidence shows the changed flow or a supported caller reaches them;
+   decline optional findings with a reason, and list them as follow-ups. If a round grew the
    diff, cut first. Do not agree with a finding just to end the loop. When the
    same finding stays disputed after two replies, stop and show both sides to
    the user.
