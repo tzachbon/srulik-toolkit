@@ -52,6 +52,8 @@ Refresh ownership and provider state after retirement. Register the main watch a
 
 6. **Deliver `MERGED` when explicitly authorized.** The main agent retains merge authority and responsibility; the child never merges. Recheck every `MERGE READY` condition immediately before merging; new blockers return to maintenance. Proof must cover every change in the final diff, including review fixes and meaningful conflict resolutions. Use the repository's usual method. Verify the merged PR and linked issue closure; close the issue only after its acceptance criteria pass. Completion: provider-verified `MERGED` with the evidence and monitoring cleanup required above.
 
+7. **Close with `$srulik-toolkit:recap`.** After the terminal state and monitoring cleanup, read and follow the installed skill to recap the whole task for a reader who was not watching. Put the handoff evidence above under it. Run it for `WAITING`, `BLOCKED`, and `STOPPED` handoffs too, so the user can resume. Completion: the handoff opens with the recap.
+
 ## Boundaries and blockers
 
 - Read each named skill and its required references at the phase where it is needed; use the current instructions rather than a cached version path. If a required skill is missing, identify it and the blocked phase without silently substituting a different workflow.
