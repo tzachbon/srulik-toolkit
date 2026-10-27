@@ -24,7 +24,7 @@ Stop and ask when:
 - authentication or required push/create permission is unavailable;
 - local and remote history require rewriting or discarding work.
 
-Do not ask for permission to force-push, weaken checks, or publish sensitive data. Those are outside this workflow.
+Do not ask for permission to force-push another branch, weaken checks, or publish sensitive data. Those are outside this workflow.
 
 ## Branch state
 
@@ -32,7 +32,7 @@ Do not ask for permission to force-push, weaken checks, or publish sensitive dat
 - On the base branch with intended changes, create a feature branch before committing.
 - On a detached HEAD with clear intended changes, create a feature branch at the current commit; this preserves the checkout and changes.
 - If the current branch already has an open PR for the intended base, do not create another. Continue to provider read-back.
-- If the branch has published commits, preserve history. Bring in a changed base only when needed and authorized, using the repository's established non-rewriting approach.
+- Before publishing, rebase this change's own branch onto the freshly fetched base unless the repository prefers merge commits. If the branch already has published commits, push the rebase with `--force-with-lease=<branch>:<observed remote sha>`; when the lease fails, fetch and reassess instead of overwriting. Never rewrite a branch other people push to.
 
 ## Readiness record
 

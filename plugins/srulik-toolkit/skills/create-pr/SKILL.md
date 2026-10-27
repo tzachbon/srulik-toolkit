@@ -5,7 +5,7 @@ description: Create a pull request for the current changes.
 
 # Create a pull request
 
-Invocation authorizes a branch for the intended changes, project validation, a commit, a normal push, and pull request creation. Honor narrower user limits. Never force-push, merge, enable auto-merge, weaken checks, publish sensitive content, or include unrelated changes.
+Invocation authorizes a branch for the intended changes, project validation, a commit, a push, rebasing the change's own branch with a lease-protected force push, and pull request creation. Honor narrower user limits. Never force-push without a lease or to another branch, merge, enable auto-merge, weaken checks, publish sensitive content, or include unrelated changes.
 
 Follow this sequence:
 

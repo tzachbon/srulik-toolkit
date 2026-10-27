@@ -12,7 +12,7 @@
 - `plugins/srulik-toolkit/scripts/`: utilities skills call, such as [`models.js`](plugins/srulik-toolkit/scripts/models.js).
 - `plugins/srulik-toolkit/hooks/`: session hooks.
 - `.claude-plugin/`, `.agents/plugins/`, and `plugins/srulik-toolkit/.{claude,codex}-plugin/`: marketplace and plugin manifests.
-- `scripts/validate.sh`: the repository's single check, run by CI on Linux, macOS, and Windows.
+- `scripts/validate.sh`: the repository's single check, run by CI on Linux, macOS, and Windows. Its contract checks live in `scripts/validate/<n>_<area>.py`, run in order in one namespace; keep each part under 20 KB and add a new part rather than growing one past that.
 - `research/`: dated research notes behind past decisions.
 
 ## Legacy skills

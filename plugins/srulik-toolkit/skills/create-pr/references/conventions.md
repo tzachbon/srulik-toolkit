@@ -28,7 +28,17 @@ When repository evidence is insufficient:
 
 ## Title and body
 
-Keep both as short as the repository permits. A title names the outcome, not the implementation diary. The body should help a reviewer answer three questions: what changed, why when non-obvious, and what proves it.
+Keep both as short as the repository permits. A title names the outcome and why it matters, not the implementation diary:
+
+- Weak: `perf(server): negotiate permessage-deflate on the websocket`
+- Better: `perf(server): cut websocket frame size by 70%+ with compression`
+
+Open the body with the problem in the user's terms, then the fix. Do not lead with an inventory of removed functions and touched entry points:
+
+- Weak: "Removed implicit workspace carry-over from every new-thread entry point. Deleted buildContextualThreadOptions and the sidebar seed-context machinery."
+- Better: "My new-worktree default was ignored when starting threads from an existing worktree. Now the configured defaults always apply."
+
+End the body with the public model name and harness that made the change, for example `Created with <model> in <harness>.`, including subagent models that wrote part of it. If the harness reports no model name, name only the harness. Follow any attribution line the user or repository requires instead. The body should help a reviewer answer three questions: what changed, why when non-obvious, and what proves it.
 
 When a template exists:
 

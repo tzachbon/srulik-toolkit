@@ -9,14 +9,14 @@ Publish the prepared change once, then verify provider state.
 - Exclude unrelated and incidental generated files. Never use a blanket stage when the worktree contains unrelated changes.
 - Commit only when intended uncommitted changes exist. Use the convention selected earlier and ensure the commit contains the validated state.
 - Recheck the branch tip and remote relationship immediately before push.
-- Push normally with explicit remote and upstream tracking when needed. Never force-push or rewrite published history.
+- Push with explicit remote and upstream tracking when needed. Force-push only the rebased branch from preparation, only with a lease. Never force-push any other branch.
 - If push fails, preserve the local branch and report the provider or permission error. Do not switch to an unapproved fork or remote.
 
 ## Create
 
 Before creation, query again for an open PR matching the head repository/branch and base. This closes the race between preparation and publication.
 
-Create through the authenticated provider using explicit repository, base, and head values. Supply the selected title, prepared body, requested draft state, and safe evidence attachments. Avoid interactive inference when explicit flags or API fields can carry resolved values.
+Create through the authenticated provider using explicit repository, base, and head values. If GitHub CLI fails because the GraphQL quota is used up, create through REST, which has a separate quota: `gh api repos/<owner>/<repo>/pulls -f title=... -f head=... -f base=... -F body=@<file>`. Supply the selected title, prepared body, requested draft state, and safe evidence attachments. Avoid interactive inference when explicit flags or API fields can carry resolved values.
 
 For fork PRs, identify both head and base repositories. Do not assume the base remote accepts the push. Do not enable maintainer edits, assign reviewers, add labels, or join projects contrary to repository convention or user direction.
 
