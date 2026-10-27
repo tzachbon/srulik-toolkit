@@ -8,7 +8,7 @@ Publish the prepared change once, then verify provider state.
 - Stage intended paths explicitly. Inspect the staged diff and staged file list before committing.
 - Exclude unrelated and incidental generated files. Never use a blanket stage when the worktree contains unrelated changes.
 - Commit only when intended uncommitted changes exist. Use the convention selected earlier and ensure the commit contains the validated state.
-- After committing, fetch the base and this branch's remote. If the remote branch has commits the local branch lacks, integrate them first. Then rebase onto the fetched base unless the repository prefers merge commits, and repeat the validation from [evidence](evidence.md) on the rebased state. If unrelated uncommitted work blocks the rebase, stop and ask; do not stash or discard it.
+- After committing, fetch the base and this branch's remote. If the remote branch has commits the local branch lacks, integrate them first. Then bring in the fetched base: rebase onto it, or merge it when the repository prefers merge commits, and repeat the validation from [evidence](evidence.md) on the resulting state. If unrelated uncommitted work blocks the rebase, stop and ask; do not stash or discard it.
 - Recheck the branch tip and remote relationship immediately before push. When the rebase rewrote published commits, record the remote head you integrated and push with `--force-with-lease=<branch>:<that sha>`; when the lease fails, fetch and integrate again instead of overwriting.
 - Push with explicit remote and upstream tracking when needed. Never force-push any other branch.
 - If push fails, preserve the local branch and report the provider or permission error. Do not switch to an unapproved fork or remote.
@@ -17,7 +17,7 @@ Publish the prepared change once, then verify provider state.
 
 Before creation, query again for an open PR matching the head repository/branch and base. This closes the race between preparation and publication.
 
-Create through the authenticated provider using explicit repository, base, and head values. If GitHub CLI fails because the GraphQL quota is used up, create through REST, which has a separate quota: `gh api --hostname <host> repos/<owner>/<repo>/pulls -f title=... -f head=... -f base=... -F body=@<file>`. Supply the selected title, prepared body, requested draft state, and safe evidence attachments. Avoid interactive inference when explicit flags or API fields can carry resolved values.
+Create through the authenticated provider using explicit repository, base, and head values. If GitHub CLI fails because the GraphQL quota is used up, create through REST, which has a separate quota: `gh api --hostname <host> repos/<owner>/<repo>/pulls -f title=... -f head=... -f base=... -F draft=<true|false> -F body=@<file>`. Supply the selected title, prepared body, requested draft state, and safe evidence attachments. Avoid interactive inference when explicit flags or API fields can carry resolved values.
 
 For fork PRs, identify both head and base repositories. Do not assume the base remote accepts the push. Do not enable maintainer edits, assign reviewers, add labels, or join projects contrary to repository convention or user direction.
 
