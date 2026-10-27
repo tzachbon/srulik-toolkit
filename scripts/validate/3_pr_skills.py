@@ -126,16 +126,24 @@ if not all(token in readme for token in [
 ]):
     raise SystemExit("README is missing the pr-babysit preference and fallback contract")
 agents_guide = (root / "AGENTS.md").read_text(encoding="utf-8")
-for link in re.findall(r"\]\(([^)#]+)", agents_guide):
-    if not (root / link).exists():
-        raise SystemExit(f"AGENTS.md links to a missing file: {link}")
-agents_stages = agents_guide[agents_guide.index("| Stage |"):agents_guide.index("Prefer extending")]
+standards = (root / "CODING_STANDARDS.md").read_text(encoding="utf-8")
+for name, text in [("AGENTS.md", agents_guide), ("CODING_STANDARDS.md", standards)]:
+    for link in re.findall(r"\]\(([^)#]+)", text):
+        if not (root / link).exists():
+            raise SystemExit(f"{name} links to a missing file: {link}")
+if "[CODING_STANDARDS.md](CODING_STANDARDS.md)" not in agents_guide:
+    raise SystemExit("AGENTS.md must point agents to CODING_STANDARDS.md")
+agents_stages = standards[standards.index("| Stage |"):standards.index("Prefer extending")]
 if set(re.findall(r"`([a-z-]+)`", agents_stages)) != expected:
-    raise SystemExit("AGENTS.md stage table must list every skill exactly once by its directory name")
+    raise SystemExit("CODING_STANDARDS.md stage table must list every skill exactly once by its directory name")
 agents_contract = [
     "Generic across providers and agent harnesses",
     "A streamlined path from request to merged change",
     "Reusable skills and utilities",
+]
+if not all(token in agents_guide for token in agents_contract):
+    raise SystemExit(f"AGENTS.md is missing its purpose: {[t for t in agents_contract if t not in agents_guide]}")
+standards_contract = [
     "Write a skill's `SKILL.md` in terms of capabilities, not one harness's tools",
     "[`references/t3-code.md`](plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md)",
     "To support another harness, add a reference beside it; do not edit the core to fit one host",
@@ -144,8 +152,8 @@ agents_contract = [
     "Encode each skill's contract in `scripts/validate.sh`",
     "Break each new check once on purpose and confirm validation fails",
 ]
-if not all(token in agents_guide for token in agents_contract):
-    raise SystemExit(f"AGENTS.md is missing its architecture guidance: {[t for t in agents_contract if t not in agents_guide]}")
+if not all(token in standards for token in standards_contract):
+    raise SystemExit(f"CODING_STANDARDS.md is missing its architecture guidance: {[t for t in standards_contract if t not in standards]}")
 if "[AGENTS.md](AGENTS.md)" not in (root / "CONTRIBUTING.md").read_text(encoding="utf-8"):
     raise SystemExit("CONTRIBUTING.md must point contributors to AGENTS.md")
 # Lifecycle matrix: every T3 run status maps to exactly one class, and the core table defines every class.
