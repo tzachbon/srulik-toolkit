@@ -137,12 +137,12 @@ agents_stages = standards[standards.index("| Stage |"):standards.index("Prefer e
 if set(re.findall(r"`([a-z-]+)`", agents_stages)) != expected:
     raise SystemExit("CODING_STANDARDS.md stage table must list every skill exactly once by its directory name")
 agents_contract = [
-    "Generic across providers and agent harnesses",
-    "A streamlined path from request to merged change",
-    "Reusable skills and utilities",
+    "generic across providers and agent harnesses",
+    "a streamlined path from request to merged change",
+    "reusable skills and utilities",
 ]
-if not all(token in agents_guide for token in agents_contract):
-    raise SystemExit(f"AGENTS.md is missing its purpose: {[t for t in agents_contract if t not in agents_guide]}")
+if not all(token in agents_guide.lower() for token in agents_contract):
+    raise SystemExit(f"AGENTS.md is missing its purpose: {[t for t in agents_contract if t not in agents_guide.lower()]}")
 standards_contract = [
     "Write a skill's `SKILL.md` in terms of capabilities, not one harness's tools",
     "[`references/t3-code.md`](plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md)",

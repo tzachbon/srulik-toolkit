@@ -8,6 +8,8 @@ Write a skill's `SKILL.md` in terms of capabilities, not one harness's tools: "l
 
 When a required capability is missing, the skill reports which one and stops or degrades as its core describes. On a harness with no reference, a skill shows its capability mapping, says it is untested, and acts only after the user confirms. Never claim support for a harness that no reference documents or nobody has tested; say what is unverified.
 
+Some older skills still name Claude Code or Codex directly; move that text into a reference when you next change such a skill.
+
 ## Where new work fits
 
 | Stage | Skills | Add here when a skill or utility |
@@ -23,16 +25,7 @@ Prefer extending an existing skill over adding a new one. A new skill needs a di
 - Encode each skill's contract in `scripts/validate.sh`: the phrases that carry its behavior, the phrases it must no longer contain, and, for a generic core, the host-specific names it must not mention. A reference gets its own contract.
 - Break each new check once on purpose and confirm validation fails.
 - Test utilities in `scripts/validate.sh` against local fakes, never live paid services.
-
-## Layout
-
-- `.claude-plugin/`, `.agents/plugins/`, and `plugins/srulik-toolkit/.{claude,codex}-plugin/`: marketplace and plugin manifests.
-- `scripts/validate.sh`: the repository's single check, run by CI on Linux, macOS, and Windows. Its contract checks live in `scripts/validate/<n>_<area>.py`, run in order in one namespace; keep each part under 20 KB and add a new part rather than growing one past that.
-- `research/`: dated research notes behind past decisions.
-
-## Legacy skills
-
-Some older skills still name Claude Code or Codex directly. Move host-specific text into a reference when you next change such a skill, not as a separate sweep.
+- `scripts/validate.sh` is the repository's single check, run by CI on Linux, macOS and Windows. Its contract checks live in `scripts/validate/<n>_<area>.py`, run in order in one namespace; keep each part under 20 KB and add a part rather than grow one past that.
 
 ## Utilities
 
