@@ -1,4 +1,9 @@
 pr_babysit_contract = [
+    "If the user explicitly invoked `execute-task-end-to-end` for this task",
+    "load [that workflow](../execute-task-end-to-end/SKILL.md) before applying the standalone roles below",
+    "Its ownership and completion rules take precedence",
+    "If it is absent from the skill catalog, check the linked bundled file",
+    "If that file is unavailable, report the missing skill and blocked phase instead of substituting a background handoff",
     "Prefer a delegated subagent when it meets every capability below",
     "it owns its native PR watch, receives events independently, and keeps listening after its initial run and the main thread's turn end",
     "Delegation alone does not prove persistent monitoring",
@@ -68,6 +73,10 @@ for removed in ["A thread here is an independent agent conversation", 'mode: "as
     if removed in pr_babysit + pr_babysit_t3:
         raise SystemExit(f"pr-babysit still contains a retired design: {removed}")
 pr_babysit_t3_contract = [
+    "This mapping covers standalone babysitting",
+    "[its host mapping](../../execute-task-end-to-end/references/t3-code.md)",
+    "The separate top-level babysitter's watch does not register a pending child or a PR watch on the main thread",
+    "The startup wait covers the launch run, not the PR's eventual merge",
     "A subagent cannot watch: its parent thread owns the pull request",
     "Although `delegate_task` can launch a child, it cannot give that child the required watch on this build",
     "Do not substitute a parent-owned watch or event relay",
