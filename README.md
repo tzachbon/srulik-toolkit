@@ -91,7 +91,7 @@ and trust the new `Stop` hook through `/hooks` after updating the plugin.
 | [`tour`](plugins/srulik-toolkit/skills/tour/SKILL.md) | Research a topic's history and current flow as a sourced visual narrative. |
 | [`show-me`](plugins/srulik-toolkit/skills/show-me/SKILL.md) | Explain the current topic with concise diagrams and focused visual artifacts. |
 | [`stop-slop`](plugins/srulik-toolkit/skills/stop-slop/SKILL.md) | Edit prose for direct language while preserving facts and uncertainty. |
-| [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Hand a pull request to a dedicated low-cost babysitter, preferably a subagent, that fixes conflicts, review feedback, and CI until closure, messaging you only when needed. |
+| [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Keep PR monitoring in this conversation, with a low-cost child subagent for triage and the parent handling fixes and authorized merging until closure. |
 | [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
 | [`fix-ci`](plugins/srulik-toolkit/skills/fix-ci/SKILL.md) | Diagnose failing checks, apply the smallest repair, and verify the result. |
 | [`recap`](plugins/srulik-toolkit/skills/recap/SKILL.md) | Get a short, plain-language catch-up on a session: the whole thread around its goal, or focused on a topic you add. |
@@ -146,9 +146,9 @@ intermediate progress. The main agent owns monitoring and fixes; a read-only
 child filters event batches. Without merge authority, completion is `MERGE READY`
 with current-head evidence and monitoring stopped. Explicit merge authority
 requires verified `MERGED` and linked issue closure. Pending checks, missing
-approvals and inaccessible evidence remain incomplete. This workflow overrides
-`pr-babysit`'s default ownership and stop conditions; it creates no separate
-top-level babysitter. Full end-to-end runtime behavior remains unverified.
+approvals and inaccessible evidence remain incomplete. This workflow uses
+`pr-babysit`'s parent/subagent ownership and overrides its standalone stop
+conditions; it creates no separate top-level babysitter. Full end-to-end runtime behavior remains unverified.
 
 `create-plan` checks installed skills first. For every non-trivial plan, it runs
 one external search per material discipline even when an installed skill covers
@@ -226,20 +226,14 @@ for human review; a retrospective alone does not authorize environment changes.
 - `create-pr`, `pr-babysit`, and `fix-ci` can use an authenticated GitHub CLI
   or an equivalent connector for checks, logs, and pull requests. Local checks
   use the project toolchain.
-- `pr-babysit` prefers a delegated subagent that owns a persistent native PR
-  watch and keeps listening after its initial run and the parent turn end.
-  When that is unavailable, it uses a separate babysitter conversation only
-  with your explicit authorization. T3 Code currently requires this fallback
-  because subagents cannot own PR watches. The skill lists the capabilities it needs; T3 Code's
-  tool mapping is in
-  [`plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md`](plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md),
-  and other hosts
-  map the same capabilities to their own tools after you confirm the mapping.
-  That thread owns the watch, so PR events never wake the main conversation, and
-  the main conversation sends requests to it only after its watch is active. Listening continues after green CI
-  and quiet passes until the PR closes or you stop it. Hosts without that support
-  report the limitation; the skill does not install a scheduler or substitute
-  foreground waiting.
+- `pr-babysit` uses a subagent under the original conversation for bounded
+  read-only triage. The parent owns the native PR watch, receives completion
+  and PR events, applies fixes, and merges only with explicit authority. It
+  never creates a separate babysitter conversation. Listening continues after
+  green CI and quiet passes until closure or STOP; an explicit end-to-end
+  invocation uses its own terminal gate. Hosts missing child/result/watch
+  capabilities report the limitation. T3 Code's tool mapping is in
+  [`plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md`](plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md).
 - `agent-swarm` and `pr-babysit` use
   `plugins/srulik-toolkit/scripts/models.js` for model facts from the public
   [Artificial Analysis](https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index)

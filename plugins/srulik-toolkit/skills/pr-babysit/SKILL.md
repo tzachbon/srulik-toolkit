@@ -1,94 +1,60 @@
 ---
 name: pr-babysit
-description: Babysit a pull request with a dedicated low-cost background agent, preferably a subagent, that owns the PR watch and resolves compatible conflicts, review feedback, and PR-caused CI failures, messaging the main thread only when needed. Use when asked to babysit or monitor a PR through CI and review, including new feedback after checks pass.
+description: Babysit a pull request within the original conversation, using a low-cost subagent for bounded read-only triage while the parent owns monitoring, fixes, and authorized merging. Use when asked to babysit or monitor a PR through CI and review, including new feedback after checks pass.
 ---
 
 # Babysit a pull request
 
 If the user explicitly invoked `execute-task-end-to-end` for this task, load [that workflow](../execute-task-end-to-end/SKILL.md) before applying the standalone roles below. Its ownership and completion rules take precedence. If it is absent from the skill catalog, check the linked bundled file. If that file is unavailable, report the missing skill and blocked phase instead of substituting a background handoff.
 
-Invocation for a named PR authorizes scoped edits, commits, pushes to its head branch, rebasing that branch onto its base with a lease-protected force push, review replies, and resolution of addressed review threads. Honor any narrower user limits. Keep changes within the PR's intended behavior. Never force-push without a lease or to any other branch, enable auto-merge, mark a draft ready, weaken checks, or expand the assignment. Merge only when the user's request explicitly asks to merge, after a fresh readiness check, using the repository's usual merge method.
+Invocation for a named PR authorizes scoped edits, commits, pushes to its head branch, rebasing that branch onto its base with a lease-protected force push, review replies, and resolution of addressed review threads. Honor narrower user limits. Never force-push without a lease or to any other branch, enable auto-merge, mark a draft ready, weaken checks, or expand the assignment. Merge only when the user's request explicitly asks to merge, after a fresh readiness check, using the repository's usual method.
 
-The main thread never owns the PR watch and never runs maintenance passes. One dedicated babysitter thread per PR does both, so PR events never wake the main thread and the user can keep talking to it. Green CI, missing approvals, silence, and a quiet pass do not stop listening; only PR closure or an explicit stop does.
+The babysitter is a subagent under the original conversation. The parent owns the native PR watch and all maintenance. The child handles bounded read-only triage of comments, checks, conflicts, and readiness; the parent verifies its findings, applies fixes, and merges only with authority. Never launch a separate conversation for babysitting. Green CI, missing approvals, silence, and a quiet pass do not stop listening; standalone monitoring ends only on PR closure or explicit STOP.
 
 ## Host capabilities
 
-A thread here is an agent conversation the host runs in the background, either a delegated subagent or a separate top-level conversation. Prefer a delegated subagent when it meets every capability below: it owns its native PR watch, receives events independently, and keeps listening after its initial run and the main thread's turn end. Delegation alone does not prove persistent monitoring.
+Before starting, verify that the host can:
 
-If a subagent cannot meet those requirements, use a separate top-level babysitter conversation only when the user explicitly authorizes that fallback. Otherwise report the missing capability and ask for that authorization before launching. The main thread still never owns the watch or forwards watch events to a child. Both forms use the same startup, lookup, forwarding, and retirement rules.
+1. Launch a child of the original conversation with a chosen runnable model and a bounded brief.
+2. Register, inspect, and remove a native PR watch owned by the parent, with events that wake it after its turn ends.
+3. Deliver child results back to that parent, including completion after its turn ends.
+4. Retain task handles, inspect terminal results or pending questions, cancel owned tasks, and verify cancellation.
+5. Discover existing PR owners, watches, and pending writers so maintenance has one owner.
 
-This skill needs a host that can:
-
-1. List the models it can run, and launch a thread with a chosen model, its own checkout, a title, and a first message.
-2. Give that thread a native PR watch that wakes it on new comments, reviews, check results, and conflicts, and let another thread check whether that watch is active.
-3. Send a message to another thread.
-4. List threads by exact title, across every page of results.
-5. Rename a thread.
-6. Report a thread's latest run status with its error details, wait for a run with a time limit that does not cancel it, and interrupt a run.
-
-Settling or archiving a thread is optional. Before starting, read the reference for your host and use its mapping:
+Read the host mapping before using those capabilities:
 
 - T3 Code: [references/t3-code.md](references/t3-code.md)
 
-For another host, map each capability to its own tools, show the user the mapping, say that this host has no tested reference, and launch only after the user confirms. If capability 1, 2, 3, 4, or 6 is missing, report which one and stop: without them, a babysitter that was refused, died, or never started watching cannot be detected. Never substitute foreground maintenance, a polling loop, a sleep, or a new scheduler. If capability 5 is missing, retire threads by settling or archiving them where the host's lookup skips those; otherwise tell the user which thread to remove by hand and stop. Relaunch only on a later request, after the lookup in step 2 no longer finds that thread.
+On another host, show the capability mapping, label it untested, and obtain confirmation before starting. If a required capability is missing, report it and stop. A separate conversation, shell watcher, polling loop, sleep, or scheduler does not supply the missing capability. Confirm the host records the task as a child of the original conversation before relying on it; creating a task is not proof of correct ancestry or result delivery.
 
-## Classify a babysitter
+## Parent role
 
-A running thread is not a monitored PR. A babysitter has started only once its PR watch is active. Classify a babysitter by checking these rows in order and act on the first that matches:
+1. Resolve the supplied PR, or infer it from the current branch. If none exists, load [create-pr](../create-pr/SKILL.md) and continue only with the provider-verified PR. Discover prior owners, including legacy babysitters and pending writer tasks. Before registering a watch or writing, verify that competing dedicated owners and their writer tasks have stopped and cannot resume automatically. Preserve unrelated threads and unpublished work. An inactive watch or a renamed owner alone is insufficient; unknown ownership blocks the handoff.
+2. Read the current PR state, base/head commits, all feedback pages, review threads, and checks. Retain a ledger of source URLs, finding IDs, dispositions, and the checked head. Start one child for the catch-up batch with this pinned evidence. Keep one active child per PR; retain its task and child identifiers. If more events arrive while it runs, collect them for the next batch rather than launching another child.
+3. Use a small suitable runnable model selected through [agent-swarm's model selection](../agent-swarm/SKILL.md#model-selection). For public model facts, run `node <plugin root>/scripts/models.js --frontier`; the plugin root is two directories above this skill. It reads the public Artificial Analysis dataset without an API key. Choose by task fit, remaining usage, then cost; disclose unavailable quota or a required model's absence instead of silently substituting.
+4. Follow the host's native waiting and completion instructions. Register and verify the parent's watch before yielding responsibility to native events; finish the initial catch-up and any writes before the registration call when that tool requires ending the turn immediately. Child completion is not persistent monitoring. On each child result or native event, refresh provider state before acting. Validate findings against the current head, run One pass for actionable work, and carry the ledger into a fresh bounded batch when needed. A failed, cancelled, refused, or stale child is not a clean review: retry a bounded batch when authorized and feasible, or report the missing coverage.
+5. When no action is ready, leave the parent's watch active and end the turn. Events and child completion resume this same conversation. Do not poll the child, wait with a shell command, or report that monitoring moved elsewhere. Report only meaningful readiness changes, input needed, monitoring failure, or closure; unchanged bot summaries are noise. A new inline finding, review, failed check, or conflict is never noise.
+6. On PR closure or user STOP, clean up as below. Without merge authority, report READY and keep listening; an end-to-end invocation may instead end at its documented terminal gate. With explicit merge authority, follow Readiness and verify the provider's merged state before reporting success.
 
-| Babysitter | Class | Action |
-| --- | --- | --- |
-| Its PR watch is active | Watching | It has started. Requests may be sent to it. |
-| Latest run failed with a confirmed model-access error | Refused | Retire it and launch again with the model after the refused one in the order of step 3. When every candidate has been refused, report the refusals to the user and stop. |
-| Latest run failed with any other error, ended without running (cancelled, interrupted, or rolled back), or completed without an active watch | Dead | Retire it and report the error or status to the user, then stop. A later request launches a fresh babysitter. |
-| Latest run is still queued, preparing, starting, running, or waiting on an approval or question | Pending | Startup is unverified. Send it nothing. |
+Before asking for a user decision, use the host's native question capability and expose the pending question rather than leaving it in an ordinary progress message. Suspend this workflow's watch if it would hide that question; resume monitoring after the answer when work remains. Missing evidence or authority is a blocker, not permission to bypass a check.
 
-Send requests only to a Watching babysitter. Requests sent earlier queue behind an unconfirmed start and hide how it ended. Because of this rule, a babysitter that never started has only its launch run, and its latest run is the one to judge.
+## Child role
 
-## Main thread role
+The child receives the PR URL, base/head commits, bounded event batch, prior finding ledger, and repository constraints. It never edits, pushes, replies, resolves threads, merges, or owns a watch. It returns a parent-visible report: checked head, new actionable findings with source URLs and code evidence, failed checks, conflicts, pending decisions, readiness or closure, and deduplication updates. Child-local completion alone does not prove delivery.
 
-1. Resolve the supplied PR, or infer it from the current branch. If none exists, load [create-pr](../create-pr/SKILL.md) and continue only with the PR it read back from the provider.
-2. Look for an existing babysitter: list threads whose title is exactly `Babysit PR <owner>/<repo>#<number>`, including subagents and separate conversations. Filter for the exact title, since a prefix search for #34 also matches #347 and other repositories reuse numbers, and read every page of results before concluding none exists. If an active one exists, classify it. Watching: send it the new request and stop. Pending: tell the user it has not confirmed its PR watch, so the request was not delivered and should be repeated later; if it is waiting on an approval or question, they can answer in its thread. Then stop. Refused or Dead: act as the table says. One babysitter per PR.
-3. Otherwise launch one:
-   - Execution: prefer a delegated subagent that meets Host capabilities; otherwise use the explicitly authorized separate-conversation fallback. Retain its task and conversation identifiers for status, follow-up requests, and cancellation.
-   - Title: `Babysit PR <owner>/<repo>#<number>` (base repository).
-   - Model: a small, fast model. Try `gpt-6-luna`, then `claude-haiku-5-5`, then the cheapest other general-purpose model, taking the first that the host's runnable-model catalog lists. For fallback comparisons, run `node <plugin root>/scripts/models.js --frontier`; use `node <plugin root>/scripts/models.js luna` only to inspect Luna matches. The plugin root is two directories above this skill file. Both read the public Artificial Analysis dataset without an API key; prefer a runnable model with a similar score.
-   - Checkout: a new worktree of the PR head on branch `babysit/pr-<number>`. For a fork PR, fetch the head ref from the fork first; it is not on `origin`. If the branch already exists, reuse its worktree.
-   - First message: the brief below.
-   If the launch result is uncertain, list threads before retrying; a second launch creates a duplicate babysitter.
-4. Check startup once. A listed model can still be refused by the provider, and the host may not report a launched thread's failure back. Wait once, for up to 2 minutes, for the launch run; a timeout does not cancel it. Wait only this once, then classify the babysitter. Watching: tell the user its thread, then end the turn. Pending: tell the user its thread and that startup is unverified, so a refusal or failure after this point is caught the next time the skill runs for this PR; if it is waiting on an approval or question, it needs their answer in its thread. Then end the turn. Refused or Dead: act as the table says, and check each relaunch the same way.
-
-   Retire a babysitter so the lookup in step 2 no longer finds it: rename it to `Retired babysitter for <owner>/<repo>#<number> (<reason>)`, then settle or archive it if the host can. Rename whenever the host can, because not every host can settle or archive a thread; without rename, use the fallback in Host capabilities.
-5. Treat the user's later instructions for this PR as new requests through step 2, so they reach only a Watching babysitter: answers to its input-needed messages, merge authorization, or `STOP` when the user asks to stop. Deliver them even when the babysitter is idle between wakes. `STOP` for a Pending babysitter is the exception: do not queue it behind an unconfirmed start. Interrupt its run, wait once for up to 2 minutes for that run to end, then classify it again. Dead or Refused: retire it and tell the user monitoring stopped. Watching: its watch became active meanwhile, so send it `STOP`. Still Pending: the interrupt did not take, so tell the user stopping is unconfirmed and name its thread; never report a babysitter stopped before its run has ended without an active watch.
-
-Brief:
+Use this brief:
 
 ```text
-Load the pr-babysit skill and act in its Babysitter role.
-PR: <url>. Head branch: <head ref> on <head repository>. Push with: git push <remote> HEAD:<head ref>.
-Main thread: <main thread id>.
-User request (verbatim): "<request>"
-Merge authorized: <yes only if the request explicitly asks to merge, otherwise no>.
-Preview link format: <query parameters or other link rules the user gave, or "as provided">.
-Constraints: <repository instructions and machine resource limits that apply>.
+Act as the read-only babysitter subagent under this original conversation.
+PR: <url>. Base/head: <commits>. Batch: <events>. Prior ledger: <findings and dispositions>.
+Return current-head evidence and source URLs for actionable findings, failures, conflicts, readiness, or closure.
+Never edit, push, post, resolve threads, merge, register a watch, or launch another agent.
+Report uncertainty or blocked input. Return the result to the parent.
 ```
 
-## Babysitter role
+## Stop and cleanup
 
-**Start.** Read repository instructions and the host reference, then register this thread's PR watch and confirm it is active. If registration fails, send `MONITORING FAILED` and stop: without an active watch the main thread classifies this babysitter as Dead and does not send it requests. Then run one pass. Events from before registration may never arrive, so this first pass is also the catch-up.
-
-**Each wake.** Refresh live PR state first. If the only change is bot status noise, end the turn without a pass. Noise means: preview-link comments, review-tool status notices (review skipped, paused, or limit reached), and edits to bot summary comments that bring no new inline finding. A new inline review comment, a new review, a failed check, or a conflict is never noise. Process any other change with a pass.
-
-**Messages to the main thread.** Visible notifications are limited to input needed, readiness changes, monitoring failure, or PR closure. Send each as one message to the main thread, and never repeat an unchanged state:
-
-- `INPUT NEEDED: <conversation URL> — <decision needed> — recommended: <action>`
-- `READY: <PR URL> @ <head sha> — preview: <full preview link, if any>` or `NOT READY: <PR URL> — <blocker>`
-- `MONITORING FAILED: <what failed and the error>`
-- `CLOSED: <merged|closed> @ <head sha>`
-
-**Waiting for input.** After sending input needed, keep handling other feedback; act on that item once the main thread forwards the user's answer.
-
-**Stop.** On `STOP` or PR closure, remove this thread's PR watch (a watch that already ended on closure is not a failure), send the final state, and retire this thread: rename it to `Retired babysitter for <owner>/<repo>#<number> (<merged|closed|stopped>)`, then settle or archive it if the host can. Without rename, use the fallback in Host capabilities. A later wake after a stop does nothing.
+Cancel the active child and remove the parent's watch on PR closure or user STOP. Verify that the task has ended with no pending descendants and that this workflow's watch is inactive before saying monitoring stopped. If cancellation is unconfirmed, report that limit and keep it incomplete. Keep unrelated tasks and watches intact. Do not rename, settle, or archive the original conversation. A later wake after confirmed STOP does nothing.
 
 ## Boundaries
 
