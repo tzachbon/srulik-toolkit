@@ -14,6 +14,10 @@ How each [host capability](../SKILL.md#host-capabilities) maps to T3 Code's orch
 
 ## Execution form
 
+This mapping covers standalone babysitting. When the user explicitly invoked `execute-task-end-to-end`, follow [its host mapping](../../execute-task-end-to-end/references/t3-code.md) instead.
+
+The separate top-level babysitter's watch does not register a pending child or a PR watch on the main thread. The startup wait covers the launch run, not the PR's eventual merge. Report a standalone handoff as background monitoring in the babysitter's conversation, not a native wait in the main conversation.
+
 Prefer a delegated subagent only when it can satisfy the core's independent watch and lifetime requirements. The current `watch_pull_request` tool explicitly says: "A subagent cannot watch: its parent thread owns the pull request." Although `delegate_task` can launch a child, it cannot give that child the required watch on this build. Do not substitute a parent-owned watch or event relay.
 
 Use `t3_thread_launch` for the separate top-level fallback only after the user explicitly authorizes a separate babysitter conversation. Without that authorization, report the subagent-watch limitation and ask before launching. If a future build supports child-owned persistent watches, verify every host capability and document/test its delegation lifecycle before claiming that path is supported. The mapping below describes the current top-level fallback.
