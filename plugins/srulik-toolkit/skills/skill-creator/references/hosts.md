@@ -1,5 +1,7 @@
 # Select the host mapping
 
+Bundled Python helpers require Python 3.10 or newer.
+
 Read only the mapping for the active runtime:
 
 - [Claude Code](claude-code.md): native skill invocation, isolated sessions and

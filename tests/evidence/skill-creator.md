@@ -296,3 +296,5 @@ runtime authoring and live optional optimization remain unverified.
 
 Remote CI, review conversations and provider-verified merge/issue closure are
 subsequent publication gates; this source receipt does not predeclare them.
+
+Review-fix evidence is recorded in [the follow-up receipt](skill-creator-review-fixes.md).

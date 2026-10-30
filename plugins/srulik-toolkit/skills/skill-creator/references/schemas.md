@@ -37,7 +37,9 @@ the evidence receipt; an old snapshot is immutable throughout improvement.
 ```
 
 Require at least one expectation, boolean `passed`, nonempty text/evidence,
-and summary counts/rate consistent with the entries. Missing files, malformed
+and summary counts/rate consistent with the entries. A reported rate may round
+to two decimal places; benchmark rates are recomputed from the entries.
+Missing files, malformed
 JSON, non-finite metrics, and inconsistent grades are errors, not skipped runs.
 Additional claim/analysis fields may be retained; they do not replace evidence.
 

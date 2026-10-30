@@ -45,7 +45,7 @@ def find_runs(root, benchmark):
         files = []
         for candidate in sorted(outputs.rglob("*")):
             checked = safe_path(root, candidate)
-            if checked.is_file() and candidate.name not in {"transcript.md", "user_notes.md", "metrics.json"}:
+            if checked.is_file():
                 files.append(embed_file(root, candidate, outputs))
         runs.append({"id": run_dir.relative_to(root).as_posix(), "prompt": meta["prompt"],
                      "eval_id": row["eval_id"], "outputs": files,

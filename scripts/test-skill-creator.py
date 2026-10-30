@@ -12,6 +12,16 @@ import time
 
 SKILL = Path(__file__).resolve().parents[1] / "plugins/srulik-toolkit/skills/skill-creator"
 
+runner = Path(__file__).with_name("validate") / "run.py"
+unsupported = subprocess.run([sys.executable, "-B", "-c",
+    "import sys,runpy,pathlib; sys.version_info=(3,9,0); "
+    "pathlib.Path.glob=lambda *_: iter(()); "
+    f"runpy.run_path({str(runner)!r},run_name='__main__')"],
+    capture_output=True, text=True, timeout=10)
+assert unsupported.returncode != 0 and "Python 3.10" in unsupported.stderr
+subprocess.run(["node", str(Path(__file__).with_name("test-skill-creator-feedback.js"))],
+               check=True, timeout=10)
+
 
 def write_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -55,6 +65,30 @@ with tempfile.TemporaryDirectory(prefix="skill-creator-check-") as scratch:
     benchmark = json.loads((root / "benchmark.json").read_text())
     assert benchmark["run_summary"]["with_skill"]["tokens"] is None, "missing tokens became character counts"
 
+    rounded = root / "rounded"
+    for eval_id, values, rate in [(1, (True, True, False), 0.67),
+                                  (2, (True,) + (False,) * 7, 0.13)]:
+        for config in ("with_skill", "without_skill"):
+            grade_file = fixture(rounded, eval_id, config, values) / "grading.json"
+            grade = json.loads(grade_file.read_text())
+            grade["summary"]["pass_rate"] = rate
+            write_json(grade_file, grade)
+    run_helper("scripts/aggregate_benchmark.py", rounded)
+    rounded_results = json.loads((rounded / "benchmark.json").read_text())["runs"]
+    assert all(row["result"]["pass_rate"] == {1: 2/3, 2: 1/8}[row["eval_id"]]
+               for row in rounded_results), "rounded grade rates changed measured benchmark rates"
+    grade["summary"]["pass_rate"] = 0.5
+    write_json(grade_file, grade)
+    run_helper("scripts/aggregate_benchmark.py", rounded, success=False)
+
+    out_of_range = root / "out-of-range"
+    for config in ("with_skill", "without_skill"):
+        grade_file = fixture(out_of_range, config=config, values=(True,)) / "grading.json"
+    grade = json.loads(grade_file.read_text())
+    grade["summary"]["pass_rate"] = 1.004
+    write_json(grade_file, grade)
+    run_helper("scripts/aggregate_benchmark.py", out_of_range, success=False)
+
     asymmetric = root / "asymmetric"
     for config, counts in [("with_skill", (3, 1)), ("without_skill", (1, 3))]:
         for eval_id, count in enumerate(counts, 1):
@@ -76,7 +110,16 @@ with tempfile.TemporaryDirectory(prefix="skill-creator-check-") as scratch:
     assert improved["metadata"]["model"] == "fake-model"
 
     viewer = root / "review.html"
+    output_dir = improvement / "eval-1-fixture/with_skill/run-1/outputs"
+    deliverables = {"metrics.json", "report/metrics.json", "transcript.md", "user_notes.md"}
+    for name in deliverables:
+        target = output_dir / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("Synthetic task deliverable", encoding="utf-8")
     run_helper("eval-viewer/generate_review.py", improvement, "--static", viewer)
+    embedded = json.loads(viewer.read_text().split("const EMBEDDED_DATA = ", 1)[1].split(";\n", 1)[0])
+    outputs = next(run["outputs"] for run in embedded["runs"] if "/with_skill/" in run["id"])
+    assert deliverables <= {file["name"] for file in outputs}, "task deliverables were hidden from review"
     assert '"prompt": "Synthetic fixture"' in viewer.read_text(), "canonical metadata was not shown"
     assert 'fetch(' not in viewer.read_text(), "static review attempts network feedback"
     assert 'cdn.sheetjs.com' not in viewer.read_text(), "static review loads remote code"

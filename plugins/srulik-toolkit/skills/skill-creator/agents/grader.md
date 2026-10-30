@@ -194,7 +194,7 @@ Write a JSON file with this structure:
   - **passed**: Count of passed expectations
   - **failed**: Count of failed expectations
   - **total**: Total expectations evaluated
-  - **pass_rate**: Fraction passed (0.0 to 1.0)
+  - **pass_rate**: Fraction passed (0.0 to 1.0); may round to two decimal places. Benchmark rates are recomputed from the validated counts.
 - **execution_metrics**: Copied from executor's metrics.json (if available)
   - **output_chars**: Total character count of output files (proxy for tokens)
   - **transcript_chars**: Character count of transcript

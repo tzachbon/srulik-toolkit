@@ -17,7 +17,7 @@ cd srulik-toolkit
 ./scripts/validate.sh
 ```
 
-You need Git and Python 3. Claude Code is optional during validation, but when
+You need Git and Python 3.10 or newer. Claude Code is optional during validation, but when
 the `claude` command is available the script also validates both plugin
 manifests with Claude Code.
 

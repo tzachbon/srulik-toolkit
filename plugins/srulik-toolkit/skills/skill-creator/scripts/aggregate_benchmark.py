@@ -41,7 +41,8 @@ def load_grade(root, directory):
     expected = {"passed": passed, "failed": total-passed, "total": total}
     if any(type(summary.get(k)) is not int or summary[k] != v for k, v in expected.items()):
         raise ValueError("grading summary counts disagree with expectations")
-    if not math.isclose(number(summary.get("pass_rate")), passed/total, abs_tol=1e-9):
+    rate = number(summary.get("pass_rate"))
+    if rate is None or rate > 1 or not math.isclose(rate, passed/total, abs_tol=0.005 + 1e-9):
         raise ValueError("grading pass rate disagrees with expectations")
     timing_file = directory / "timing.json"
     timing = read_json(root, timing_file) if timing_file.exists() or timing_file.is_symlink() else {}

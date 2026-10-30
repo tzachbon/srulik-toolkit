@@ -954,8 +954,10 @@
       const a = document.createElement("a");
       a.href = url;
       a.download = "feedback.json";
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       document.getElementById("done-overlay").classList.add("visible");
     }
 
