@@ -71,3 +71,20 @@ unmodified as [`references/ui-ux-pro-max.md`](plugins/srulik-toolkit/skills/ui-u
 [`references/quick-reference.md`](plugins/srulik-toolkit/skills/ui-ux-review/references/quick-reference.md),
 and [`references/pro-rules.md`](plugins/srulik-toolkit/skills/ui-ux-review/references/pro-rules.md)
 for source context; the adapted review workflow remains authoritative.
+
+The `skill-creator` skill adapts Anthropic's public
+[`skill-creator`](https://github.com/anthropics/skills/tree/ca45fc496a3436251f191354091d557da31c15b5/skills/skill-creator)
+at revision `ca45fc496a3436251f191354091d557da31c15b5`, distributed under the
+Apache License, Version 2.0. Its original terms and copyright are retained in
+[`skills/skill-creator/LICENSE.txt`](plugins/srulik-toolkit/skills/skill-creator/LICENSE.txt).
+
+Copyright 2026 Anthropic, PBC
+
+The adaptation adds mandatory Srulik planning/implementation/review handoffs,
+host-specific mappings, validated paired evaluations, equal fixture weighting,
+measured-only telemetry, and confined offline review. Modified upstream files
+carry change notices. The optional description optimizer remains specific to
+Claude Code on POSIX; it adds no required external dependency. PyYAML-dependent
+archive packaging/validation and the upstream review server are not bundled.
+The repository's MIT terms do not replace the retained Apache-2.0 terms for
+this adapted material.

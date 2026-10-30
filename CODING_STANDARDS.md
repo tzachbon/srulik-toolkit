@@ -15,10 +15,15 @@ Some older skills still name Claude Code or Codex directly; move that text into 
 | Stage | Skills | Add here when a skill or utility |
 | --- | --- | --- |
 | Understand and plan | `can-you-help`, `to-project`, `research`, `tour`, `show-me`, `recap`, `create-plan`, `keep-it-simple` | clarifies a request or produces a decision or plan |
-| Implement | `implement-plan`, `execute-task-end-to-end`, `tdd`, `agent-swarm`, `stay-in-scope` | executes an approved plan or keeps execution on track |
+| Implement | `implement-plan`, `execute-task-end-to-end`, `skill-creator`, `tdd`, `agent-swarm`, `stay-in-scope` | executes an approved plan or keeps execution on track |
 | Verify and ship | `review-pro-max`, `ui-ux-review`, `create-pr`, `pr-babysit`, `fix-ci`, `resolving-merge-conflicts`, `stop-slop`, `retro` | checks, publishes, or maintains the result |
 
 Prefer extending an existing skill over adding a new one. A new skill needs a distinct trigger, a handoff to its neighbors in this flow, and a row in the README's skill table.
+
+Skill creation or editing follows [`skill-creator`](plugins/srulik-toolkit/skills/skill-creator/SKILL.md)
+through `create-plan` and `implement-plan`, including small changes. An already
+approved authoring task consumes its references within that task rather than
+recursively starting the request flow again.
 
 ## Keeping the boundaries
 
