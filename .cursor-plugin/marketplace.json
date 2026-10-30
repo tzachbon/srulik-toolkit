@@ -1,0 +1,12 @@
+{
+  "name": "srulik-toolkit",
+  "owner": {
+    "name": "Zach Bonfil"
+  },
+  "plugins": [
+    {
+      "name": "srulik-toolkit",
+      "source": "plugins/srulik-toolkit"
+    }
+  ]
+}

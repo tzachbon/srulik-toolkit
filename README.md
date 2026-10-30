@@ -7,9 +7,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-supported-6C47FF)](https://claude.ai/code)
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
+[![Cursor](https://img.shields.io/badge/Cursor-supported-000000)](https://cursor.com)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Twenty-one focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
+**Twenty-one focused skills for understanding, planning, and shipping software with Claude Code, Codex, and Cursor.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
@@ -47,12 +48,27 @@ Start a new Codex task after installation. Open `/hooks` and trust the plugin
 hook to enable the startup hint. Codex requires separate hook trust after an
 installation or a hook change; installing the plugin alone does not grant it.
 
+### Cursor
+
+The plugin is not listed in the Cursor Marketplace. Install it as a local plugin:
+
+```bash
+git clone https://github.com/tzachbon/srulik-toolkit.git
+cp -R srulik-toolkit/plugins/srulik-toolkit ~/.cursor/plugins/local/srulik-toolkit
+```
+
+Copy the folder instead of symlinking it: Cursor skips a symlink in
+`~/.cursor/plugins/local` that points outside that folder. Restart Cursor or run
+**Developer: Reload Window**, then confirm the skills in Customize. Team
+marketplaces can import this repository through `.cursor-plugin/marketplace.json`.
+
 ## Startup hint
 
 On a new session, the plugin writes the twenty-one skill names and a short routing
-instruction to model context. It uses the default `hooks/hooks.json` location
-and runs only for `SessionStart` with the `startup` matcher. It does not run on
-each prompt or skill invocation.
+instruction to model context. Claude Code and Codex use the default
+`hooks/hooks.json` location and run it only for `SessionStart` with the
+`startup` matcher. Cursor runs it from `hooks/hooks-cursor.json` on
+`sessionStart`. It does not run on each prompt or skill invocation.
 
 The same hook checks the installed version against this repository at most once
 every 24 hours and suggests an upgrade only when the versions differ. The
@@ -71,6 +87,7 @@ The agent may still report a real blocker after the recovery turn.
 Recovery is on by default. Set `SRULIK_TOOLKIT_BLOCKED_STOP=0` in the agent's
 environment before launch to disable only this hook. Codex users must review
 and trust the new `Stop` hook through `/hooks` after updating the plugin.
+Cursor does not run this hook yet.
 
 ## Choose a skill
 
@@ -291,8 +308,11 @@ codex plugin remove srulik-toolkit@srulik-toolkit
 codex plugin marketplace remove srulik-toolkit
 ```
 
-Restart Claude Code or start a new Codex task after updating. In Codex, open
-`/hooks` again and review trust if the hook changed.
+In Cursor, pull the clone and replace `~/.cursor/plugins/local/srulik-toolkit`
+with a fresh copy. Delete that folder to remove the plugin.
+
+Restart Claude Code or Cursor, or start a new Codex task, after updating. In
+Codex, open `/hooks` again and review trust if the hook changed.
 
 ## Windows
 
@@ -328,16 +348,19 @@ codex plugin marketplace add .
 codex plugin add srulik-toolkit@srulik-toolkit
 ```
 
-The repository keeps the same skill payload for both tools:
+For Cursor, see [CONTRIBUTING.md](CONTRIBUTING.md). The repository keeps the same skill payload for all three tools:
 
 ```text
 srulik-toolkit/
 ├── .agents/plugins/marketplace.json
 ├── .claude-plugin/marketplace.json
+├── .cursor-plugin/marketplace.json
 ├── plugins/srulik-toolkit/
 │   ├── .claude-plugin/plugin.json
 │   ├── .codex-plugin/plugin.json
+│   ├── .cursor-plugin/plugin.json
 │   ├── hooks/hooks.json
+│   ├── hooks/hooks-cursor.json
 │   └── skills/
 └── scripts/validate.sh
 ```

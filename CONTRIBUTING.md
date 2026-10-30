@@ -34,6 +34,13 @@ codex plugin marketplace add .
 codex plugin add srulik-toolkit@srulik-toolkit
 ```
 
+For Cursor, sync the plugin folder into the local plugins folder and run
+**Developer: Reload Window**. Cursor skips symlinks that point outside this folder:
+
+```bash
+rsync -a --delete ./plugins/srulik-toolkit/ ~/.cursor/plugins/local/srulik-toolkit/
+```
+
 ## Make a focused change
 
 Read [AGENTS.md](AGENTS.md) first for the toolkit's purpose. Then read
@@ -57,6 +64,7 @@ together:
 - `.claude-plugin/marketplace.json`
 - `plugins/srulik-toolkit/.claude-plugin/plugin.json`
 - `plugins/srulik-toolkit/.codex-plugin/plugin.json`
+- `plugins/srulik-toolkit/.cursor-plugin/plugin.json`
 
 Pull requests that change packaged plugin or marketplace files must also change
 `plugins/srulik-toolkit/VERSION`. Documentation-only and CI-only changes do not

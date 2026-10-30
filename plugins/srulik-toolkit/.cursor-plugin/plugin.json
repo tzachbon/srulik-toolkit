@@ -1,0 +1,21 @@
+{
+  "name": "srulik-toolkit",
+  "displayName": "Srulik Toolkit",
+  "description": "Twenty-one portable skills for request triage, research, planning, plan execution, explanation, code and UI/UX review, scoped implementation, writing, session recaps, retrospectives, and pull request maintenance.",
+  "version": "1.9.0",
+  "author": {
+    "name": "Zach Bonfil"
+  },
+  "homepage": "https://github.com/tzachbon/srulik-toolkit",
+  "repository": "https://github.com/tzachbon/srulik-toolkit",
+  "license": "MIT",
+  "keywords": [
+    "planning",
+    "review",
+    "tdd",
+    "agents",
+    "scope"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks-cursor.json"
+}
