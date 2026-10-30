@@ -10,7 +10,7 @@
 [![Cursor](https://img.shields.io/badge/Cursor-supported-000000)](https://cursor.com)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Twenty-one focused skills for understanding, planning, and shipping software with Claude Code, Codex, and Cursor.**
+**Twenty-two focused skills for understanding, planning, and shipping software with Claude Code, Codex, and Cursor.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
@@ -64,7 +64,7 @@ marketplaces can import this repository through `.cursor-plugin/marketplace.json
 
 ## Startup hint
 
-On a new session, the plugin writes the twenty-one skill names and a short routing
+On a new session, the plugin writes the twenty-two skill names and a short routing
 instruction to model context. Claude Code and Codex use the default
 `hooks/hooks.json` location and run it only for `SessionStart` with the
 `startup` matcher. Cursor runs it from `hooks/hooks-cursor.json` on
@@ -97,6 +97,7 @@ Cursor does not run this hook yet.
 | [`to-project`](plugins/srulik-toolkit/skills/to-project/SKILL.md) | Turn an idea or an existing folder into a project with durable context. |
 | [`create-plan`](plugins/srulik-toolkit/skills/create-plan/SKILL.md) | Research, draft, review, and revise an execution-ready plan until no actionable comments remain. |
 | [`implement-plan`](plugins/srulik-toolkit/skills/implement-plan/SKILL.md) | Execute an approved plan, integrate and verify tasks, then repeat review and fixes until no actionable comments remain. |
+| [`skill-creator`](plugins/srulik-toolkit/skills/skill-creator/SKILL.md) | Create or edit a skill through mandatory planning and implementation, compare real outputs, and improve it with human review. |
 | [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request with review evidence, merge danger, and blast radius. |
 | [`execute-task-end-to-end`](plugins/srulik-toolkit/skills/execute-task-end-to-end/SKILL.md) | Explicitly request the full workflow: plan, issue, implementation, and a PR driven to `MERGE READY`, or verified `MERGED` when authorized, closing with a `recap`. |
 | [`ui-ux-review`](plugins/srulik-toolkit/skills/ui-ux-review/SKILL.md) | Validate every in-scope user story against actual design images, rendered screens, and the project's design system without changing it. |
@@ -121,6 +122,7 @@ Example prompts:
 $can-you-help Here is a Slack thread. Can you help?
 $create-plan Add offline support to this app
 $implement-plan Execute the approved plan in docs/offline-plan.md
+$srulik-toolkit:skill-creator Create a skill for release notes and evaluate it on real examples
 $execute-task-end-to-end Add offline support and drive its PR to MERGE READY
 $create-pr Open a pull request for the current changes
 $review-pro-max Review the changes on my current branch
@@ -137,6 +139,23 @@ $retro Review this session and suggest environment improvements
 Claude Code may expose skills as slash commands. Codex uses `$skill-name`.
 Plain-language requests can trigger a matching skill in either tool.
 `execute-task-end-to-end` requires explicit invocation.
+
+`skill-creator` uses `create-plan` and `implement-plan` for every skill creation
+or edit, including small changes, then reviews the authored change through
+`review-pro-max`. Executing a covered task reads its authoring references inside
+the approved plan; it does not recursively restart planning. Evaluation-only
+requests can compare outputs without editing a skill. Use the namespaced name
+to distinguish this adaptation from a host's built-in skill with the same name.
+
+The portable workflow runs actual target tasks and independent no-skill or
+old-skill baselines, preserves unknown telemetry, and uses equal fixture weights
+for benchmarks. Its offline static viewer exports completed feedback; synthetic
+feedback proves plumbing, while human acceptance is recorded separately.
+Automatic description optimization is optional, Claude-specific, and currently
+POSIX-only. It is not a prerequisite for portable authoring or evaluation.
+Runtime evidence identifies the exact isolated installation and platform tested;
+repository checks alone do not prove both native workflows or current-session
+activation. Installing a shared copy is a separate action.
 
 ## How the toolkit fits together
 

@@ -1,7 +1,7 @@
 {
   "name": "srulik-toolkit",
-  "version": "1.9.0",
-  "description": "Twenty-one portable skills for request triage, research, planning, plan execution, explanation, code and UI/UX review, scoped implementation, writing, session recaps, retrospectives, and pull request maintenance.",
+  "version": "1.10.0",
+  "description": "Twenty-two portable skills for request triage, research, planning, plan execution, skill authoring, explanation, code and UI/UX review, scoped implementation, writing, session recaps, retrospectives, and pull request maintenance.",
   "author": {
     "name": "Zach Bonfil",
     "url": "https://github.com/tzachbon"
@@ -20,13 +20,14 @@
   "interface": {
     "displayName": "Srulik Toolkit",
     "shortDescription": "Plan, review, and build with tighter scope.",
-    "longDescription": "Srulik Toolkit packages twenty-one portable workflows for request triage, project setup, research, planning, plan execution, visual explanation, guided tours, code and UI/UX review, scope control, agent coordination, TDD, simple implementations, prose editing, pull request creation and maintenance, merge conflicts, CI fixes, session recaps, and session retrospectives.",
+    "longDescription": "Srulik Toolkit packages twenty-two portable workflows for request triage, project setup, research, planning, plan execution, skill authoring, visual explanation, guided tours, code and UI/UX review, scope control, agent coordination, TDD, simple implementations, prose editing, pull request creation and maintenance, merge conflicts, CI fixes, session recaps, and session retrospectives.",
     "developerName": "Zach Bonfil",
     "category": "Productivity",
     "capabilities": [
       "Planning",
       "Code review",
-      "Project setup"
+      "Project setup",
+      "Skill authoring"
     ],
     "defaultPrompt": [
       "Turn this idea into a project.",
