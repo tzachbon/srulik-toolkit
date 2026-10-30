@@ -7,14 +7,13 @@ synthetic fixture feedback, and actual human review.
 
 ## Source and checks
 
-- Integration base: `1bf9f6047602435ff1259503a340eeff0f32703c`.
-- Final local plugin candidate: `1.10.0`; twenty-one discoverable skills on the
-  approved base. The four functional workflows exercised candidate `1.8.0`;
-  final package activation and identity are checked separately below. Concurrent
-  UI/UX and Cursor releases (`c9632f564b643867465ab46ab93503fcafd8bdc4` and
-  `bdb2315d2883914d2a6f5c7b071b8d25736e5330`) consumed versions `1.8.0` and
-  `1.9.0`. Their changes are not imported into this checkout; integration with
-  newer main remains a later publishing task.
+- Original implementation base: `1bf9f6047602435ff1259503a340eeff0f32703c`.
+- Publication base: `bdb2315d2883914d2a6f5c7b071b8d25736e5330`.
+- Plugin version: `1.10.0`; twenty-two top-level skills after preserving the
+  concurrent UI/UX and Cursor releases. All four version-bearing manifests are
+  synchronized, including Cursor. The functional workflows exercised candidate
+  `1.8.0` on the original base; later isolated activation and viewer refreshes
+  verified `1.10.0`. Rebase verification is recorded below.
 - Upstream: `anthropics/skills`, revision
   `ca45fc496a3436251f191354091d557da31c15b5`, `skills/skill-creator`.
 - The requested `npx skills use "https://github.com/anthropics/skills" --skill
@@ -24,8 +23,8 @@ synthetic fixture feedback, and actual human review.
   `dcd4803e61e913e6fc27294184cd3a71f09f5e924ff20c8a9a20173e7b3c2bcf`.
 - Adapted `SKILL.md` SHA-256:
   `f4abcc97d54d9d6476feae81b66ee2ed8013cc53740918bfbc3fff7a06eeabf6`.
-- Final 22-file creator source and isolated Codex cache match. Tree SHA-256:
-  `f9a35e8b0f2d27a1235a0d163c61fbed4263fd5a524a4c8ba7d39813d2f09330`
+- Publication 22-file creator source and isolated Codex cache match. Tree SHA-256:
+  `fd8f05797fd25875f9b8c4ed0796793d27305c3426025bd2f5443b1c21f5021b`
   (SHA-256 of compact, sorted JSON mapping relative paths to file SHA-256;
   Python bytecode caches excluded).
 - `python3 scripts/test-skill-creator.py`: passed. Independent helper verification
@@ -187,7 +186,8 @@ activation in the current T3 conversation or other provider configurations.
 Synthetic completed feedback proves the feedback round trip and covered revision;
 it does not establish human acceptance or an actual human download gesture.
 
-No commit, push, PR, publication, or shared-plugin upgrade is part of this work.
+The original local-only phase did not publish or upgrade shared plugins.
+The user later authorized publication and merge; see the publication section.
 
 Shared-state comparisons did change during this task: a separate authorized UI/UX
 release updated the installed registrations, then the independent Cursor release
@@ -253,3 +253,46 @@ review flow: “Accept these Claude examples and review flow.” These responses
 are recorded separately from synthetic feedback, with the reviewed artifact
 hashes. All local integration acceptance gates are now satisfied. No commit,
 publication, shared-installation update, or latest-main merge is implied.
+
+## Publication integration
+
+The user subsequently authorized the end-to-end publishing workflow and merge.
+[Issue #47](https://github.com/tzachbon/srulik-toolkit/issues/47) preserves the
+scope, execution plan and acceptance criteria outside the conversation.
+
+The task branch was rebased onto the UI/UX and Cursor releases. Conflict
+resolution preserved both license notices, both new skills in the catalog and
+startup hint, Cursor's install documentation/hooks/manifest, and every existing
+validator. The creator validator is now part 8, following the existing UI/UX
+part 7. Root `AGENTS.md` routes skill authoring through the namespaced creator;
+root `CLAUDE.md` imports that same guide. The imported viewer has an exact-path
+vendored attribute under the repository's large-file commit policy.
+
+The only creator-source change during publication integration removes one
+trailing space from an optional proposal prompt. Its pre-publication tree was
+`f9a35e8b0f2d27a1235a0d163c61fbed4263fd5a524a4c8ba7d39813d2f09330`.
+Core instructions, portable helpers and every viewer source remain byte-identical
+to the human-accepted/native-refresh state. No additional model evaluations or
+quality gains are claimed from this metadata integration.
+
+Full repository validation passed on the combined state, including existing
+UI/UX and Cursor contracts, all creator helper regressions, and native manifest
+validation. `git diff origin/main --check` passed for the complete publication
+diff, including newly added files. Fresh post-rebase package activation passed
+in both native hosts: actual source/helper hashes, version, all three plugin
+manifest versions, 22 top-level skills and 24 recursive files were verified from
+the native tools. The two extra files are existing internal to-project helpers.
+The first Codex probe incorrectly required 22 recursive files; a corrected fresh
+conversation passed. Denied or unavailable read commands remain in the evidence.
+
+A fresh independent publication integration review passed on attempt 1/3 with
+zero actionable findings, preserving the two earlier local review rounds. Its
+140-file source snapshot SHA-256 is
+`b5139497755384392a704a43cd3d9f1c4347c53c1d9fd807fece5f5be9a20d71`.
+Only this administrative receipt was updated after review. A fresh cleanup scan
+found zero credential-value matches in 6089 retained runtime/package files, and
+the temporary secret-reference environment file was removed again. Cursor
+runtime authoring and live optional optimization remain unverified.
+
+Remote CI, review conversations and provider-verified merge/issue closure are
+subsequent publication gates; this source receipt does not predeclare them.
