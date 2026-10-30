@@ -9,7 +9,7 @@
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Twenty focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
+**Twenty-one focused skills for understanding, planning, and shipping software with Claude Code and Codex.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
@@ -49,7 +49,7 @@ installation or a hook change; installing the plugin alone does not grant it.
 
 ## Startup hint
 
-On a new session, the plugin writes the twenty skill names and a short routing
+On a new session, the plugin writes the twenty-one skill names and a short routing
 instruction to model context. It uses the default `hooks/hooks.json` location
 and runs only for `SessionStart` with the `startup` matcher. It does not run on
 each prompt or skill invocation.
@@ -82,6 +82,7 @@ and trust the new `Stop` hook through `/hooks` after updating the plugin.
 | [`implement-plan`](plugins/srulik-toolkit/skills/implement-plan/SKILL.md) | Execute an approved plan, integrate and verify tasks, then repeat review and fixes until no actionable comments remain. |
 | [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request with review evidence, merge danger, and blast radius. |
 | [`execute-task-end-to-end`](plugins/srulik-toolkit/skills/execute-task-end-to-end/SKILL.md) | Explicitly request the full workflow: plan, issue, implementation, and a PR driven to `MERGE READY`, or verified `MERGED` when authorized, closing with a `recap`. |
+| [`ui-ux-review`](plugins/srulik-toolkit/skills/ui-ux-review/SKILL.md) | Validate every in-scope user story against actual design images, rendered screens, and the project's design system without changing it. |
 | [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a local diff, branch, or pull request without changing it. |
 | [`stay-in-scope`](plugins/srulik-toolkit/skills/stay-in-scope/SKILL.md) | Re-establish the requested boundary when work starts to drift. |
 | [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. |
@@ -106,6 +107,7 @@ $implement-plan Execute the approved plan in docs/offline-plan.md
 $execute-task-end-to-end Add offline support and drive its PR to MERGE READY
 $create-pr Open a pull request for the current changes
 $review-pro-max Review the changes on my current branch
+$ui-ux-review Review the checkout flow for usability and accessibility
 $tdd Implement expiration for cached sessions
 $research Trace how this repository handles retries
 $tour How did this repository's PR review workflow evolve?
@@ -215,6 +217,16 @@ follow the project's selected vocabulary file; no existing project files are
 renamed automatically. When both files exist, the glossary owns terms and context
 retains background. `retro` continues to propose evidence-backed improvements
 for human review; a retrospective alone does not authorize environment changes.
+
+`ui-ux-review` extracts review criteria from Next Level Builder’s UI UX Pro Max.
+It maps every in-scope story and acceptance criterion to actual visual and
+behavioral evidence, opens generated design images and implementation renders,
+and checks reuse of the project's design system. It returns prioritized
+findings with evidence, user impact, a small repair, and a verification step.
+Missing visual or behavioral evidence makes coverage incomplete; passing code
+checks cannot establish visual acceptance. Design-only reviews retain the
+limits on unverified implementation behavior.
+Design generation, search catalogs, and implementation tooling are not bundled.
 
 ## Optional tools
 

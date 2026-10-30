@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI UX Review"
+  short_description: "Validate user stories, actual visuals, and design-system reuse."
+  default_prompt: "Use $ui-ux-review to validate every in-scope user story against actual design images, rendered screens, and the project's design system, then report findings and coverage gaps."

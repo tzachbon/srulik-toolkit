@@ -14,12 +14,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.7.2":
+if version != "1.8.0":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
     "to-project",
     "review-pro-max",
+    "ui-ux-review",
     "create-plan",
     "implement-plan",
     "create-pr",

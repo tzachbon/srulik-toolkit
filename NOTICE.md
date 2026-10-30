@@ -59,3 +59,15 @@ The `create-plan` impact and risk assessment takes inspiration from the door
 and blast-radius concepts in [Matt Pocock's `pr` skill](https://github.com/mattpocock/skills/blob/6fd947921b935b7e1e69293a200400f0fdd5c15f/skills/engineering/pr/SKILL.md).
 The planning guidance uses new wording and adds task-linked failure scenarios,
 detection signals, stop conditions, and recovery limits.
+
+The `ui-ux-review` skill adapts review priorities, UX guidelines, and professional
+UI checks from [Next Level Builder’s UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/28b3b8dee8c976df4fa3e94aed4e092ad43fcb03),
+originally published under the MIT License. Copyright (c) 2024 Next Level Builder.
+The original terms are retained in
+[`skills/ui-ux-review/LICENSE`](plugins/srulik-toolkit/skills/ui-ux-review/LICENSE).
+Design generation, search datasets, and implementation tooling are not bundled.
+The original skill file and its references from that pinned commit are retained
+unmodified as [`references/ui-ux-pro-max.md`](plugins/srulik-toolkit/skills/ui-ux-review/references/ui-ux-pro-max.md),
+[`references/quick-reference.md`](plugins/srulik-toolkit/skills/ui-ux-review/references/quick-reference.md),
+and [`references/pro-rules.md`](plugins/srulik-toolkit/skills/ui-ux-review/references/pro-rules.md)
+for source context; the adapted review workflow remains authoritative.
