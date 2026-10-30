@@ -7,6 +7,7 @@ version_path="plugins/srulik-toolkit/VERSION"
 if git diff --quiet "$base" HEAD -- \
   .agents/plugins/marketplace.json \
   .claude-plugin/marketplace.json \
+  .cursor-plugin/marketplace.json \
   plugins/srulik-toolkit \
   ":(exclude)$version_path"; then
   echo "No packaged plugin changes; version bump not required."

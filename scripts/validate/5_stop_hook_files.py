@@ -52,20 +52,29 @@ threading.Thread(target=server.serve_forever, daemon=True).start()
 base_url = f"http://127.0.0.1:{server.server_port}"
 hint_start = "Srulik Toolkit skills:"
 
-def check(endpoint, data_root, timeout="2000"):
-    env = os.environ | {
-        "PLUGIN_ROOT": str(plugin),
+def check(endpoint, data_root, timeout="2000", cursor=False):
+    env = {k: v for k, v in os.environ.items() if k not in {"CURSOR_PLUGIN_ROOT", "PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT"}} | {
+        "CURSOR_PLUGIN_ROOT" if cursor else "PLUGIN_ROOT": str(plugin),
         "PLUGIN_DATA": str(data_root),
         "SRULIK_TOOLKIT_VERSION_URL": base_url + endpoint,
         "SRULIK_TOOLKIT_VERSION_TIMEOUT_MS": timeout,
     }
     result = subprocess.run([node, str(plugin / "hooks" / "check-version.js")], env=env, capture_output=True, text=True, timeout=30, check=True)
-    if result.stderr or not result.stdout.startswith(hint_start):
-        raise SystemExit(f"version checker did not preserve startup hint: {result.stderr or result.stdout}")
-    advertised = set(result.stdout.splitlines()[0].split("skills: ", 1)[1].split(". Read", 1)[0].split(", "))
+    stdout = result.stdout
+    if cursor:
+        try:
+            payload = json.loads(stdout) if len(stdout.splitlines()) == 1 else None
+        except json.JSONDecodeError:
+            payload = None
+        if not isinstance(payload, dict) or set(payload) != {"additional_context"}:
+            raise SystemExit(f"Cursor startup output must be one additional_context object: {stdout}")
+        stdout = payload["additional_context"] + "\n"
+    if result.stderr or not stdout.startswith(hint_start):
+        raise SystemExit(f"version checker did not preserve startup hint: {result.stderr or stdout}")
+    advertised = set(stdout.splitlines()[0].split("skills: ", 1)[1].split(". Read", 1)[0].split(", "))
     if advertised != expected:
         raise SystemExit(f"startup hint differs from packaged skills: {sorted(advertised ^ expected)}")
-    return result.stdout
+    return stdout
 
 with tempfile.TemporaryDirectory() as temporary:
     data = pathlib.Path(temporary)
@@ -82,6 +91,12 @@ with tempfile.TemporaryDirectory() as temporary:
     check("/new", data)
     if requests.get("/new") != 1:
         raise SystemExit("fresh cached version must prevent a second request")
+with tempfile.TemporaryDirectory() as temporary:
+    if "is available" in check("/equal", pathlib.Path(temporary), cursor=True):
+        raise SystemExit("Cursor equal versions must not suggest an upgrade")
+with tempfile.TemporaryDirectory() as temporary:
+    if f"\nSrulik Toolkit {version} is installed; 9.9.9 is available" not in check("/new", pathlib.Path(temporary), cursor=True):
+        raise SystemExit("Cursor version mismatch must join the upgrade notice to the hint")
 with tempfile.TemporaryDirectory() as temporary:
     if "is available" in check("/bad", pathlib.Path(temporary)):
         raise SystemExit("invalid upstream version must be silent")

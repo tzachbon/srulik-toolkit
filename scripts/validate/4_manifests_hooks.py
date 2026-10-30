@@ -42,8 +42,10 @@ manifests = {}
 for manifest in [
     root / ".claude-plugin" / "marketplace.json",
     root / ".agents" / "plugins" / "marketplace.json",
+    root / ".cursor-plugin" / "marketplace.json",
     plugin / ".claude-plugin" / "plugin.json",
     plugin / ".codex-plugin" / "plugin.json",
+    plugin / ".cursor-plugin" / "plugin.json",
 ]:
     data = json.loads(manifest.read_text(encoding="utf-8"))
     if data.get("name") != "srulik-toolkit":
@@ -51,15 +53,20 @@ for manifest in [
     manifests[manifest.relative_to(root).as_posix()] = data
     if "version" in data and data["version"] != version:
         raise SystemExit(f"wrong version: {manifest.relative_to(root)}")
-    if "hooks" in data:
+    if "hooks" in data and manifest != plugin / ".cursor-plugin" / "plugin.json":
         raise SystemExit(f"hooks must use default discovery: {manifest.relative_to(root)}")
 
 claude_catalog = manifests[".claude-plugin/marketplace.json"]
 codex_catalog = manifests[".agents/plugins/marketplace.json"]
-for catalog in [claude_catalog, codex_catalog]:
+cursor_catalog = manifests[".cursor-plugin/marketplace.json"]
+for catalog in [claude_catalog, codex_catalog, cursor_catalog]:
     entries = catalog.get("plugins", [])
     if len(entries) != 1 or entries[0].get("name") != "srulik-toolkit":
         raise SystemExit("catalog must contain exactly the srulik-toolkit plugin")
+if cursor_catalog.get("owner", {}).get("name") != "Zach Bonfil":
+    raise SystemExit("Cursor marketplace needs an owner name")
+if cursor_catalog["plugins"][0] != {"name": "srulik-toolkit", "source": "plugins/srulik-toolkit"}:
+    raise SystemExit("Cursor catalog must point at plugins/srulik-toolkit without restating its manifest")
 if claude_catalog.get("version") != version:
     raise SystemExit("wrong Claude marketplace version")
 claude_entry = claude_catalog["plugins"][0]
@@ -72,7 +79,7 @@ if codex_entry.get("policy") != {"installation": "AVAILABLE", "authentication": 
     raise SystemExit("wrong Codex catalog policy")
 if not codex_entry.get("category"):
     raise SystemExit("missing Codex catalog category")
-for harness in ["claude", "codex"]:
+for harness in ["claude", "codex", "cursor"]:
     manifest = manifests[f"plugins/srulik-toolkit/.{harness}-plugin/plugin.json"]
     if manifest.get("version") != version or manifest.get("license") != "MIT":
         raise SystemExit(f"wrong {harness} plugin version or license")
@@ -80,6 +87,16 @@ for harness in ["claude", "codex"]:
         raise SystemExit(f"stale {harness} plugin skill count")
 if manifests["plugins/srulik-toolkit/.codex-plugin/plugin.json"].get("skills") != "./skills/":
     raise SystemExit("wrong Codex skill discovery path")
+cursor_manifest = manifests["plugins/srulik-toolkit/.cursor-plugin/plugin.json"]
+if cursor_manifest.get("skills") != "./skills/":
+    raise SystemExit("wrong Cursor skill discovery path")
+if cursor_manifest.get("hooks") != "./hooks/hooks-cursor.json" or not (plugin / cursor_manifest["hooks"]).is_file():
+    raise SystemExit("Cursor manifest must point at an existing hooks/hooks-cursor.json")
+cursor_hooks = json.loads((plugin / "hooks" / "hooks-cursor.json").read_text(encoding="utf-8"))
+if cursor_hooks != {"version": 1, "hooks": {"sessionStart": [{"command": "node ./hooks/check-version.js", "timeout": 3}]}}:
+    raise SystemExit("Cursor hooks must run the packaged version checker on sessionStart only")
+if not all(token in readme for token in ["### Cursor", "~/.cursor/plugins/local/srulik-toolkit", "instead of symlinking", "hooks/hooks-cursor.json"]):
+    raise SystemExit("README must document the Cursor local install and startup hook")
 
 hook_file = plugin / "hooks" / "hooks.json"
 hook_config = json.loads(hook_file.read_text(encoding="utf-8"))
