@@ -62,6 +62,10 @@ by `create-plan` and executed through `implement-plan`. Use bounded calls and
 report test-set size/limits. Do not imply that a live optimizer run was verified
 when only local fake tests ran.
 
+With holdout enabled, provide at least two queries per present trigger class so
+each class retains training and test examples. For smaller sets, add queries or
+explicitly use `--holdout 0`; this disables held-out evaluation.
+
 Capability mapping is based on inspected CLI help and upstream source. Live
 creation/improvement evidence, when available, belongs in the repository's
 verification receipt; unexercised configurations remain unverified.

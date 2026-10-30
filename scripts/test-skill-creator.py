@@ -12,6 +12,9 @@ import time
 
 SKILL = Path(__file__).resolve().parents[1] / "plugins/srulik-toolkit/skills/skill-creator"
 
+subprocess.run([sys.executable, "-B", str(Path(__file__).with_name("test-skill-creator-optimizer.py"))],
+               check=True, timeout=30)
+
 runner = Path(__file__).with_name("validate") / "run.py"
 unsupported = subprocess.run([sys.executable, "-B", "-c",
     "import sys,runpy,pathlib; sys.version_info=(3,9,0); "
