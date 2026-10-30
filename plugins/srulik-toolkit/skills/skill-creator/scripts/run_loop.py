@@ -24,11 +24,15 @@ from scripts.utils import parse_skill_md
 
 def split_eval_set(eval_set: list[dict], holdout: float, seed: int = 42) -> tuple[list[dict], list[dict]]:
     """Split eval set into train and test sets, stratified by should_trigger."""
+    if not 0 < holdout < 1:
+        raise ValueError("holdout must be between zero and one; use --holdout 0 to disable")
     random.seed(seed)
 
     # Separate by should_trigger
     trigger = [e for e in eval_set if e["should_trigger"]]
     no_trigger = [e for e in eval_set if not e["should_trigger"]]
+    if not eval_set or any(len(group) == 1 for group in (trigger, no_trigger)):
+        raise ValueError("holdout requires at least two queries per present class; add queries or use --holdout 0")
 
     # Shuffle each group
     random.shuffle(trigger)
@@ -61,6 +65,8 @@ def run_loop(
     log_dir: Path | None = None,
 ) -> dict:
     """Run the eval + improvement loop."""
+    if not 0 <= holdout < 1:
+        raise ValueError("holdout must be between zero (disabled) and one (excluded)")
     project_root = find_project_root()
     name, original_description, content = parse_skill_md(skill_path)
     current_description = description_override or original_description
