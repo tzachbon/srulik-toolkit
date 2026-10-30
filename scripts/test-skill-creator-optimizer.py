@@ -18,7 +18,7 @@ def check_triggers():
         print("SKIP trigger subprocess cases: optional optimizer is POSIX-only.")
         return
     with tempfile.TemporaryDirectory(prefix="creator-trigger-") as scratch:
-        root = Path(scratch)
+        root = Path(scratch).resolve()
         (root / ".claude").mkdir()
         binary = root / "bin"
         binary.mkdir()

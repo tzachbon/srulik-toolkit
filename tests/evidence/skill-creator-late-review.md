@@ -73,3 +73,9 @@ platform-independent holdout tests still run there.
 
 Final validation, independent review and exact published-head CI are reported in
 the follow-up PR rather than predeclared by this source receipt.
+
+Initial follow-up CI passed Linux and Windows but failed macOS: its symlinked
+temporary directory exposed a noncanonical path in the new trigger fixture.
+A local symlinked `TMPDIR` reproduced the same confinement error. Resolving the
+fixture root fixes that reproduction without changing the production guard;
+exact-head remote macOS confirmation remains a separate gate.
