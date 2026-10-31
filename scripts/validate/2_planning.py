@@ -6,7 +6,8 @@ keep_it_simple = (skill_root / "keep-it-simple" / "SKILL.md").read_text(encoding
 pr_babysit = (skill_root / "pr-babysit" / "SKILL.md").read_text(encoding="utf-8")
 skill_routing = (skill_root / "create-plan" / "references" / "skill-routing.md").read_text(encoding="utf-8")
 create_plan_openai = (skill_root / "create-plan" / "agents" / "openai.yaml").read_text(encoding="utf-8")
-readme = (root / "README.md").read_text(encoding="utf-8")
+# README plus the workflow page it links; together they are the user-facing docs.
+readme = "\n".join((root / name).read_text(encoding="utf-8") for name in ["README.md", "docs/workflow.md"])
 implement_plan = (skill_root / "implement-plan" / "SKILL.md").read_text(encoding="utf-8")
 implement_plan_openai = (skill_root / "implement-plan" / "agents" / "openai.yaml").read_text(encoding="utf-8")
 agent_swarm = (skill_root / "agent-swarm" / "SKILL.md").read_text(encoding="utf-8")
