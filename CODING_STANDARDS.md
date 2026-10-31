@@ -14,7 +14,7 @@ Some older skills still name Claude Code or Codex directly; move that text into 
 
 | Stage | Skills | Add here when a skill or utility |
 | --- | --- | --- |
-| Understand and plan | `can-you-help`, `to-project`, `research`, `tour`, `show-me`, `recap`, `create-plan`, `keep-it-simple` | clarifies a request or produces a decision or plan |
+| Understand and plan | `can-you-help`, `to-project`, `research`, `tour`, `show-me`, `recap`, `takeover`, `create-plan`, `keep-it-simple` | clarifies a request or produces a decision or plan |
 | Implement | `implement-plan`, `execute-task-end-to-end`, `skill-creator`, `tdd`, `agent-swarm`, `stay-in-scope` | executes an approved plan or keeps execution on track |
 | Verify and ship | `review-pro-max`, `ui-ux-review`, `create-pr`, `pr-babysit`, `fix-ci`, `resolving-merge-conflicts`, `stop-slop`, `retro` | checks, publishes, or maintains the result |
 
