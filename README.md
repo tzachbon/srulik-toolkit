@@ -10,7 +10,7 @@
 [![Cursor](https://img.shields.io/badge/Cursor-supported-000000)](https://cursor.com)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Twenty-three focused skills for understanding, planning, and shipping software with Claude Code, Codex, and Cursor.**
+**Twenty-four focused skills for understanding, planning, and shipping software with Claude Code, Codex, and Cursor.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
@@ -19,7 +19,7 @@
 Srulik Toolkit packages the workflows I use to make sense of incoming requests, turn loose ideas into projects,
 investigate questions, explain topics visually, give guided tours, write and implement plans, review changes, keep work in scope, delegate
 suitable tasks, work test-first, and maintain pull requests. It also covers prose
-editing, merge conflicts, CI failures, session recaps, agent takeovers, and session retrospectives.
+editing, product videos, merge conflicts, CI failures, session recaps, agent takeovers, and session retrospectives.
 
 Each skill works on its own. Install one plugin, then invoke the skill you need
 by name or describe the task in plain language.
@@ -64,7 +64,7 @@ marketplaces can import this repository through `.cursor-plugin/marketplace.json
 
 ## Startup hint
 
-On a new session, the plugin writes the twenty-three skill names and a short routing
+On a new session, the plugin writes the twenty-four skill names and a short routing
 instruction to model context. Claude Code and Codex use the default
 `hooks/hooks.json` location and run it only for `SessionStart` with the
 `startup` matcher. Cursor runs it from `hooks/hooks-cursor.json` on
@@ -110,6 +110,7 @@ Cursor does not run this hook yet.
 | [`tour`](plugins/srulik-toolkit/skills/tour/SKILL.md) | Research a topic's history and current flow as a sourced visual narrative. |
 | [`show-me`](plugins/srulik-toolkit/skills/show-me/SKILL.md) | Explain the current topic with concise diagrams and focused visual artifacts. |
 | [`stop-slop`](plugins/srulik-toolkit/skills/stop-slop/SKILL.md) | Edit prose for direct language while preserving facts and uncertainty. |
+| [`video-creation`](plugins/srulik-toolkit/skills/video-creation/SKILL.md) | Build a product or demo video from code: safe real-app footage, frame-exact rendering, original music timed to the cuts, and a contact-sheet review. |
 | [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Keep PR monitoring in this conversation, with a low-cost child subagent for triage and the parent handling fixes and authorized merging until closure. |
 | [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
 | [`fix-ci`](plugins/srulik-toolkit/skills/fix-ci/SKILL.md) | Diagnose failing checks, apply the smallest repair, and verify the result. |
@@ -132,6 +133,7 @@ $tdd Implement expiration for cached sessions
 $research Trace how this repository handles retries
 $tour How did this repository's PR review workflow evolve?
 $show-me Explain the current request flow
+$video-creation Make a 90-second product video of the new import flow
 $fix-ci Diagnose and fix the failing checks on this pull request
 $recap Catch me up on this thread from the beginning
 $takeover The other agent added things I didn't ask for; take over from here

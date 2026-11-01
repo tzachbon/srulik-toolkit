@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.11.0":
+if version != "1.12.0":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -40,6 +40,7 @@ expected = {
     "recap",
     "takeover",
     "skill-creator",
+    "video-creation",
 }
 
 skill_root = plugin / "skills"
