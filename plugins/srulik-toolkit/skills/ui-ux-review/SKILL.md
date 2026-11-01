@@ -92,9 +92,10 @@ To spot generic, AI-generated visuals, consult the archived
 [unslop skill](references/unslop/unslop.md), its
 [signs of slop](references/unslop/references/signs.md), and its
 [finished references](references/unslop/references/refs.md). A sign becomes a
-finding only when it hides meaning, harms legibility or accessibility, or
-conflicts with the design-system baseline; otherwise report it as an optional
-aesthetic suggestion. Do not apply its redesign passes, image generation,
+finding only when it hides meaning, harms legibility or accessibility,
+conflicts with the design-system baseline, or causes another demonstrated user
+impact; otherwise treat it as an optional aesthetic suggestion, omitted unless
+requested. Do not apply its redesign passes, image generation,
 snapshot or story tooling; they are not bundled or authorized by this review.
 
 For every in-scope story in an implemented interface, exercise its acceptance
