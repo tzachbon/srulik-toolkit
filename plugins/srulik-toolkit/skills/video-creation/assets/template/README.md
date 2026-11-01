@@ -22,7 +22,8 @@ render single frames instead: `node render.mjs --stills 2,8`.
 
 Edit `record-example.mjs` for your app and flow, then run `node record-example.mjs`. It
 writes `capture/example/` (frames and `meta.js`), and the demo scene plays it in place of
-the placeholder. Re-run `./build.sh` after a capture.
+the placeholder. The demo scene's length now follows the capture, so copy the scene starts
+that `render.mjs` prints into the `T` map in `music.mjs`, then re-run `./build.sh`.
 
 ## Files
 

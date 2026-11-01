@@ -33,6 +33,8 @@ names, so a new take stays in sync.
 Make each `record-*.mjs` safe before it runs against a real app:
 
 - Let only `GET`, `HEAD` and `OPTIONS` through. Abort every other request and log it.
+  Request routing does not cover WebSockets; if the app writes over one, block it too or
+  film against sample data.
 - Answer event, analytics and telemetry posts locally with `204`, so the take adds no
   views or usage.
 - Open confirmation dialogs, then cancel them. Never confirm a write.

@@ -74,7 +74,8 @@ export async function session(dir, contextOptions = {}) {
     loop = (async () => {
       while (capturing) {
         const a = Date.now();
-        await page.screenshot({ path: join(dir, `f${String(n).padStart(5, '0')}.jpg`), type: 'jpeg', quality: 90 }).catch(() => null);
+        const ok = await page.screenshot({ path: join(dir, `f${String(n).padStart(5, '0')}.jpg`), type: 'jpeg', quality: 90 }).then(() => true, () => false);
+        if (!ok) continue;
         times.push(Math.round((a + Date.now()) / 2 - t0));
         n++;
       }
