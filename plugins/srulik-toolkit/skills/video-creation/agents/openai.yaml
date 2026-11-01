@@ -1,0 +1,4 @@
+interface:
+  display_name: "Video Creation"
+  short_description: "Build a product or demo video from code with real footage and original music."
+  default_prompt: "Use $video-creation to build a product video from a scene list, safe real-app capture, a seek(t) timeline, frame-exact rendering, and original music timed to the cuts, then show me the contact sheet."

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Product video</title>
+<style>
+  /* Brand tokens: replace with the brand's own values (see references/brand-feel.md).
+     Load brand fonts with @font-face from a local assets/ folder you supply. */
+  :root {
+    --bg: #0b0b0c; --ink: #ffffff; --muted: #b9b9b4; --rule: #5f5f5f; --accent: #4f8cff;
+    --font-display: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-text: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --m: 96px; --radius: 32px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; background: var(--bg); color: var(--ink); overflow: hidden; }
+  body { font-family: var(--font-text); -webkit-font-smoothing: antialiased; }
+  .scene { position: absolute; inset: 0; opacity: 0; }
+  .abs { position: absolute; }
+  .line { display: block; will-change: transform, opacity; }
+  .label { font: 500 32px/40px var(--font-text); color: var(--muted); }
+  .sub { font: 400 24px/32px var(--font-text); color: var(--muted); }
+  .h-xl { font: 700 136px/136px var(--font-display); letter-spacing: -0.01em; }
+  .h-l { font: 700 88px/96px var(--font-display); letter-spacing: -0.005em; }
+  .accent { color: var(--accent); }
+  .rule { height: 1px; background: var(--rule); transform-origin: 0 50%; }
+
+  .card { position: absolute; overflow: hidden; border-radius: var(--radius); background: #000; outline: 1px solid var(--rule); outline-offset: -1px; }
+  .shot { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; transform-origin: 0 0; }
+  /* Stand-in for real footage until capture/example/meta.js exists. */
+  .placeholder { background: #f4f4f2; color: #8a8a86; font: 500 40px/48px var(--font-text); }
+  .placeholder .bar { position: absolute; left: 0; right: 0; top: 0; height: 64px; background: #e3e3df; }
+  .placeholder .side { position: absolute; left: 0; top: 64px; bottom: 0; width: 240px; background: #ebebe7; }
+  .placeholder .row { position: absolute; left: 288px; right: 48px; height: 56px; border-bottom: 2px solid #e3e3df; }
+  .placeholder .note { position: absolute; left: 288px; top: 720px; }
+
+  .stat .big { font: 700 240px/232px var(--font-display); letter-spacing: -0.02em; margin-top: 40px; }
+  .stat .cap { margin-top: 32px; font: 400 36px/48px var(--font-text); width: 760px; }
+</style>
+</head>
+<body>
+
+<section class="scene" id="s-title">
+  <div class="abs" style="left:var(--m); top:var(--m)">
+    <div class="line" id="t-label" style="font:500 32px/40px var(--font-text)">Product name</div>
+    <div class="line sub" id="t-sub" style="margin-top:8px">One line on what it is and who it is for</div>
+  </div>
+  <div class="abs h-xl" style="left:var(--m); top:712px">
+    <span class="line" id="t-l1">State the promise.</span>
+    <span class="line accent" id="t-l2">Then show it.</span>
+  </div>
+</section>
+
+<section class="scene" id="s-demo">
+  <div class="card" id="demo-card">
+    <img class="shot" id="demo-shot" alt="">
+    <div class="shot placeholder" id="demo-ph">
+      <div class="bar"></div><div class="side"></div>
+      <div class="row" style="top:120px"></div><div class="row" style="top:200px"></div>
+      <div class="row" style="top:280px"></div><div class="row" style="top:360px"></div>
+      <div class="note">Real footage plays here after capture</div>
+    </div>
+  </div>
+  <div class="abs" style="left:1296px; top:var(--m); width:528px">
+    <div class="label line" id="d-label">The main flow</div>
+    <div class="line" id="d-h" style="margin-top:24px; font:700 52px/60px var(--font-display)">One idea per scene, readable in two seconds</div>
+  </div>
+  <div class="abs sub line" id="d-foot" style="left:1296px; bottom:var(--m); width:528px">Real footage. Waiting time shortened.</div>
+</section>
+
+<section class="scene" id="s-stat">
+  <div class="abs label line" id="st-label" style="left:var(--m); top:var(--m)">Measured</div>
+  <div class="abs stat" id="st-a" style="left:var(--m); top:336px; width:1728px">
+    <div class="rule" id="st-rule" style="background:var(--ink)"></div>
+    <div class="big accent" id="st-num">00</div>
+    <div class="cap">One number with a written source, or no number</div>
+  </div>
+  <div class="abs sub line" id="st-src" style="left:var(--m); bottom:var(--m)">Source: where this number comes from</div>
+</section>
+
+<section class="scene" id="s-end">
+  <div class="abs" id="lockup" style="left:0; right:0; top:500px; text-align:center; font:700 64px/80px var(--font-display)">Logo</div>
+</section>
+
+<script src="capture/example/meta.js"></script>
+<script src="timeline.js"></script>
+</body>
+</html>
