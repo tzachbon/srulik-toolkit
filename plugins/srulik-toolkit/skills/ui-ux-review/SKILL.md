@@ -88,6 +88,16 @@ references; this skill's review workflow and checklist take precedence.
 Upstream generation/search tooling and datasets are not bundled or authorized
 by this review. Apply only guidance relevant to the reviewed task.
 
+To spot generic, AI-generated visuals, consult the archived
+[unslop skill](references/unslop/unslop.md), its
+[signs of slop](references/unslop/references/signs.md), and its
+[finished references](references/unslop/references/refs.md). A sign becomes a
+finding only when it hides meaning, harms legibility or accessibility,
+conflicts with the design-system baseline, or causes another demonstrated user
+impact; otherwise treat it as an optional aesthetic suggestion, omitted unless
+requested. Do not apply its redesign passes, image generation,
+snapshot or story tooling; they are not bundled or authorized by this review.
+
 For every in-scope story in an implemented interface, exercise its acceptance
 criteria and relevant alternate, failure, and recovery paths in the running
 interface. Use the project's existing validation pipeline where available;
@@ -161,3 +171,8 @@ specifically its review priorities, UX guidelines, and professional UI checks.
 This adaptation retains review criteria and omits design generation, searchable
 catalogs, and stack-specific implementation tooling. Copyright (c) 2024 Next
 Level Builder. Original MIT terms are preserved in [LICENSE](LICENSE).
+
+The unslop reference is copied unmodified from Damir Sokolovsky's
+[unslop](https://github.com/heydamir/unslop/tree/1d13095e4bef6ad6c74f1dd828d84c4ba309a4dc/skills/unslop)
+([@heydamir](https://x.com/heydamir)) under CC BY 4.0. Its license is retained
+in [references/unslop/LICENSE](references/unslop/LICENSE).
