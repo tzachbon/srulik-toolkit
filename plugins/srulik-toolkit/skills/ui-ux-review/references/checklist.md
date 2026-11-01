@@ -92,6 +92,11 @@ other layout and timing choices need evidence of a user problem.
 - Compare repeated components with existing tokens: typography, color roles,
   spacing, alignment, icons, borders, elevation, and interaction states.
   Flag inconsistency when it obscures meaning or conflicts with the system.
+- Check for generic AI-generated visual patterns listed in the unslop
+  [signs of slop](unslop/references/signs.md): decorative gradients and glows,
+  gradient text, emoji as icons, uppercase tracked labels, arbitrary spacing,
+  and chrome competing with content. Report a sign as a defect only with a
+  user impact or design-system conflict.
 
 ## Motion and perceived performance
 

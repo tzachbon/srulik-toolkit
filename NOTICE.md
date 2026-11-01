@@ -72,6 +72,18 @@ unmodified as [`references/ui-ux-pro-max.md`](plugins/srulik-toolkit/skills/ui-u
 and [`references/pro-rules.md`](plugins/srulik-toolkit/skills/ui-ux-review/references/pro-rules.md)
 for source context; the adapted review workflow remains authoritative.
 
+The `ui-ux-review` skill also retains Damir Sokolovsky's
+[unslop](https://github.com/heydamir/unslop/tree/1d13095e4bef6ad6c74f1dd828d84c4ba309a4dc/skills/unslop)
+skill at revision `1d13095e4bef6ad6c74f1dd828d84c4ba309a4dc`, licensed under
+CC BY 4.0. Its skill file, references and reference images are copied
+unmodified under
+[`references/unslop/`](plugins/srulik-toolkit/skills/ui-ux-review/references/unslop/unslop.md),
+with the original skill file renamed to `unslop.md`. Its license is retained in
+[`skills/ui-ux-review/references/unslop/LICENSE`](plugins/srulik-toolkit/skills/ui-ux-review/references/unslop/LICENSE).
+Its snapshot and story scripts and examples are not bundled. The review
+workflow uses it as a source reference for spotting generic AI-generated
+visuals and remains authoritative.
+
 The `skill-creator` skill adapts Anthropic's public
 [`skill-creator`](https://github.com/anthropics/skills/tree/ca45fc496a3436251f191354091d557da31c15b5/skills/skill-creator)
 at revision `ca45fc496a3436251f191354091d557da31c15b5`, distributed under the
