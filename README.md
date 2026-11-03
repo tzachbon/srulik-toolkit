@@ -142,7 +142,6 @@ $retro Review this session and suggest environment improvements
 
 Claude Code may expose skills as slash commands. Codex uses `$skill-name`.
 Plain-language requests can trigger a matching skill in either tool.
-`execute-task-end-to-end` requires explicit invocation.
 
 `skill-creator` uses `create-plan` and `implement-plan` for every skill creation
 or edit, including small changes, then reviews the authored change through

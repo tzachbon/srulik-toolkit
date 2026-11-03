@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.13.0":
+if version != "1.13.1":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -110,8 +110,8 @@ if re.search(r"\]\(\.\./[^)]+/SKILL\.md\)", end_to_end):
 for token in ["T3 Code", "Codex", "Claude", "Luna", "watch_pull_request", "delegate_task", "clientRequestId", "task_cancel", "Keep listening until closure or user STOP"]:
     if token in end_to_end:
         raise SystemExit(f"host-specific or obsolete end-to-end core instruction: {token}")
-if "disable-model-invocation: true" not in end_to_end or "allow_implicit_invocation: false" not in end_to_end_ui:
-    raise SystemExit("end-to-end execution must require explicit invocation")
+if "disable-model-invocation: true" in end_to_end or "allow_implicit_invocation: true" not in end_to_end_ui:
+    raise SystemExit("end-to-end execution must allow model invocation")
 for token in [
     "verify `watching: true`",
     "one stable `clientRequestId` per batch",

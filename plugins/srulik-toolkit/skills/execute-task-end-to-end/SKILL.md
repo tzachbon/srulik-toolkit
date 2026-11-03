@@ -1,7 +1,6 @@
 ---
 name: execute-task-end-to-end
 description: Create a task's issue and PR, then drive the PR to MERGE READY or, when explicitly authorized, verified MERGED.
-disable-model-invocation: true
 ---
 
 # Execute task end to end
