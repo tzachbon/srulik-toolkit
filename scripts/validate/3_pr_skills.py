@@ -1,5 +1,5 @@
 pr_babysit_contract = [
-    "If the user explicitly invoked `execute-task-end-to-end` for this task",
+    "If the user asked for `execute-task-end-to-end` for this task",
     "load [that workflow](../execute-task-end-to-end/SKILL.md) before applying the standalone roles below",
     "Its ownership and completion rules take precedence",
     "If it is absent from the skill catalog, check the linked bundled file",
