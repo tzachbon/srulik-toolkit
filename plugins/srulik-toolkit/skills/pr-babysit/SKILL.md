@@ -5,7 +5,7 @@ description: Babysit a pull request within the original conversation, using a lo
 
 # Babysit a pull request
 
-If the user explicitly invoked `execute-task-end-to-end` for this task, load [that workflow](../execute-task-end-to-end/SKILL.md) before applying the standalone roles below. Its ownership and completion rules take precedence. If it is absent from the skill catalog, check the linked bundled file. If that file is unavailable, report the missing skill and blocked phase instead of substituting a background handoff.
+If the user asked for `execute-task-end-to-end` for this task, load [that workflow](../execute-task-end-to-end/SKILL.md) before applying the standalone roles below. Its ownership and completion rules take precedence. If it is absent from the skill catalog, check the linked bundled file. If that file is unavailable, report the missing skill and blocked phase instead of substituting a background handoff.
 
 Invocation for a named PR authorizes scoped edits, commits, pushes to its head branch, rebasing that branch onto its base with a lease-protected force push, review replies, and resolution of addressed review threads. Honor narrower user limits. Never force-push without a lease or to any other branch, enable auto-merge, mark a draft ready, weaken checks, or expand the assignment. Merge only when the user's request explicitly asks to merge, after a fresh readiness check, using the repository's usual method.
 

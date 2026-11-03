@@ -1,12 +1,11 @@
 ---
 name: execute-task-end-to-end
 description: Create a task's issue and PR, then drive the PR to MERGE READY or, when explicitly authorized, verified MERGED.
-disable-model-invocation: true
 ---
 
 # Execute task end to end
 
-Use only when the user explicitly invokes `execute-task-end-to-end`. Creating a PR and driving it to the terminal Definition of Done below is the primary obligation. Carry out the entire workflow; a plan, local changes, PR creation, or green CI alone is intermediate progress.
+Use only when the user asks for this full workflow, by name or in plain language, such as "take this task end to end through a ready PR". Creating a PR and driving it to the terminal Definition of Done below is the primary obligation. Carry out the entire workflow; a plan, local changes, PR creation, or green CI alone is intermediate progress.
 
 Invocation authorizes planning, creating or updating the task's issue in its Git hosting provider, implementation, validation, the test methods that proof needs, a branch, commits, pushes, rebasing this task's branch with a lease-protected force push, PR creation, review replies, and resolution of addressed review threads. It also authorizes a read-only event-filter subagent; the main agent retains execution responsibility. Honor narrower user limits and repository instructions. Merge authority exists only when the user explicitly asks to merge this task's PR, either in the initial request or later; retain that authorization without asking again.
 
