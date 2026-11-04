@@ -100,3 +100,15 @@ Claude Code on POSIX; it adds no required external dependency. PyYAML-dependent
 archive packaging/validation and the upstream review server are not bundled.
 The repository's MIT terms do not replace the retained Apache-2.0 terms for
 this adapted material.
+
+The `handoff` skill adapts [Matt Pocock's public handoff skill](https://github.com/mattpocock/skills/blob/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/productivity/handoff/SKILL.md)
+at revision `4ae2317ddb22b046e26455e4f9c9b3aaaf62212d` under the MIT License.
+The original copyright and terms are retained in
+[`skills/handoff/LICENSE`](plugins/srulik-toolkit/skills/handoff/LICENSE).
+
+Copyright (c) 2026 Matt Pocock
+
+The adaptation preserves explicit invocation, temporary output, redaction,
+artifact references, focus arguments, and suggested skills. It adds portable host
+mappings, scoped continuation state, saved-file verification, and a receiving
+prompt for the existing `takeover` workflow.

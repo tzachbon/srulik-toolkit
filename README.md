@@ -10,7 +10,7 @@
 [![Cursor](https://img.shields.io/badge/Cursor-supported-000000)](https://cursor.com)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Twenty-four focused skills for understanding, planning, and shipping software with Claude Code, Codex, and Cursor.**
+**Twenty-five focused skills for understanding, planning, and shipping software with Claude Code, Codex, and Cursor.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
@@ -19,7 +19,7 @@
 Srulik Toolkit packages the workflows I use to make sense of incoming requests, turn loose ideas into projects,
 investigate questions, explain topics visually, give guided tours, write and implement plans, review changes, keep work in scope, delegate
 suitable tasks, work test-first, and maintain pull requests. It also covers prose
-editing, product videos, merge conflicts, CI failures, session recaps, agent takeovers, and session retrospectives.
+editing, product videos, merge conflicts, CI failures, session recaps, handoffs, agent takeovers, and session retrospectives.
 
 Each skill works on its own. Install one plugin, then invoke the skill you need
 by name or describe the task in plain language.
@@ -64,7 +64,7 @@ marketplaces can import this repository through `.cursor-plugin/marketplace.json
 
 ## Startup hint
 
-On a new session, the plugin writes the twenty-four skill names and a short routing
+On a new session, the plugin writes the twenty-five skill names and a short routing
 instruction to model context. Claude Code and Codex use the default
 `hooks/hooks.json` location and run it only for `SessionStart` with the
 `startup` matcher. Cursor runs it from `hooks/hooks-cursor.json` on
@@ -115,6 +115,7 @@ Cursor does not run this hook yet.
 | [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
 | [`fix-ci`](plugins/srulik-toolkit/skills/fix-ci/SKILL.md) | Diagnose failing checks, apply the smallest repair, and verify the result. |
 | [`recap`](plugins/srulik-toolkit/skills/recap/SKILL.md) | Get a short, plain-language catch-up on a session: the whole thread around its goal, or focused on a topic you add. |
+| [`handoff`](plugins/srulik-toolkit/skills/handoff/SKILL.md) | Explicitly write a compact, redacted continuation document in OS temporary storage for another agent; optionally focus the next session. |
 | [`takeover`](plugins/srulik-toolkit/skills/takeover/SKILL.md) | Take over another agent's work: check its claims, list scope creep, state why you switched, then continue or wait for your confirmation. |
 | [`retro`](plugins/srulik-toolkit/skills/retro/SKILL.md) | Learn from a coding session and propose evidence-backed improvements to the agent's environment. Adapted from Matt Pocock. |
 
@@ -136,12 +137,15 @@ $show-me Explain the current request flow
 $video-creation Make a 90-second product video of the new import flow
 $fix-ci Diagnose and fix the failing checks on this pull request
 $recap Catch me up on this thread from the beginning
+$handoff Focus the next session on the failing CI job
 $takeover The other agent added things I didn't ask for; take over from here
 $retro Review this session and suggest environment improvements
 ```
 
 Claude Code may expose skills as slash commands. Codex uses `$skill-name`.
-Plain-language requests can trigger a matching skill in either tool.
+Plain-language requests can trigger a matching skill in either tool, except
+`handoff`, which preserves upstream’s explicit invocation policy. `handoff` writes
+outgoing notes; `takeover` verifies incoming work before continuing.
 
 `skill-creator` uses `create-plan` and `implement-plan` for every skill creation
 or edit, including small changes, then reviews the authored change through

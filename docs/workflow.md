@@ -104,3 +104,9 @@ Missing visual or behavioral evidence makes coverage incomplete; passing code
 checks cannot establish visual acceptance. Design-only reviews retain the
 limits on unverified implementation behavior.
 Design generation, search catalogs, and implementation tooling are not bundled.
+
+`recap` explains session history. Explicitly invoke `handoff` to prepare compact,
+redacted continuation notes in OS temporary storage, with artifact references,
+authorization limits, and suggested skills. It returns a path and receiving
+prompt without starting another agent. The receiver uses `takeover` to check
+claims against current evidence before continuing within the existing authority.
