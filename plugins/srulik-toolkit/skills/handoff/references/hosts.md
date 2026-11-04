@@ -12,7 +12,10 @@ proof that every installation or operating system has been tested.
 ## Temporary storage
 
 Use the platform's temporary-file capability to create a unique Markdown file;
-do not add a project helper. On POSIX, use `$TMPDIR` when set, otherwise `/tmp`.
+do not add a project helper. Create it with owner-only access before writing
+content: mode `0600` on POSIX or an equivalent private ACL on Windows. Verify
+the protection with the host's filesystem capability; stop if it cannot be established.
+On POSIX, use `$TMPDIR` when set, otherwise `/tmp`.
 On Windows, use `%TEMP%` or the system temporary-path API. Resolve the chosen
 directory and ensure it is outside the workspace before writing. If an
 environment override points inside the workspace, use another OS temporary
