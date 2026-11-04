@@ -64,7 +64,8 @@ for handoff_path, handoff_tokens in handoff_contracts:
 handoff_core = (handoff_dir / "SKILL.md").read_text(encoding="utf-8")
 if re.search(r"\b(?:Claude|Codex|Cursor|T3)\b|t3_[a-z_]+|\bSkill tool\b|\$(?:TMPDIR|TEMP)\b|%TEMP%", handoff_core):
     raise SystemExit("handoff core must stay host-agnostic")
-if hashlib.sha256((handoff_dir / "LICENSE").read_bytes()).hexdigest() != "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5":
+# Git can check text out with CRLF on Windows; compare the unchanged license text.
+if hashlib.sha256((handoff_dir / "LICENSE").read_text(encoding="utf-8").encode("utf-8")).hexdigest() != "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5":
     raise SystemExit("handoff must retain the exact pinned upstream MIT license")
 if {p.relative_to(handoff_dir).as_posix() for p in handoff_dir.rglob("*") if p.is_file()} != {
     "SKILL.md", "LICENSE", "agents/openai.yaml", "references/hosts.md",
