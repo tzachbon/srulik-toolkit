@@ -54,7 +54,7 @@ Each full panel pass is one round. A fresh review after fixes starts the next ro
 
 Record each round's pinned state, each reviewer's model and score, and each finding with its status: `open`, `fixed`, `disputed`, or `withdrawn`. Store no secrets and no more source than a finding needs.
 
-At the start of a review, read the target's existing ledger and compare its identity before changing anything. If the identity differs, the ledger is unreadable, or its pinned history does not match the target, report the limit and do not write to that ledger. Otherwise recheck its open findings against the current state and update their status, then run the fresh pass. Start a new ledger only when the user asks or the target is merged or closed.
+At the start of a review, read the target's existing ledger and compare its identity before changing anything. If the identity differs or the ledger is unreadable, report the limit and do not write to that ledger. If its recorded heads are no longer in the target's history, as after a rebase, record the rewritten history as a limit and continue. Then recheck its open findings against the current state and update their status, then run the fresh pass. Start a new ledger only when the user asks or the target is merged or closed.
 
 Later rounds must not widen scope. Report a new finding only when it is a defect in the reviewed change or one introduced by a fix. Do not add requirements, preferences, or adjacent cleanup that earlier rounds did not need, even when a reviewer asks for them.
 
