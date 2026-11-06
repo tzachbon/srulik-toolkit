@@ -1,6 +1,6 @@
 # Reviewer brief
 
-Use this brief for your own pass or attach it to a delegated review. Supply the resolved target, pinned base and head or local snapshot, requirements, assigned files, and any scope exclusions in the task message. Do not leave unresolved placeholders in a delegation.
+Use this brief for your own pass or attach it to a delegated review. Supply the resolved target, pinned base and head or local snapshot, requirements, assigned files, round number, prior findings with their status, and any scope exclusions in the task message. Do not leave unresolved placeholders in a delegation.
 
 ## Authority and evidence
 
@@ -16,7 +16,8 @@ Use committed specifications and committed executable test contracts as the auth
 2. Compare implementation with committed requirements. Identify committed requirement gaps and changes outside the agreed scope. Treat other intent signals as non-blocking context and do not invent requirements from preferred architecture or style.
 3. Assess tests at the public behavior boundary. Check whether assertions would catch a plausible regression. Passing tests only support paths they exercise; test names and mock counts do not prove behavior.
 4. Inspect risks that apply to the assigned changes: authorization, sensitive data, concurrency, accessibility, performance, configuration, deployment, or migrations. State the actual consequence and its prerequisites.
-5. Identify avoidable complexity that affects this change. Prefer existing helpers, configuration, standard features, and deletion where they preserve behavior. Recommend an abstraction only for demonstrated uses. Preserve security, accessibility, error handling, and agreed tests when suggesting simplification.
+5. In a later round, recheck each prior finding first and say whether it is fixed, still open, or should be withdrawn. Report a new finding only when it is a defect in the reviewed change or one introduced by a fix; do not add requirements, preferences, or adjacent cleanup.
+6. Identify avoidable complexity that affects this change. Prefer existing helpers, configuration, standard features, and deletion where they preserve behavior. Recommend an abstraction only for demonstrated uses. Preserve security, accessibility, error handling, and agreed tests when suggesting simplification.
 
 ## Finding standard
 
@@ -33,4 +34,4 @@ Return findings in severity order. For each, provide:
 - Failure scenario, expected behavior, and actual behavior or code-path inference.
 - Evidence and minimal fix direction.
 
-Then state reviewed files and state identity, checks run or reused with outcomes, and gaps. If no actionable findings remain, say so with the coverage limit. Use a technical recommendation supported by the review: changes required, no blocking findings in scope, or insufficient evidence. Do not equate a recommendation with GitHub approval, and do not claim a check passed unless you observed its result.
+Then give `Score: N/10` for the reviewed change, where 10 means no open findings that should block merging, and state reviewed files and state identity, checks run or reused with outcomes, and gaps. If no actionable findings remain, say so with the coverage limit. Use a technical recommendation supported by the review: changes required, no blocking findings in scope, or insufficient evidence. Do not equate a recommendation with GitHub approval, and do not claim a check passed unless you observed its result.

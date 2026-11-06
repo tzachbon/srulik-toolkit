@@ -101,7 +101,7 @@ Cursor does not run this hook yet.
 | [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request with review evidence, merge danger, and blast radius. |
 | [`execute-task-end-to-end`](plugins/srulik-toolkit/skills/execute-task-end-to-end/SKILL.md) | Explicitly request the full workflow: plan, issue, implementation, and a PR driven to `MERGE READY`, or verified `MERGED` when authorized, closing with a `recap`. |
 | [`ui-ux-review`](plugins/srulik-toolkit/skills/ui-ux-review/SKILL.md) | Validate every in-scope user story against actual design images, rendered screens, and the project's design system without changing it. |
-| [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a local diff, branch, or pull request without changing it. |
+| [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a local diff, branch, or pull request without changing it, using a three-vendor reviewer panel with scores and rounds that carry across reruns. |
 | [`stay-in-scope`](plugins/srulik-toolkit/skills/stay-in-scope/SKILL.md) | Re-establish the requested boundary when work starts to drift. |
 | [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. |
 | [`tdd`](plugins/srulik-toolkit/skills/tdd/SKILL.md) | Build one behavior at a time through red, green, and refactor. |
@@ -174,6 +174,9 @@ planning research, and how the skills hand off to each other.
 - `review-pro-max` can use GitHub CLI for pull requests. It can also run
   CodeRabbit when you opt in and the command is installed and authenticated.
   CodeRabbit may send source outside the local machine.
+- `review-pro-max` uses a three-vendor reviewer panel on a harness with a host
+  mapping (T3 Code); on other harnesses it asks before launching child agents, and keeps a round ledger in the OS temporary
+  directory so a rerun after fixes sees earlier findings.
 - `agent-swarm` and `research` use available child-agent controls when useful.
   They can work inline when those controls are unavailable.
 - `create-pr`, `pr-babysit`, and `fix-ci` can use an authenticated GitHub CLI
