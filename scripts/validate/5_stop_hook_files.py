@@ -194,7 +194,7 @@ if "Twenty-five focused skills" not in readme or "/hooks" not in readme:
     raise SystemExit("README must document twenty-five skills and Codex hook trust")
 
 outcome_dod_contract = "Outcome and Definition of Done gate"
-create_plan_text = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
+create_plan_text = "\n".join((skill_root / "create-plan" / name).read_text(encoding="utf-8") for name in ["SKILL.md", "references/readiness-gate.md"])
 grilling_text = (skill_root / "create-plan" / "references" / "grilling.md").read_text(encoding="utf-8")
 for relative, text in [
     ("skills/create-plan/SKILL.md", create_plan_text),

@@ -11,7 +11,8 @@ rpm_contracts = {
         "label the mapping untested, and ask before launching children",
         "### Rounds and ledger",
         "`review-pro-max-<host>-<owner>-<repo>-<target>`",
-        "`local-<first 12 hex characters of the SHA-256 of the repository root path>`",
+        "`local-<first 12 hex characters of the SHA-256 of the repository root path>-<first 12 characters of the HEAD commit, or no-head>`",
+        "Use an existing folder only when it is a real directory, not a link, owned by the current user",
         "Create the folder with owner-only access",
         "`open`, `fixed`, `disputed`, or `withdrawn`",
         "Recheck its open findings against the current state",
@@ -33,7 +34,8 @@ rpm_contracts = {
         "A provider instance is not a vendor",
         "`role: \"review\"`",
         "high effort in `target.options`",
-        "end the turn instead of polling",
+        "while reviewers are still running, end the turn instead of polling",
+        "finish the report once every seat has returned or failed",
         "Never send a new round to an earlier reviewer through `t3_thread_send`",
         "`task_cancel`",
         "mode `0700` on POSIX",
@@ -50,3 +52,6 @@ rpm_core = (rpm_dir / "SKILL.md").read_text(encoding="utf-8").replace("- T3 Code
 for rpm_name, rpm_surface in [("SKILL.md", rpm_core), ("code-reviewer.md", (rpm_dir / "code-reviewer.md").read_text(encoding="utf-8"))]:
     if re.search(r"\b(?:Claude|Codex|Cursor|T3|Opus|GPT|Gemini|Grok)\b|t3_[a-z_]+|delegate_task|orchestrator_capabilities|\$TMPDIR|%TEMP%", rpm_surface):
         raise SystemExit(f"review-pro-max {rpm_name} must stay host-agnostic")
+for rpm_retired in ["Avoid arbitrary reviewer counts", "for a consequential change, use one strong model from each of several providers"]:
+    if rpm_retired in " ".join(rpm_core.split()):
+        raise SystemExit(f"review-pro-max SKILL.md still contains retired text: {rpm_retired}")

@@ -20,7 +20,7 @@ Read `orchestrator_capabilities` and pick the latest flagship model from three d
 
 1. Call `delegate_task` once per seat with `mode: "async"`, `role: "review"`, the default shared checkout, `target.providerInstanceId`, `target.model`, and high effort in `target.options`. Give each task a stable `clientRequestId` that includes the ledger folder name, round number, and seat.
 2. Put the whole brief in `task`: the pinned state, requirements, assigned files, round number, prior ledger findings, the read-only boundary, and the content of [code-reviewer.md](../code-reviewer.md). The child has no parent history. Include no secrets.
-3. Retain each `taskId`. Follow the returned `next`; when completion wakes this thread, end the turn instead of polling with `task_status`, sleeps, or watchers.
+3. Retain each `taskId`. Follow the returned `next`: while reviewers are still running, end the turn instead of polling with `task_status`, sleeps, or watchers. When a completion wakes this thread, record that reviewer's findings and score in the ledger, and finish the report once every seat has returned or failed.
 4. Start each new round with new `delegate_task` calls. Never send a new round to an earlier reviewer through `t3_thread_send`.
 5. Cancel a reviewer you replace or no longer need with `task_cancel`. A timed-out wait does not cancel a child; a failed or cancelled seat is incomplete coverage.
 

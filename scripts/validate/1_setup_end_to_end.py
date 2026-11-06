@@ -152,3 +152,6 @@ for text in [end_to_end, end_to_end_t3]:
 if end_to_end_t3.index("## Ownership handoff before registration") > end_to_end_t3.index("## Main watch and event handling"):
     raise SystemExit("end-to-end ownership handoff must precede main watch registration")
 
+# create-plan keeps its workflow in SKILL.md and moved step bodies in references;
+# contract checks in later parts read them together.
+create_plan = "\n".join((skill_root / "create-plan" / n).read_text(encoding="utf-8") for n in ["SKILL.md"] + [f"references/{r}.md" for r in ["research-first", "planning-brief", "readiness-gate", "plan-template"]])

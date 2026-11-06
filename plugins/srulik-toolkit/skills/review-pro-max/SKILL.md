@@ -50,7 +50,7 @@ Read all returned findings and resolve disagreements against the code before rep
 
 ### Rounds and ledger
 
-Each full panel pass is one round. A fresh review after fixes starts the next round. Keep a round ledger in the OS temporary directory, outside the worktree, in a folder named from the target so a later run finds it: `review-pro-max-<host>-<owner>-<repo>-<target>`. The target is `pr-<number>`, `branch-<name>`, or `local-<first 12 hex characters of the SHA-256 of the repository root path>`. Replace each character other than a letter, digit, dot, dash, or underscore with `-`. Create the folder with owner-only access.
+Each full panel pass is one round. A fresh review after fixes starts the next round. Keep a round ledger in the OS temporary directory, outside the worktree, in a folder named from the target so a later run finds it: `review-pro-max-<host>-<owner>-<repo>-<target>`. The target is `pr-<number>`, `branch-<name>`, or `local-<first 12 hex characters of the SHA-256 of the repository root path>-<first 12 characters of the HEAD commit, or no-head>`, so a local ledger ends when HEAD moves. Replace each character other than a letter, digit, dot, dash, or underscore with `-`. Create the folder with owner-only access. Use an existing folder only when it is a real directory, not a link, owned by the current user, with owner-only access; otherwise skip the ledger and report the limit.
 
 Record each round's pinned state, each reviewer's model and score, and each finding with its status: `open`, `fixed`, `disputed`, or `withdrawn`. Store no secrets and no more source than a finding needs.
 

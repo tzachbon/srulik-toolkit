@@ -61,10 +61,12 @@ Both skills repeat review and fixes until the latest complete review of the curr
 plan or implementation reports zero actionable comments. Optional suggestions may
 remain; they do not authorize scope expansion. Unresolved blockers and incomplete
 reviews are reported explicitly and never count as a clean pass.
-Each skill defaults to three review rounds; the user can set a different positive
+`implement-plan` defaults to three review rounds; the user can set a different positive
 whole-number cap. Failed attempts count, and fixes or resumes do not reset the
 budget. At the cap without a clean verdict, stop, report incomplete with remaining
-findings, and ask whether to continue. Until a complete review exists, each
+findings, and ask whether to continue. `create-plan` keeps reviewing past three
+rounds without asking while each round fixes findings, and asks only when the loop
+stalls or reaches a user-set cap. Until a complete review exists, each
 attempt reviews the whole plan or change. Later rounds focus on changes since
 the last complete review and unresolved findings while checking the full context
 and wider effects; changes that invalidate prior coverage require another full
