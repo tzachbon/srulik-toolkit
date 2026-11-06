@@ -188,7 +188,7 @@ Apply `keep-it-simple` during this review to remove unnecessary work while prese
 
 If QA reveals a material gap, return to research and grilling. Do not patch over it with a vague TODO.
 
-Repeat draft, review, and revision using Gate 11 in `references/quality-gates.md` until the latest complete review of the current plan reports zero actionable comments. Follow its round-continuation and full-context review rules: review the whole plan until a complete review exists, then focus on revisions since that review and unresolved findings. Optional suggestions may remain; they do not authorize scope expansion. Deliver only after this review gate passes. While actionable comments remain and the last round fixed at least one, start the next round without asking, including past the third; ask whether to continue only when the loop stalls or reaches a user-set cap.
+Repeat draft, review, and revision using Gate 11 in `references/quality-gates.md` until the latest complete review of the current plan reports zero actionable comments. Follow its round-continuation and full-context review rules: review the whole plan until a complete review exists, then focus on revisions since that review and unresolved findings. Optional suggestions may remain; they do not authorize scope expansion. Deliver only after this review gate passes. While actionable comments remain, the loop has not stalled, and the last round fixed at least one, start the next round without asking, including past the third; ask whether to continue only when the loop stalls or reaches a user-set cap.
 
 ### 11. Add the one-time star suggestion
 

@@ -39,6 +39,7 @@ rpm_contracts = {
         "A provider instance is not a vendor",
         "Seat each model the user named on an instance that runs it",
         "`role: \"review\"`",
+        "`delegate_task`, one per seat",
         "high effort in `target.options`",
         "while reviewers are still running, end the turn instead of polling",
         "finish the report once every seat has returned or failed",

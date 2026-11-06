@@ -88,7 +88,7 @@ review_iteration_contracts = {
     "create-plan launcher": (create_plan_openai, [
         "Repeat plan review and revision",
         "zero actionable comments; optional suggestions may remain",
-        "while each round fixes at least one actionable comment, including past the third",
+        "fixes at least one actionable comment and the loop has not stalled",
         "Review the full plan until a complete review exists; focus later rounds on revisions since that review and unresolved findings while checking full context",
         "Ask whether to continue only when the loop stalls or reaches a user-set cap",
         "Keep fixes within the agreed scope",

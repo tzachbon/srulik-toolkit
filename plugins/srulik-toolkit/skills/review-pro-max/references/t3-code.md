@@ -7,7 +7,7 @@ The current thread owns the review. Panel reviewers run as child tasks of that t
 | Capability | T3 Code |
 | --- | --- |
 | Runnable reviewer models | `orchestrator_capabilities`, called once per thread before the first `delegate_task` |
-| Reviewer launch | `delegate_task`, one per vendor, started in the same turn |
+| Reviewer launch | `delegate_task`, one per seat, started in the same turn |
 | Reasoning effort | the model's effort option in `target.options`, for example `effort`, `reasoningEffort`, or `reasoning_effort`, set to `high` |
 | Result delivery | native completion delivery; follow each task's `next` |
 | Cancellation | `task_cancel` with the reviewer's `taskId` |
