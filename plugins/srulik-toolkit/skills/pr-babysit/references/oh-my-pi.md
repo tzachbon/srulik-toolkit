@@ -30,5 +30,7 @@ capability and stop.
 ## Verification limits
 
 Verified: tool presence in a top-level OMP thread and absence in a delegated
-OMP child. Registering, receiving events from and removing a watch from an OMP
-thread is unverified until exercised against a real PR.
+OMP child. A top-level OMP thread registered a watch on a real PR
+(`watching: true`), saw it in `list_thread_pull_requests`, and removed it
+(`watching: false`). Event delivery that wakes an OMP thread after its turn
+ends is unverified.
