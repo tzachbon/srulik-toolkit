@@ -1,7 +1,7 @@
 {
   "name": "srulik-toolkit",
-  "version": "1.14.0",
-  "description": "Twenty-five portable skills for request triage, research, planning, plan execution, skill authoring, explanation, code and UI/UX review, scoped implementation, writing, product videos, session recaps, handoffs, agent takeovers, retrospectives, and pull request maintenance.",
+  "version": "1.15.0",
+  "description": "Twenty-six portable skills for request triage, research, planning, plan execution, skill authoring, explanation, code and UI/UX review, verification contracts, scoped implementation, writing, product videos, session recaps, handoffs, agent takeovers, retrospectives, and pull request maintenance.",
   "author": {
     "name": "Zach Bonfil",
     "url": "https://github.com/tzachbon"
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Srulik Toolkit",
     "shortDescription": "Plan, review, and build with tighter scope.",
-    "longDescription": "Srulik Toolkit packages twenty-five portable workflows for request triage, project setup, research, planning, plan execution, skill authoring, visual explanation, guided tours, code and UI/UX review, scope control, agent coordination, TDD, simple implementations, prose editing, product videos, pull request creation and maintenance, merge conflicts, CI fixes, session recaps, handoffs, agent takeovers, and session retrospectives.",
+    "longDescription": "Srulik Toolkit packages twenty-six portable workflows for request triage, project setup, research, planning, plan execution, skill authoring, visual explanation, guided tours, code and UI/UX review, verification contracts, scope control, agent coordination, TDD, simple implementations, prose editing, product videos, pull request creation and maintenance, merge conflicts, CI fixes, session recaps, handoffs, agent takeovers, and session retrospectives.",
     "developerName": "Zach Bonfil",
     "category": "Productivity",
     "capabilities": [

@@ -112,3 +112,24 @@ The adaptation preserves explicit invocation, temporary output, redaction,
 artifact references, focus arguments, and suggested skills. It adds portable host
 mappings, scoped continuation state, saved-file verification, and a receiving
 prompt for the existing `takeover` workflow.
+
+The `make-it-verifiable` skill adapts the feedback-loop material in
+[Matt Pocock's public diagnosing-bugs skill](https://github.com/mattpocock/skills/blob/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/diagnosing-bugs/SKILL.md)
+at revision `4ae2317ddb22b046e26455e4f9c9b3aaaf62212d` under the MIT License.
+The original copyright and terms are retained in
+[`skills/make-it-verifiable/LICENSE`](plugins/srulik-toolkit/skills/make-it-verifiable/LICENSE).
+
+Copyright (c) 2026 Matt Pocock
+
+The adaptation keeps the check ladder, tightening, non-deterministic handling,
+redaction, and the red-capable completion bar, generalized from bugs to the
+claims of any change. It adds contract and audit modes, invariant proof by
+mutation, scripted human steps, portable host mappings, and the verification
+contract table.
+
+The writing style of `make-it-verifiable` and the restyled `create-plan` and
+`execute-task-end-to-end` skills is inspired by Matt Pocock's
+[writing-for-agents](https://github.com/mattpocock/skills/blob/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/productivity/writing-for-agents/SKILL.md)
+at the same revision: leading words, completion criteria, positive phrasing,
+one meaning in one place, progressive disclosure, and no-op pruning, applied
+in new wording.
