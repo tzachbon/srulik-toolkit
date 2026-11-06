@@ -6,7 +6,7 @@ plan_rounds = {
         "Count every launched review attempt, including failed, stale, or timed-out attempts",
         "Preserve the count across resumes; fixes do not reset it",
         "A round count alone is not a reason to stop or ask",
-        "no stall condition holds, and the previous round fixed at least one, start the next round without asking, including after the third",
+        "no stall condition holds, no user-specified cap has been reached, and the previous round fixed at least one, start the next round without asking, including after the third",
         "even if that round also fixed comments",
         "a round fixes nothing, a fixed comment returns, or a disagreement stays unresolved after two replies",
         "A user-specified cap must be a positive whole number",

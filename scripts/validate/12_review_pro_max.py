@@ -20,7 +20,7 @@ rpm_contracts = {
         "Use an existing folder only when it is a real directory, not a link, owned by the current user",
         "Create the folder with owner-only access",
         "`open`, `fixed`, `disputed`, or `withdrawn`",
-        "Then recheck its open findings against the current state",
+        "If the ledger is usable, recheck its open findings against the current state",
         "Later rounds must not widen scope",
         "Ask each reviewer for a score out of 10",
         "never in a PR description or PR comment",
