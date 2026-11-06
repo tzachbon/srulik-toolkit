@@ -11,6 +11,7 @@ plan_rounds = {
         "a round fixes nothing, a fixed comment returns, or a disagreement stays unresolved after two replies",
         "A user-specified cap must be a positive whole number",
         "Only explicit user continuation grants more rounds after a stall or cap",
+        "That continuation starts the next round, and after a cap it opens another budget of the same size",
     ]),
 }
 for plan_surface_name, (plan_surface, plan_phrases) in plan_rounds.items():
