@@ -21,8 +21,9 @@ An unprefixed `xd://<tool>` returns `No such tool`; use the `mcp__t3_code_` name
 ## OMP terminal without T3 Code
 
 OMP's own `task` children run on the session's configured models, which may
-all come from one vendor. Fill only seats from distinct vendors, report the
-empty seats as a coverage limit, and do not repeat a vendor.
+all come from one vendor. Seat user-named models as the core says. Fill open
+seats only from vendors not yet seated, and report the empty seats as a
+coverage limit.
 
 ## Verification limits
 

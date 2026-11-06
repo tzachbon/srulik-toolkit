@@ -7,18 +7,18 @@ omp_contracts = {
     ],
     "review-pro-max/references/oh-my-pi.md": [
         "# review-pro-max on Oh My Pi", 'read("skill://<name>")', "xd://mcp__t3_code_delegate_task",
-        "report the\nempty seats", "unverified",
+        "Seat user-named models as the core says", "report the empty seats", "unverified",
     ],
     "ui-ux-review/references/oh-my-pi.md": [
-        "# UI UX review on Oh My Pi", "`read` on a local image path", "| Clarification | `ask` |", "xd://mcp__t3_code_<tool>", "unverified",
+        "# UI UX review on Oh My Pi", "replaces the untested-host gate", "`read` on a local image path", "| Clarification | `ask` |", "xd://mcp__t3_code_<tool>", "unverified",
     ],
     "execute-task-end-to-end/references/oh-my-pi.md": [
         "# End-to-end execution on Oh My Pi", 'read("skill://<skill>")', "`ask`",
-        "top-level OMP thread", "BLOCKED: no native PR watch", "unverified",
+        "top-level OMP thread", "BLOCKED: no native PR watch", "xd://mcp__t3_code_<tool>", "unverified",
     ],
     "skill-creator/references/oh-my-pi.md": [
         "# Oh My Pi mapping", 'read("skill://<name>")', "disable-model-invocation: true",
-        "Never edit a shared profile", "unverified",
+        "Never edit a shared profile", "xd://mcp__t3_code_<tool>", "unverified",
     ],
     "create-plan/references/hosts.md": ["## Oh My Pi, on T3 Code or its terminal", "xd://mcp__t3_code_delegate_task", "unverified"],
     "handoff/references/hosts.md": ["| Oh My Pi |", 'read("skill://handoff")'],

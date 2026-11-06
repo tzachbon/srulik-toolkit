@@ -115,6 +115,7 @@ ui_contracts = {
         "question tool", "unique task session ID",
         "full application acceptance remain unverified",
         "Other provider backends on T3 Code follow the core's untested-host gate",
+        "A backend with its own mapping in this folder",
         "show the capability mapping, label it untested, and obtain user confirmation before proceeding",
     ]),
     "review license": (ui_license, [

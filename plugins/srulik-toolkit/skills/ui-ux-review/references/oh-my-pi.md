@@ -12,7 +12,8 @@ Observed with OMP 18.16.0 and Kimi K3.1 Pro on T3 Code, 2026-11-06.
 | Browser and device tools on T3 Code | the T3 Code tools in the [T3 Code mapping](t3-code.md), reached through `xd://mcp__t3_code_<tool>` |
 | Clarification | `ask` |
 
-Follow the [T3 Code mapping](t3-code.md)'s rules for browser tabs, resource
+This documented mapping replaces the untested-host gate that the T3 Code
+mapping applies to other backends. Follow the [T3 Code mapping](t3-code.md)'s rules for browser tabs, resource
 checks, own-edit validation and image delivery; they apply to OMP on T3 Code.
 In the OMP terminal without T3 Code, browser and device checks need the
 project's own harness.
