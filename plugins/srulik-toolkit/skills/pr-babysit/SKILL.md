@@ -24,6 +24,7 @@ Before starting, verify that the host can:
 Read the host mapping before using those capabilities:
 
 - T3 Code: [references/t3-code.md](references/t3-code.md)
+- Oh My Pi: [references/oh-my-pi.md](references/oh-my-pi.md)
 
 On another host, show the capability mapping, label it untested, and obtain confirmation before starting. If a required capability is missing, report it and stop. A separate conversation, shell watcher, polling loop, sleep, or scheduler does not supply the missing capability. Confirm the host records the task as a child of the original conversation before relying on it; creating a task is not proof of correct ancestry or result delivery.
 
