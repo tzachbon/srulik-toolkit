@@ -88,6 +88,8 @@ Strong validation specifies observable evidence, threshold, reviewer, test, metr
 
 For every major workstream ask: "What evidence could convince a skeptical reviewer this outcome is complete?"
 
+The verification contract from `make-it-verifiable` contract mode is this gate's evidence. Fail the gate when a requirement has no contract row or any row is `blocked`.
+
 ## Gate 6: risk and recovery
 
 Check the impact and risk assessment defined in the planning brief:

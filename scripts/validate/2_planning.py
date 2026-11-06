@@ -1,4 +1,3 @@
-create_plan = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
 engineering_plan = (skill_root / "create-plan" / "references" / "engineering.md").read_text(encoding="utf-8")
 dynamic_skills = (skill_root / "create-plan" / "references" / "dynamic-skills.md").read_text(encoding="utf-8")
 quality_gates = (skill_root / "create-plan" / "references" / "quality-gates.md").read_text(encoding="utf-8")

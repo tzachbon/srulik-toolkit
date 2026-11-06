@@ -54,6 +54,8 @@ The handoff must begin with Skill discovery: `COMPLETE`, Skill discovery: `INCOM
 
 For implementation-oriented plans, the handoff must include `keep-it-simple`, invoked before implementation to select the smallest correct change and again after implementation to remove task-introduced code with no current purpose.
 
+Every plan's handoff also routes `make-it-verifiable` in audit mode after implementation, so each verification contract row ends `verified` or `accepted-unverified` before the outcome is reported done.
+
 For an approved engineering plan that the user wants executed, route to
 [implement-plan](../../implement-plan/SKILL.md). Include stable task IDs,
 dependencies, owned paths, input/output contracts, acceptance checks, and final

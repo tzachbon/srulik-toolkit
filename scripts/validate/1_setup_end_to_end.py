@@ -50,6 +50,14 @@ actual = {path.name for path in skill_root.iterdir() if path.is_dir()}
 if actual != expected:
     raise SystemExit(f"skill directories differ: expected={sorted(expected)} actual={sorted(actual)}")
 
+# create-plan keeps whole workflow sections in these references; later parts check SKILL.md plus each linked one.
+create_plan = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
+create_plan_moved = ["discovery-and-research.md", "planning-brief.md", "plan-template.md", "delivery.md"]
+for name in create_plan_moved:
+    if f"](references/{name})" not in create_plan:
+        raise SystemExit(f"create-plan SKILL.md must link references/{name}")
+create_plan = "\n".join([create_plan] + [(skill_root / "create-plan" / "references" / name).read_text(encoding="utf-8") for name in create_plan_moved])
+
 for path in root.rglob("*"):
     if ".git" in path.relative_to(root).parts:
         continue
