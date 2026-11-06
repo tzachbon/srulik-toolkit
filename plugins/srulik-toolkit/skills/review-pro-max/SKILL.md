@@ -26,7 +26,7 @@ Read repository instructions, the requested scope, and relevant requirements. Ca
 
 With GitHub CLI available, `gh pr view` with selected JSON fields and `gh pr checks` can collect metadata and current checks. Confirm the installed CLI's accepted fields and options. If the API serves a diff by PR number, compare the head ID before and after retrieval. Treat a moved head as stale input and recapture before analysis. If pinned objects are unavailable locally, use an authenticated read-only API or an isolated clone. Do not fetch into or change the user's checkout for a review.
 
-An empty diff ends the review. In a re-review, inspect prior findings, then cover the current diff with a fresh pass. Limit the pass to old comments only if the user requested that limit.
+An empty diff ends the review. In a re-review, read the [round ledger](#rounds-and-ledger) and inspect prior findings, then cover the current diff with a fresh pass. Limit the pass to old comments only if the user requested that limit.
 
 ## 2. Trace behavior and choose coverage
 
@@ -36,9 +36,27 @@ Treat a committed specification or committed executable test contract as the aut
 
 Check for concrete regressions and test behavior in every review, but do not try to prove complete product correctness without a committed specification. A correctness concern blocks only when evidence shows a committed-spec or test-contract violation, a reachable crash, data loss, security or authorization failure, a broken supported interface or caller, or a failing required check. Otherwise keep it non-blocking or omit it. Add accessibility, performance, configuration, migration, or compatibility checks where the change creates those risks. Consider existing code, deletion, configuration, and platform features before recommending a dependency or abstraction. Do not turn stylistic preferences or hypothetical future scale into blockers.
 
-If the harness exposes subagents and the task warrants independent passes, delegate bounded areas using its available delegation API. Prefer reviewers on models from a different provider than the author; for a consequential change, use one strong model from each of several providers. If the user named reviewer models, use those, and report an unavailable one instead of substituting. Give each reviewer the same pinned state, relevant requirements, assigned files, surrounding dependencies, the bundled brief, and the read-only boundary. Assign a fresh reviewer for substantial re-reviews. Serialize expensive execution and respect the host's resource limits. If delegation is unavailable, perform the passes yourself and disclose the lack of independent review.
+If the harness can launch child agents, review with a panel of three: one strong model from each of three model vendors, at high reasoning effort. A vendor is the model's maker, not the harness that runs it. Prefer reviewers on models from a different provider than the author; include the author's vendor only when no other vendor can fill a seat. If the user named reviewer models, use those, and report an unavailable one instead of substituting. When fewer than three vendors are reachable, run the ones you can, never fill a seat with a second model from the same vendor, and report the empty seat as a coverage limit. A requested quick review uses one pass.
 
-Read all returned findings and resolve disagreements against the code before reporting. A reviewer failure or timeout is incomplete coverage, not a clean pass. Avoid arbitrary reviewer counts; ensure the selected passes cover the change.
+Give each reviewer the same pinned state, relevant requirements, assigned files, surrounding dependencies, prior ledger findings, the bundled brief, and the read-only boundary. Start reviewers in parallel; serialize expensive execution and respect the host's resource limits. Use a fresh reviewer for each round. If delegation is unavailable, perform the passes yourself and disclose the lack of independent review.
+
+Host mappings:
+
+- T3 Code: [references/t3-code.md](references/t3-code.md)
+
+On a harness without a mapping, show how its child-agent capability maps to the panel, label the mapping untested, and ask before launching children; without confirmation, perform the passes yourself.
+
+Read all returned findings and resolve disagreements against the code before reporting. A reviewer failure or timeout is incomplete coverage, not a clean pass. Add passes beyond the panel only when the change is too large for one reviewer to cover.
+
+### Rounds and ledger
+
+Each full panel pass is one round. A fresh review after fixes starts the next round. Keep a round ledger in the OS temporary directory, outside the worktree, in a folder named from the target so a later run finds it: `review-pro-max-<host>-<owner>-<repo>-<target>`. The target is `pr-<number>`, `branch-<name>`, or `local-<first 12 hex characters of the SHA-256 of the repository root path>`. Replace each character other than a letter, digit, dot, dash, or underscore with `-`. Create the folder with owner-only access.
+
+Record each round's pinned state, each reviewer's model and score, and each finding with its status: `open`, `fixed`, `disputed`, or `withdrawn`. Store no secrets and no more source than a finding needs.
+
+At the start of a review, read the target's existing ledger. Recheck its open findings against the current state and update their status, then run the fresh pass. Start a new ledger only when the user asks or the target is merged or closed. Report an unreadable ledger or a ledger whose pinned history does not match the target as a limit; do not discard it silently.
+
+Later rounds must not widen scope. Report a new finding only when it is a defect in the reviewed change or one introduced by a fix. Do not add requirements, preferences, or adjacent cleanup that earlier rounds did not need, even when a reviewer asks for them.
 
 ## 3. Validate with existing checks
 
@@ -65,6 +83,22 @@ For each finding, include severity, `path:line`, triggering inputs or state, exp
 Use consequence-based severity: critical for demonstrated severe exposure or loss, high for significant broken behavior, medium for a bounded defect, and low for a substantiated minor issue. A defect only on another path or a rare case, a small performance cost, or a missing extra test, guard, or compatibility layer is low unless evidence shows the intended case hits it. Recommend the fix that deletes or narrows code over a new lock, cache, helper, or option. Distinguish an observed reproduction from a reasoned code-path finding. Omit generic praise, unsupported warnings, and empty finding sections.
 
 Before the final report, recheck the PR head or local snapshot identity. If it changed, mark the report stale and identify what needs another pass. Do not claim current merge readiness from an old snapshot.
+
+Ask each reviewer for a score out of 10. Put the score table in the final reply only, after the findings, never in a PR description or PR comment. Write `no score` when a reviewer gave none; never invent one. Label a pass you performed yourself as such.
+
+```markdown
+## Review panel
+
+Rounds: 2
+
+| Reviewer | Round 1 | Round 2 |
+| --- | --- | --- |
+| <vendor A model> | 7/10 | 9/10 |
+| <vendor B model> | 8/10 | 10/10 |
+| <vendor C model> | 6/10 | no score |
+```
+
+Summarize the useful findings, the disagreements between reviewers, and how the code resolved them. When findings remain, list the suggested fixes and advise rerunning this review after they are applied; the rerun reads the ledger. Stop advising reruns once every reviewer reports no open blocking findings.
 
 Lead with the findings, or state that no actionable defects were found in the reviewed scope. Include the target and pinned state, coverage, checks and outcomes, skipped tooling, and unresolved limits. Give a technical recommendation such as changes required, no blocking findings in scope, or insufficient evidence. This recommendation does not submit a GitHub approval or assert production readiness beyond the evidence.
 
