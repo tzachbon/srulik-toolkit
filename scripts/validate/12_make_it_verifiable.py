@@ -69,6 +69,26 @@ for miv_path, miv_tokens in miv_contracts:
         if miv_token not in miv_text:
             raise SystemExit(f"make-it-verifiable contract missing in {miv_path.relative_to(root).as_posix()}: {miv_token!r}")
 
+# create-plan wiring: each phrase must sit in its own section, so a move out of the gate fails.
+miv_cp = skill_root / "create-plan"
+miv_cp_sections = [
+    ("SKILL.md", "## Non-negotiable rules", "## Route by discipline", ['Running `make-it-verifiable` contract mode in a scratch copy outside the repository is planning evidence, not execution.']),
+    ("SKILL.md", "### 7. Pass the readiness gate", "### 8. Draft the plan", ['Invoke `make-it-verifiable` in contract mode on the requirements and acceptance conditions.', 'Validation: the verification contract covers every requirement and has no `blocked` rows.']),
+    ("SKILL.md", "### 8. Draft the plan", "### 9. Right-size", ["Embed the contract in `## Acceptance criteria` (check column) and `## End-to-end verification`. Make its check artifacts the plan's first task.", 'Each `planned-red` row adds its red-proof step to that task, before any implementation.']),
+    ("SKILL.md", "### 10. Run plan QA", "### 11. Add the one-time", ['Rerun contract mode on any claim added while drafting; a `blocked` row returns to step 5.']),
+    ("references/quality-gates.md", "", "", ["The verification contract from `make-it-verifiable` contract mode is this gate's evidence. Fail the gate when a requirement has no contract row or any row is `blocked`."]),
+    ("references/skill-routing.md", "", "", ["Every plan's handoff also routes `make-it-verifiable` in audit mode after implementation, so each verification contract row ends `verified` or `accepted-unverified` before the outcome is reported done."]),
+    ("agents/openai.yaml", "", "", ['Before the readiness gate, run $make-it-verifiable contract mode in a scratch copy outside the repository; embed its verification contract in the acceptance criteria and end-to-end verification, make its check artifacts the first task, and finalize only when no contract row is blocked.']),
+]
+for miv_rel, miv_start, miv_end, miv_tokens in miv_cp_sections:
+    miv_text = (miv_cp / miv_rel).read_text(encoding="utf-8")
+    if miv_start:
+        miv_text = miv_text.split(miv_start, 1)[-1].split(miv_end, 1)[0] if miv_start in miv_text else ""
+    miv_text = " ".join(miv_text.split())
+    for miv_token in miv_tokens:
+        if miv_token not in miv_text:
+            raise SystemExit(f"make-it-verifiable contract missing in {(miv_cp / miv_rel).relative_to(root).as_posix()}: {miv_token!r}")
+
 miv_core = (miv_dir / "SKILL.md").read_text(encoding="utf-8")
 if "disable-model-invocation" in miv_core:
     raise SystemExit("make-it-verifiable must stay model-invoked")
