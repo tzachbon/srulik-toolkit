@@ -104,7 +104,7 @@ for token in [
 ]:
     if token not in end_to_end:
         raise SystemExit(f"end-to-end completion contract missing: {token}")
-for dependency in ["create-plan", "create-pr", "pr-babysit", "recap"]:
+for dependency in ["create-plan", "create-pr", "pr-babysit", "recap", "make-it-verifiable"]:
     if f"$srulik-toolkit:{dependency}" not in end_to_end:
         raise SystemExit(f"end-to-end workflow must invoke {dependency} by name")
 if re.search(r"\]\(\.\./[^)]+/SKILL\.md\)", end_to_end):
