@@ -57,6 +57,11 @@ miv_contracts = [
     (root / "README.md", [
         "$make-it-verifiable Before I add the --json flag",
     ]),
+    (skill_root / "execute-task-end-to-end" / "SKILL.md", [
+        "Build proof with `$srulik-toolkit:make-it-verifiable`.",
+        "and `$srulik-toolkit:make-it-verifiable` audit mode reports every claim `verified` or `accepted-unverified`.",
+        "Immediately before merging, rerun `$srulik-toolkit:make-it-verifiable` audit mode on the final diff.",
+    ]),
 ]
 for miv_path, miv_tokens in miv_contracts:
     miv_text = " ".join(miv_path.read_text(encoding="utf-8").split())
