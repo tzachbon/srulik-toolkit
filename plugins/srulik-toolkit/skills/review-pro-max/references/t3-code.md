@@ -14,7 +14,7 @@ The current thread owns the review. Panel reviewers run as child tasks of that t
 
 ## Choose the panel
 
-Read `orchestrator_capabilities` and pick the latest flagship model from three different model vendors where `canRunChildTask` is true. A provider instance is not a vendor: a Claude model served through the Cursor instance is still a Claude seat. Use `search` when a named model is not in the short list. Skip disabled instances. Report a named model that no runnable instance offers instead of substituting.
+Read `orchestrator_capabilities`. Seat each model the user named on an instance that runs it. Fill each open seat with the latest flagship model from a vendor not yet seated, where `canRunChildTask` is true. A provider instance is not a vendor: a Claude model served through the Cursor instance is still a Claude seat. Use `search` when a named model is not in the short list. Skip disabled instances. Report a named model that no runnable instance offers instead of substituting.
 
 ## Launch each round
 

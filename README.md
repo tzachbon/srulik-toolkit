@@ -174,8 +174,8 @@ planning research, and how the skills hand off to each other.
 - `review-pro-max` can use GitHub CLI for pull requests. It can also run
   CodeRabbit when you opt in and the command is installed and authenticated.
   CodeRabbit may send source outside the local machine.
-- `review-pro-max` uses a three-vendor reviewer panel when the harness can launch
-  child agents on chosen models, and keeps a round ledger in the OS temporary
+- `review-pro-max` uses a three-vendor reviewer panel on a harness with a host
+  mapping (T3 Code); on other harnesses it asks before launching child agents, and keeps a round ledger in the OS temporary
   directory so a rerun after fixes sees earlier findings.
 - `agent-swarm` and `research` use available child-agent controls when useful.
   They can work inline when those controls are unavailable.
