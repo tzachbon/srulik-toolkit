@@ -24,6 +24,7 @@ miv_contracts = [
         "Without a way to ask the user, every unaccepted row stays `blocked`",
         "Done when",
         "[feedback loops](references/feedback-loops.md)",
+        "A check that reads a plan, spec, or other description of the change proves only that the text exists",
         "[host mappings](references/hosts.md)",
         "label it untested",
         "tdd",

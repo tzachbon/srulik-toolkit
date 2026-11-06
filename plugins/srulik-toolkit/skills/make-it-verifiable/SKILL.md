@@ -32,7 +32,7 @@ Done when no inspected caller or acceptance condition lacks a claim.
 
 ## 2. Build one tight check per claim
 
-Climb the ladder in [feedback loops](references/feedback-loops.md) and take the first rung that observes the claim directly. Assert the exact claim, not that the code ran. Hand a new test at a code seam to `tdd`, which owns the red-green loop there.
+Climb the ladder in [feedback loops](references/feedback-loops.md) and take the first rung that observes the claim directly. Assert the exact claim, not that the code ran. A check that reads a plan, spec, or other description of the change proves only that the text exists; a claim about behavior or an outcome needs a check of the effect itself, or a scripted human step. Hand a new test at a code seam to `tdd`, which owns the red-green loop there.
 
 Done when each claim names one red-capable, tight check, or one scripted human step.
 
