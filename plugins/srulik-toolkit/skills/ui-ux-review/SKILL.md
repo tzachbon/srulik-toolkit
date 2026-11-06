@@ -14,6 +14,7 @@ comments, installing tools, or submitting real transactions.
 
 Before reviewing, identify the host's file, image-viewing, browser/device, and
 question capabilities. On T3 Code, read the [host mapping](references/t3-code.md).
+Under Oh My Pi, read the [Oh My Pi mapping](references/oh-my-pi.md).
 On a harness with no documented reference, show the capability mapping, label
 it untested, and obtain user confirmation before proceeding. Missing image or
 runtime capabilities leave the affected checks incomplete; availability alone

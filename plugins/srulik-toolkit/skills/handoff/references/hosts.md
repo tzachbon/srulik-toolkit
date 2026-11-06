@@ -8,6 +8,7 @@ proof that every installation or operating system has been tested.
 | Claude Code | Use the visible conversation, native file read/write tools, or the shell for temporary file creation and readback. Missing earlier context remains a gap. | `/srulik-toolkit:handoff [focus]`; `disable-model-invocation: true` keeps invocation user-controlled. Suggested skills use the native Skill tool. |
 | Codex | Use the visible conversation and available filesystem or shell tools. Read this checkout's source when testing an uninstalled revision. | `$srulik-toolkit:handoff [focus]`; `agents/openai.yaml` sets `allow_implicit_invocation: false`. Load suggested skills through the installed skill mechanism. |
 | T3 Code | Use the underlying provider's conversation/filesystem capabilities. If earlier thread history is needed and authorized, use `t3_thread_read` and page it. A path alone does not transfer a file to another machine. | Use the provider's explicit skill invocation above. Do not call `delegate_task` or launch a thread just to write a handoff. |
+| Oh My Pi | Use OMP's file tools or `bash` for the temporary file and readback. On T3 Code, reach T3 tools through `xd://mcp__t3_code_<tool>`. Observed with OMP 18.16.0 and Kimi K3.1 Pro, 2026-11-06. | `read("skill://handoff")`; `disable-model-invocation: true` hides it from OMP's catalog, so load it only on an explicit request. |
 
 ## Temporary storage
 

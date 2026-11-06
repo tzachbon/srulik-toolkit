@@ -27,3 +27,17 @@ using it.
 - Delivery: honor the active runtime's planning and file-write restrictions.
   Return the complete plan's temporary file link when writes are permitted;
   otherwise return the complete plan in the conversation.
+
+## Oh My Pi, on T3 Code or its terminal
+
+Observed with OMP 18.16.0 and Kimi K3.1 Pro on T3 Code, 2026-11-06.
+
+- Skills: load each handoff skill with `read("skill://<name>")`.
+- Questions: use `ask` for grill waves.
+- State: prefer `PLUGIN_DATA` when the runtime sets it. Otherwise use
+  `srulik-toolkit` under the active OMP profile's agent directory. This
+  fallback is unverified.
+- Delivery: return the temporary file link.
+- T3 delegated reviews: on T3 Code, follow the Codex section's review-round
+  rules, reaching `delegate_task` through `xd://mcp__t3_code_delegate_task`. An
+  unprefixed `xd://<tool>` returns `No such tool`.
