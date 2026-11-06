@@ -18,13 +18,13 @@ T3 Code runtime behavior and Codex native plugin discovery are unverified.
 | `skills/make-it-verifiable/references/hosts.md` | `196cfa1559b0d2c0` | 2042 |
 | `skills/create-plan/SKILL.md` | `5d2b01163ad53225` | 17880 |
 | `skills/execute-task-end-to-end/SKILL.md` | `db17663e3b29c293` | 12831 |
-| `scripts/validate/12_make_it_verifiable.py` | `5eaa5030d302f9a7` | 6220 |
+| `scripts/validate/14_make_it_verifiable.py` | `5eaa5030d302f9a7` | 6220 |
 
 - `PYTHONDONTWRITEBYTECODE=1 ./scripts/validate.sh` and `git diff --check`
   passed on macOS. Without the bytecode prefix a second local run fails on
   `__pycache__` files that the skill-creator tests write; CI runs once per clean
   clone and is unaffected.
-- New contract `scripts/validate/12_make_it_verifiable.py` pins the skill's
+- New contract `scripts/validate/14_make_it_verifiable.py` pins the skill's
   terms, its references and host table, the create-plan wiring by section, the
   execute-task-end-to-end audit gates, host-agnostic core text, the pinned
   upstream MIT license, and the exact file set.

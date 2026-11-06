@@ -25,9 +25,9 @@ review_iteration_contracts = {
         "### 10. Run plan QA and iterate review",
         "Gate 11 in `references/quality-gates.md`",
         "latest complete review of the current plan reports zero actionable comments",
-        "three-round default cap and full-context review rules",
+        "round-continuation and full-context review rules",
         "review the whole plan until a complete review exists, then focus on revisions since that review and unresolved findings",
-        "at the cap without a clean verdict, report incomplete and ask whether to continue",
+        "start the next round without asking, including past the third",
         "Optional suggestions may remain",
         "they do not authorize scope expansion",
         "Deliver only after this review gate passes",
@@ -52,7 +52,7 @@ review_iteration_contracts = {
         "requires user authority before expanding scope",
         "a blocker, not an optional suggestion",
         "Re-run affected quality gates after fixes",
-        "Request another review within the remaining cap using the coverage rules above",
+        "Request another review under the continuation rule above",
         "zero actionable comments",
         "Optional suggestions may remain",
         "round count, comment dispositions, final verdict",
@@ -88,9 +88,9 @@ review_iteration_contracts = {
     "create-plan launcher": (create_plan_openai, [
         "Repeat plan review and revision",
         "zero actionable comments; optional suggestions may remain",
-        "Default to three review rounds unless the user sets another cap",
+        "fixes at least one actionable comment and the loop has not stalled or reached a user-set cap",
         "Review the full plan until a complete review exists; focus later rounds on revisions since that review and unresolved findings while checking full context",
-        "At the cap without a clean verdict, report incomplete and ask whether to continue",
+        "Ask whether to continue only when the loop stalls or reaches a user-set cap",
         "Keep fixes within the agreed scope",
         "report unresolved blockers rather than claiming completion",
     ]),
@@ -109,7 +109,8 @@ review_iteration_contracts = {
         "Optional suggestions may remain",
         "they do not authorize scope expansion",
         "never count as a clean pass",
-        "Each skill defaults to three review rounds",
+        "`implement-plan` defaults to three review rounds",
+        "`create-plan` keeps reviewing past three rounds without asking",
         "Failed attempts count, and fixes or resumes do not reset the budget",
         "stop, report incomplete with remaining findings, and ask whether to continue",
         "Until a complete review exists, each attempt reviews the whole plan or change",
@@ -166,7 +167,7 @@ review_iteration_contracts = {
         "label it untested, and obtain confirmation",
     ]),
 }
-for surface_name in ["plan quality gates", "implement-plan"]:
+for surface_name in ["implement-plan"]:
     review_iteration_contracts[surface_name][1].extend([
         "Use a default cap of three review rounds per invocation",
         "a user-specified cap must be a positive whole number",
