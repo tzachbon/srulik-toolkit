@@ -7,16 +7,17 @@ T3 Code runtime behavior and Codex native plugin discovery are unverified.
 
 ## Source and checks
 
-- Base: `643842727da15efb3c32841522ad4bc0575ff7ab` (`origin/main` at branch start).
-- Plugin version `1.15.0`; twenty-six top-level skills.
-- File SHA-256 (first 16 hex digits) and size at the evaluated skill text:
+- Base: `643842727da15efb3c32841522ad4bc0575ff7ab` (`origin/main` at branch start),
+  then merged with `origin/main` at `f1f8d3df5b4097b564ecdbf871cec4c4514bde4d` (#58).
+- Plugin version `1.16.0`; twenty-six top-level skills.
+- File SHA-256 (first 16 hex digits) and size at the reviewed head:
 
 | File | SHA-256 | Bytes |
 | --- | --- | --- |
 | `skills/make-it-verifiable/SKILL.md` | `24a7df6e172d4d63` | 4934 |
 | `skills/make-it-verifiable/references/feedback-loops.md` | `7d7f3e8fbcf73ef8` | 3492 |
 | `skills/make-it-verifiable/references/hosts.md` | `196cfa1559b0d2c0` | 2042 |
-| `skills/create-plan/SKILL.md` | `5d2b01163ad53225` | 17880 |
+| `skills/create-plan/SKILL.md` | `a2af1b777b6952f8` | 18081 |
 | `skills/execute-task-end-to-end/SKILL.md` | `db17663e3b29c293` | 12831 |
 | `scripts/validate/14_make_it_verifiable.py` | `5eaa5030d302f9a7` | 6220 |
 
@@ -38,7 +39,7 @@ message.
 
 | Group | Rows | What each row breaks |
 | --- | --- | --- |
-| Part 12 contract (`12.1`–`12.10`) | 52 | one make-it-verifiable term, reference, host row, NOTICE or README token, create-plan section wiring, or execute-task-end-to-end gate |
+| Part 14 contract (rows `12.1`–`12.10`) | 52 | one make-it-verifiable term, reference, host row, NOTICE or README token, create-plan section wiring, or execute-task-end-to-end gate |
 | create-plan phrases (`M`) | 95 | one create-plan phrase checked by parts 2, 4, and 5, including relocated phrases |
 | create-plan reference links (`L01`–`L04`) | 4 | one `references/<name>` link from create-plan `SKILL.md` |
 | create-plan assertion 11 (`A11-01`–`A11-10`) | 10 | one make-it-verifiable wiring sentence in its section |
@@ -48,7 +49,10 @@ message.
 The first full run reported 213 of 226: the runner mutated only the first file
 that matched a phrase, while the validator reads several files joined. After
 the runner was fixed to mutate every listed file, all 226 failed as expected.
-Row `12.1.25`, for the step 2 sentence added in iteration 2, makes 227.
+Row `12.1.25`, for the step 2 sentence added in iteration 2, makes 227. After
+the merge with #58, four create-plan rows (M004, M006, M013, M015) were repointed
+to the round-continuation phrases #58 put in their place, and the final run on
+the merged tree again rejected 227 of 227.
 
 ## Restyle inventory and prunes
 
@@ -155,6 +159,11 @@ it here.
   `verified`. The skill lets a check the host cannot run be `planned-red`, which
   overlaps with `blocked` for a claim with no feasible red-capable check. One
   run per config, so this may be noise.
+- **Not re-evaluated after the merge with #58.** create-plan step 10 and its
+  launcher now use #58's round-continuation wording, and #58's own split
+  references were replaced by this branch's split. Validation and mutations
+  cover the merged text; the evals ran on the text before the merge, and the
+  `old_skill` baseline is still the base commit.
 - One run per config; scores are directional.
 - Eval children loaded the owner's global agent instructions and saw the
   installed `1.13.1` plugin in both configs. Prompts banned invoking installed

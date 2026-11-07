@@ -2,7 +2,7 @@
 
 Every create-plan literal in parts 2, 4, and 5 that reads a restyled file (`SKILL.md`, `agents/openai.yaml`) or the Outcome/DoD phrases in `references/grilling.md`. Format: `old phrase | part:line | new phrase | B#`, plus where it now lives, its status, and the mutation that proves it still fails validation when broken. Line numbers are at head: part 2 lost its first line, so its ranges are one lower than at `6438427`.
 
-Result: **no validator phrase changed or retired**, so no row points to a P#. The split moved whole sections of `SKILL.md` verbatim into four references (`discovery-and-research.md`, `planning-brief.md`, `plan-template.md`, `delivery.md`); 37 phrases now live there (status `relocated`). Part 1 now builds `create_plan` as `SKILL.md` plus those four files and fails when `SKILL.md` stops linking any of them, so every part 2 and part 4 check on `create_plan` still covers the moved text. Part 2's former line 1 read moved to part 1. Part 5's Outcome/DoD check still reads `SKILL.md` alone; none of its phrases moved.
+Result: **no validator phrase changed or retired** by this restyle. After the merge with #58, its round-continuation change replaced four of them (M004, M006, M013, M015); those rows now name #58's phrases, so no row points to a P#. The split moved whole sections of `SKILL.md` verbatim into four references (`discovery-and-research.md`, `planning-brief.md`, `plan-template.md`, `delivery.md`); 37 phrases now live there (status `relocated`). Part 1 now builds `create_plan` as `SKILL.md` plus those four files and fails when `SKILL.md` stops linking any of them, so every part 2 and part 4 check on `create_plan` still covers the moved text. Part 2's former line 1 read moved to part 1. Part 5's Outcome/DoD check still reads `SKILL.md` alone; none of its phrases moved.
 
 Mutation semantics (for `mutate.py`): `file` may list several `;`-separated paths when the validator checks a concatenation; replace **every** occurrence of `old` in each listed file; whitespace between words matches any whitespace run; the confidentiality rows (expected message contains "confidentiality boundary") match case-insensitively. Absence rows (host tokens, stale gap-only rules) insert the token after `# Create Plan`. Rows `L01`–`L04` delete the `](references/<name>)` link token from `SKILL.md` (empty `new`); `L04` removes both `delivery.md` links (steps 11 and 12).
 
@@ -11,18 +11,18 @@ Mutation semantics (for `mutate.py`): `file` may list several `;`-separated path
 | `` ### 10. Run plan QA and iterate review `` | 2_planning.py:25 | same phrase | B61 | SKILL.md | unchanged | M001 |
 | `` Gate 11 in `references/quality-gates.md` `` | 2_planning.py:26 | same phrase | B61 | SKILL.md | unchanged | M002 |
 | `` latest complete review of the current plan reports zero actionable comments `` | 2_planning.py:27 | same phrase | B61 | SKILL.md | unchanged | M003 |
-| `` three-round default cap and full-context review rules `` | 2_planning.py:28 | same phrase | B61 | SKILL.md | unchanged | M004 |
+| `` three-round default cap and full-context review rules `` | 2_planning.py:28 | `` round-continuation and full-context review rules `` | B61 | SKILL.md | replaced by #58 (round continuation) | M004 |
 | `` review the whole plan until a complete review exists, then focus on revisions since that review and unresolved findings `` | 2_planning.py:29 | same phrase | B61 | SKILL.md | unchanged | M005 |
-| `` at the cap without a clean verdict, report incomplete and ask whether to continue `` | 2_planning.py:30 | same phrase | B61 | SKILL.md | unchanged | M006 |
+| `` at the cap without a clean verdict, report incomplete and ask whether to continue `` | 2_planning.py:30 | `` start the next round without asking, including past the third `` | B61 | SKILL.md | replaced by #58 (round continuation) | M006 |
 | `` Optional suggestions may remain `` | 2_planning.py:31 | same phrase | B61 | SKILL.md | unchanged | M007 |
 | `` they do not authorize scope expansion `` | 2_planning.py:32 | same phrase | B61 | SKILL.md | unchanged | M008 |
 | `` Deliver only after this review gate passes `` | 2_planning.py:33 | same phrase | B61 | SKILL.md | unchanged | M009 |
 | `` [host references](references/hosts.md) `` | 2_planning.py:34 | same phrase | B61 | SKILL.md | unchanged; SKILL.md occurrences 2->1 | M010 |
 | `` Repeat plan review and revision `` | 2_planning.py:89 | same phrase | B74 | agents/openai.yaml | unchanged | M011 |
 | `` zero actionable comments; optional suggestions may remain `` | 2_planning.py:90 | same phrase | B74 | agents/openai.yaml | unchanged | M012 |
-| `` Default to three review rounds unless the user sets another cap `` | 2_planning.py:91 | same phrase | B74 | agents/openai.yaml | unchanged | M013 |
+| `` Default to three review rounds unless the user sets another cap `` | 2_planning.py:91 | `` fixes at least one actionable comment and the loop has not stalled or reached a user-set cap `` | B74 | agents/openai.yaml | replaced by #58 (round continuation) | M013 |
 | `` Review the full plan until a complete review exists; focus later rounds on revisions since that review and unresolved findings while checking full context `` | 2_planning.py:92 | same phrase | B74 | agents/openai.yaml | unchanged | M014 |
-| `` At the cap without a clean verdict, report incomplete and ask whether to continue `` | 2_planning.py:93 | same phrase | B74 | agents/openai.yaml | unchanged | M015 |
+| `` At the cap without a clean verdict, report incomplete and ask whether to continue `` | 2_planning.py:93 | `` Ask whether to continue only when the loop stalls or reaches a user-set cap `` | B74 | agents/openai.yaml | replaced by #58 (round continuation) | M015 |
 | `` Keep fixes within the agreed scope `` | 2_planning.py:94 | same phrase | B74 | agents/openai.yaml | unchanged | M016 |
 | `` report unresolved blockers rather than claiming completion `` | 2_planning.py:95 | same phrase | B74 | agents/openai.yaml | unchanged | M017 |
 | `` Codex `` | 2_planning.py:184 | absent (still absent) | B71 | SKILL.md | unchanged | M018 |
