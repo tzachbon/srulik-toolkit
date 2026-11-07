@@ -62,6 +62,13 @@ Copy the folder instead of symlinking it: Cursor skips a symlink in
 **Developer: Reload Window**, then confirm the skills in Customize. Team
 marketplaces can import this repository through `.cursor-plugin/marketplace.json`.
 
+### Oh My Pi
+
+Add the installed plugin directory to an Oh My Pi profile's `extensions` list.
+Skills load through `skill://<name>`. Skills with host mappings include an
+Oh My Pi reference, observed with Kimi K3.1 Pro. Claude lifecycle hooks, such
+as the startup hint, do not run under Oh My Pi.
+
 ## Startup hint
 
 On a new session, the plugin writes the twenty-six skill names and a short routing

@@ -43,6 +43,7 @@ Give each reviewer the same pinned state, relevant requirements, assigned files,
 Host mappings:
 
 - T3 Code: [references/t3-code.md](references/t3-code.md)
+- Oh My Pi: [references/oh-my-pi.md](references/oh-my-pi.md)
 
 On a harness without a mapping, show how its child-agent capability maps to the panel, label the mapping untested, and ask before launching children; without confirmation, perform the passes yourself.
 

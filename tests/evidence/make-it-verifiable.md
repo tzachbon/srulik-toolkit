@@ -8,7 +8,8 @@ T3 Code runtime behavior and Codex native plugin discovery are unverified.
 ## Source and checks
 
 - Base: `643842727da15efb3c32841522ad4bc0575ff7ab` (`origin/main` at branch start),
-  then merged with `origin/main` at `f1f8d3df5b4097b564ecdbf871cec4c4514bde4d` (#58).
+  then merged with `origin/main` at `f1f8d3df5b4097b564ecdbf871cec4c4514bde4d` (#58)
+  and `83455bec310cc312fef9d9b47328698dbc002fe8` (#60).
 - Plugin version `1.16.0`; twenty-six top-level skills.
 - File SHA-256 (first 16 hex digits) and size at the reviewed head:
 
@@ -18,14 +19,14 @@ T3 Code runtime behavior and Codex native plugin discovery are unverified.
 | `skills/make-it-verifiable/references/feedback-loops.md` | `7d7f3e8fbcf73ef8` | 3492 |
 | `skills/make-it-verifiable/references/hosts.md` | `196cfa1559b0d2c0` | 2042 |
 | `skills/create-plan/SKILL.md` | `a2af1b777b6952f8` | 18081 |
-| `skills/execute-task-end-to-end/SKILL.md` | `db17663e3b29c293` | 12831 |
-| `scripts/validate/14_make_it_verifiable.py` | `5eaa5030d302f9a7` | 6220 |
+| `skills/execute-task-end-to-end/SKILL.md` | `89aacc5b39683f80` | 12898 |
+| `scripts/validate/15_make_it_verifiable.py` | `5eaa5030d302f9a7` | 6220 |
 
 - `PYTHONDONTWRITEBYTECODE=1 ./scripts/validate.sh` and `git diff --check`
   passed on macOS. Without the bytecode prefix a second local run fails on
   `__pycache__` files that the skill-creator tests write; CI runs once per clean
   clone and is unaffected.
-- New contract `scripts/validate/14_make_it_verifiable.py` pins the skill's
+- New contract `scripts/validate/15_make_it_verifiable.py` pins the skill's
   terms, its references and host table, the create-plan wiring by section, the
   execute-task-end-to-end audit gates, host-agnostic core text, the pinned
   upstream MIT license, and the exact file set.
@@ -39,7 +40,7 @@ message.
 
 | Group | Rows | What each row breaks |
 | --- | --- | --- |
-| Part 14 contract (rows `12.1`–`12.10`) | 52 | one make-it-verifiable term, reference, host row, NOTICE or README token, create-plan section wiring, or execute-task-end-to-end gate |
+| Part 15 contract (rows `12.1`–`12.10`) | 52 | one make-it-verifiable term, reference, host row, NOTICE or README token, create-plan section wiring, or execute-task-end-to-end gate |
 | create-plan phrases (`M`) | 95 | one create-plan phrase checked by parts 2, 4, and 5, including relocated phrases |
 | create-plan reference links (`L01`–`L04`) | 4 | one `references/<name>` link from create-plan `SKILL.md` |
 | create-plan assertion 11 (`A11-01`–`A11-10`) | 10 | one make-it-verifiable wiring sentence in its section |

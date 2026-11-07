@@ -25,5 +25,6 @@ until the reviewer performs them on the target instance; this reference does
 not make those checks pass. This reference documents T3 Code through Codex
 only. Other provider backends on T3 Code follow the core's untested-host gate:
 show the capability mapping, label it untested, and obtain user confirmation
-before proceeding. Verify their native image-viewing capability rather than
+before proceeding. A backend with its own mapping in this folder, such as
+[Oh My Pi](oh-my-pi.md), uses that mapping instead of this gate. Verify their native image-viewing capability rather than
 assuming the Codex tool names apply.
