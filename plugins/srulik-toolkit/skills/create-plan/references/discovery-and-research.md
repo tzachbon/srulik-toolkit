@@ -1,12 +1,10 @@
-# Discover skills and research first
-
-Step 2 of the [create-plan workflow](../SKILL.md#2-discover-skills-and-research-first).
+# Skill discovery and research
 
 Before grilling, inspect available evidence, classify every material discipline or workstream, and inspect the installed skill catalog when the runtime supports it. External discovery is mandatory for every non-trivial plan: follow `references/dynamic-skills.md` and run one focused external search per material discipline even when an installed skill already covers the work. Loading a discovered skill is optional; load an installed match only when it materially improves planning. Search does not authorize installation.
 
-External discovery may be skipped only when all strict-trivial conditions pass: the plan has one discipline, one bounded work item, low-risk reversible effects, no external system or migration, and no specialist capability would materially improve correctness or validation. Record the evidence for every condition rather than silently skipping.
+External discovery may be skipped only when all strict-trivial conditions pass: the plan has one discipline, one bounded work item, low-risk reversible effects, no external system or migration, and no specialist capability would materially improve correctness or validation. Record the evidence for every condition.
 
-Ask about planning-critical external candidates only after the Expected outcome and Definition of Done are explicit, using the next eligible grilling wave. Defer execution-only candidates to the closure wave. If the user selects installation, record it as an execution-plan item and ask the dependent questions about project or global scope and the CLI-native detected `--agent` targets. `create-plan` never installs a candidate itself and never forces a particular skill directory.
+Ask about planning-critical external candidates only after the Expected outcome and Definition of Done are explicit, using the next eligible grill wave. Defer execution-only candidates to the closure wave. If the user selects installation, record it as an execution-plan item and ask the dependent questions about project or global scope and the CLI-native detected `--agent` targets. `create-plan` never installs a candidate itself and never forces a particular skill directory.
 
 Redact or generalize confidential terms before external skill discovery. Never send secrets, private paths, proprietary requirements, customer names, or internal identifiers; if safe generalization is not possible, mark Skill discovery: `INCOMPLETE`.
 
@@ -30,12 +28,10 @@ During research:
 - record contradictions and stale evidence
 - identify material unknowns and decision branches
 - identify dependencies, failure modes, and irreversible choices
-- discover relevant installed skills and invoke those needed for planning evidence or analysis
-- run and retain external discovery evidence for each material discipline unless the strict-trivial gate passes
 
-Research to decision sufficiency, not exhaustiveness. Stop broad exploration once the next consequential uncertainty is clear.
+Research to decision sufficiency, not exhaustiveness: stop broad exploration once the next consequential uncertainty is clear.
 
-#### Verify prior art
+## Verify prior art
 
 For every plan, including trivial plans, verify prior art before selecting an approach. Search relevant internal precedents (code, documents, prior attempts, and decisions) and run a focused external search for existing solutions, approaches, or published lessons relevant to the problem. Skill discovery is a separate check: finding a skill alone does not verify prior art. The strict-trivial exception for skill discovery does not waive this check.
 

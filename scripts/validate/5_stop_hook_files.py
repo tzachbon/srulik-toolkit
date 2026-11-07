@@ -190,11 +190,11 @@ if not all(token in tour for token in tour_contract):
 for skill_name in expected:
     if f"skills/{skill_name}/SKILL.md" not in readme:
         raise SystemExit(f"README is missing skill: {skill_name}")
-if "Twenty-five focused skills" not in readme or "/hooks" not in readme:
-    raise SystemExit("README must document twenty-five skills and Codex hook trust")
+if "Twenty-six focused skills" not in readme or "/hooks" not in readme:
+    raise SystemExit("README must document twenty-six skills and Codex hook trust")
 
 outcome_dod_contract = "Outcome and Definition of Done gate"
-create_plan_text = "\n".join((skill_root / "create-plan" / name).read_text(encoding="utf-8") for name in ["SKILL.md", "references/readiness-gate.md"])
+create_plan_text = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
 grilling_text = (skill_root / "create-plan" / "references" / "grilling.md").read_text(encoding="utf-8")
 for relative, text in [
     ("skills/create-plan/SKILL.md", create_plan_text),

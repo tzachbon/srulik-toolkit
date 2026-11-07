@@ -1,0 +1,5 @@
+interface:
+  display_name: "Make It Verifiable"
+  short_description: "Prove a change with a red-capable check per claim"
+policy:
+  allow_implicit_invocation: true

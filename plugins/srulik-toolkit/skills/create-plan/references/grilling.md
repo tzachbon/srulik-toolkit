@@ -258,6 +258,8 @@ Re-enter research between waves when an answer reveals:
 - a contradiction
 - a new high-risk condition
 - an external dependency whose current state matters
+- a new edge case
+- a change large enough that earlier research may no longer apply
 
 Do not carry a factual uncertainty into another grill wave when available evidence can resolve it first.
 

@@ -10,14 +10,14 @@
 [![Cursor](https://img.shields.io/badge/Cursor-supported-000000)](https://cursor.com)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
 
-**Twenty-five focused skills for understanding, planning, and shipping software with Claude Code, Codex, and Cursor.**
+**Twenty-six focused skills for understanding, planning, and shipping software with Claude Code, Codex, and Cursor.**
 
 [Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
 
 </div>
 
 Srulik Toolkit packages the workflows I use to make sense of incoming requests, turn loose ideas into projects,
-investigate questions, explain topics visually, give guided tours, write and implement plans, review changes, keep work in scope, delegate
+investigate questions, explain topics visually, give guided tours, write and implement plans, make changes verifiable, review changes, keep work in scope, delegate
 suitable tasks, work test-first, and maintain pull requests. It also covers prose
 editing, product videos, merge conflicts, CI failures, session recaps, handoffs, agent takeovers, and session retrospectives.
 
@@ -71,7 +71,7 @@ as the startup hint, do not run under Oh My Pi.
 
 ## Startup hint
 
-On a new session, the plugin writes the twenty-five skill names and a short routing
+On a new session, the plugin writes the twenty-six skill names and a short routing
 instruction to model context. Claude Code and Codex use the default
 `hooks/hooks.json` location and run it only for `SessionStart` with the
 `startup` matcher. Cursor runs it from `hooks/hooks-cursor.json` on
@@ -108,6 +108,7 @@ Cursor does not run this hook yet.
 | [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request with review evidence, merge danger, and blast radius. |
 | [`execute-task-end-to-end`](plugins/srulik-toolkit/skills/execute-task-end-to-end/SKILL.md) | Explicitly request the full workflow: plan, issue, implementation, and a PR driven to `MERGE READY`, or verified `MERGED` when authorized, closing with a `recap`. |
 | [`ui-ux-review`](plugins/srulik-toolkit/skills/ui-ux-review/SKILL.md) | Validate every in-scope user story against actual design images, rendered screens, and the project's design system without changing it. |
+| [`make-it-verifiable`](plugins/srulik-toolkit/skills/make-it-verifiable/SKILL.md) | Before a change, pair each claim with a check that must fail before it counts, and flag claims no check can prove yet; after it, find and prove what is still unverified. |
 | [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a local diff, branch, or pull request without changing it, using a three-vendor reviewer panel with scores and rounds that carry across reruns. |
 | [`stay-in-scope`](plugins/srulik-toolkit/skills/stay-in-scope/SKILL.md) | Re-establish the requested boundary when work starts to drift. |
 | [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. |
@@ -135,6 +136,7 @@ $implement-plan Execute the approved plan in docs/offline-plan.md
 $srulik-toolkit:skill-creator Create a skill for release notes and evaluate it on real examples
 $execute-task-end-to-end Add offline support and drive its PR to MERGE READY
 $create-pr Open a pull request for the current changes
+$make-it-verifiable Before I add the --json flag, how do we make this fully verifiable?
 $review-pro-max Review the changes on my current branch
 $ui-ux-review Review the checkout flow for usability and accessibility
 $tdd Implement expiration for cached sessions

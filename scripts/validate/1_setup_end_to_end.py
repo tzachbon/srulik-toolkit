@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.15.1":
+if version != "1.16.0":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -42,12 +42,21 @@ expected = {
     "handoff",
     "skill-creator",
     "video-creation",
+    "make-it-verifiable",
 }
 
 skill_root = plugin / "skills"
 actual = {path.name for path in skill_root.iterdir() if path.is_dir()}
 if actual != expected:
     raise SystemExit(f"skill directories differ: expected={sorted(expected)} actual={sorted(actual)}")
+
+# create-plan keeps whole workflow sections in these references; later parts check SKILL.md plus each linked one.
+create_plan = (skill_root / "create-plan" / "SKILL.md").read_text(encoding="utf-8")
+create_plan_moved = ["discovery-and-research.md", "planning-brief.md", "plan-template.md", "delivery.md"]
+for name in create_plan_moved:
+    if f"](references/{name})" not in create_plan:
+        raise SystemExit(f"create-plan SKILL.md must link references/{name}")
+create_plan = "\n".join([create_plan] + [(skill_root / "create-plan" / "references" / name).read_text(encoding="utf-8") for name in create_plan_moved])
 
 for path in root.rglob("*"):
     if ".git" in path.relative_to(root).parts:
@@ -103,7 +112,7 @@ for token in [
 ]:
     if token not in end_to_end:
         raise SystemExit(f"end-to-end completion contract missing: {token}")
-for dependency in ["create-plan", "create-pr", "pr-babysit", "recap"]:
+for dependency in ["create-plan", "create-pr", "pr-babysit", "recap", "make-it-verifiable"]:
     if f"$srulik-toolkit:{dependency}" not in end_to_end:
         raise SystemExit(f"end-to-end workflow must invoke {dependency} by name")
 if re.search(r"\]\(\.\./[^)]+/SKILL\.md\)", end_to_end):
@@ -151,7 +160,3 @@ for text in [end_to_end, end_to_end_t3]:
         raise SystemExit("end-to-end ownership handoff must block on unverified retirement")
 if end_to_end_t3.index("## Ownership handoff before registration") > end_to_end_t3.index("## Main watch and event handling"):
     raise SystemExit("end-to-end ownership handoff must precede main watch registration")
-
-# create-plan keeps its workflow in SKILL.md and moved step bodies in references;
-# contract checks in later parts read them together.
-create_plan = "\n".join((skill_root / "create-plan" / n).read_text(encoding="utf-8") for n in ["SKILL.md"] + [f"references/{r}.md" for r in ["research-first", "planning-brief", "readiness-gate", "plan-template"]])

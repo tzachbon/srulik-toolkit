@@ -1,6 +1,4 @@
-# Plan root structure
-
-Step 8 of the [create-plan workflow](../SKILL.md#8-draft-the-plan).
+# Plan template
 
 Use this root structure unless a discipline reference calls for a small adaptation:
 
@@ -13,7 +11,7 @@ Use this root structure unless a discipline reference calls for a small adaptati
 
 ## Definition of Done
 
-<The observable evidence and plan-level acceptance gate that prove the expected outcome was achieved. Do not substitute a list of completed implementation activities.>
+<The observable evidence and plan-level acceptance gate that prove the expected outcome was achieved, rather than a list of completed implementation activities.>
 
 ## Context and evidence
 
@@ -102,13 +100,13 @@ Use this root structure unless a discipline reference calls for a small adaptati
 
 ## Acceptance criteria
 
-| Requirement | Observable acceptance condition | Task(s) | Verification and evidence |
+| Requirement | Observable acceptance condition | Task(s) | Check (verification contract) |
 | --- | --- | --- | --- |
-| <ID> | <Condition> | <Task IDs> | <Procedure and proof> |
+| <ID> | <Condition> | <Task IDs> | <Contract check, red evidence, and status> |
 
 ## End-to-end verification
 
-<Describe the complete user journey, system behavior, research conclusion, or operational outcome to verify after task-level checks. State prerequisites, procedure, expected results, evidence location, and failure response.>
+<Embed the verification contract table. Then describe the complete user journey, system behavior, research conclusion, or operational outcome to verify after task-level checks: prerequisites, procedure, expected results, evidence location, and failure response.>
 
 ## What can go wrong
 
@@ -133,4 +131,4 @@ Use this root structure unless a discipline reference calls for a small adaptati
 - <source, file, document, issue, URL, decision record, or other evidence>
 ```
 
-Omit empty sections except `## Technical / Coding` in coding plans. Keep the impact, reversibility, and failure assessment explicit; for bounded low-risk work, short paragraphs may replace the risk table. If no material failure scenario is identified, state that conclusion with its evidence limits. Within the required technical section, simple fixes may omit irrelevant subsections. Add discipline-specific sections when they improve execution. The template is a scaffold: expand each substantive section into explanations, tables, examples, and executable steps as needed. Do not treat its short placeholders as the intended output length.
+Omit empty sections except `## Technical / Coding` in coding plans. Keep the impact, reversibility, and failure assessment explicit; for bounded low-risk work, short paragraphs may replace the risk table. When no material failure scenario is identified, state that conclusion with its evidence limits. Within the required technical section, simple fixes may omit irrelevant subsections. Add discipline-specific sections when they improve execution. The template is a scaffold: expand each substantive section into explanations, tables, examples, and executable steps as needed. Its short placeholders show shape, not the intended output length.

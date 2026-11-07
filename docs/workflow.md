@@ -112,3 +112,11 @@ redacted continuation notes in OS temporary storage, with artifact references,
 authorization limits, and suggested skills. It returns a path and receiving
 prompt without starting another agent. The receiver uses `takeover` to check
 claims against current evidence before continuing within the existing authority.
+
+`make-it-verifiable` names one check per claim and proves each check can go red.
+`create-plan` runs its contract mode once the grill settles scope, in a scratch
+copy outside the repository, and embeds the resulting verification contract in
+the plan's acceptance criteria. `execute-task-end-to-end` runs its audit mode
+before publishing the PR and again on the final diff before merging; a `blocked`
+claim stops either step until the user accepts it by name. A new test at a code
+seam goes to `tdd`, which owns the red-green loop there.
