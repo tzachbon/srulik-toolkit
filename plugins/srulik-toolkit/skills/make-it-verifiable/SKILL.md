@@ -22,7 +22,7 @@ This needs running commands, a scratch copy outside the workspace, and asking th
 
 - Contract mode without commands or a scratch copy: name every check fully and mark it `planned-red`.
 - Audit mode without them: report which capability is missing and stop.
-- Without a way to ask the user, every unaccepted row stays `blocked`.
+- Without a way to ask the user, a claim that needs acceptance stays `blocked`.
 
 ## 1. Define "fully" for this change
 

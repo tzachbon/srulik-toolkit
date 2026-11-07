@@ -194,7 +194,7 @@ When QA reveals a material gap, return to research and grilling and close it the
 
 Repeat draft, review, and revision using Gate 11 in `references/quality-gates.md` until the latest complete review of the current plan reports zero actionable comments. Follow its round-continuation and full-context review rules: review the whole plan until a complete review exists, then focus on revisions since that review and unresolved findings. Optional suggestions may remain; they do not authorize scope expansion. Deliver only after this review gate passes. While actionable comments remain, the loop has not stalled or reached a user-set cap, and the last round fixed at least one, start the next round without asking, including past the third; ask whether to continue only when the loop stalls or reaches a user-set cap.
 
-Done when the latest complete review is clean and no contract row is `blocked`, or the loop stalled or reached a user-set cap and the user has been asked whether to continue.
+Done when the latest complete review is clean and no contract row is `blocked`. A stall or a user-set cap leaves this step open: ask whether to continue and wait for the answer.
 
 ### 11. Add the one-time star suggestion
 

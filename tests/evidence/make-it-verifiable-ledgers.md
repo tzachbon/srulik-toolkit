@@ -96,4 +96,3 @@ Format: `old phrase | part:line | new phrase | B#`. Part and line are at base `6
 | question tools / model names absent from core | 6:83 | unchanged; none present | B81 |
 
 Rows: 55. Mutations: 58 (one per mapping row, three for assertion 12).
-

@@ -15,12 +15,12 @@ T3 Code runtime behavior and Codex native plugin discovery are unverified.
 
 | File | SHA-256 | Bytes |
 | --- | --- | --- |
-| `skills/make-it-verifiable/SKILL.md` | `24a7df6e172d4d63` | 4934 |
+| `skills/make-it-verifiable/SKILL.md` | `cd8cda096d04e4c1` | 4943 |
 | `skills/make-it-verifiable/references/feedback-loops.md` | `7d7f3e8fbcf73ef8` | 3492 |
-| `skills/make-it-verifiable/references/hosts.md` | `196cfa1559b0d2c0` | 2042 |
-| `skills/create-plan/SKILL.md` | `a2af1b777b6952f8` | 18081 |
+| `skills/make-it-verifiable/references/hosts.md` | `3442be811278ff82` | 2046 |
+| `skills/create-plan/SKILL.md` | `cd84086700b0d591` | 18084 |
 | `skills/execute-task-end-to-end/SKILL.md` | `89aacc5b39683f80` | 12898 |
-| `scripts/validate/15_make_it_verifiable.py` | `5eaa5030d302f9a7` | 6220 |
+| `scripts/validate/15_make_it_verifiable.py` | `5db6e57533abf179` | 6360 |
 
 - `PYTHONDONTWRITEBYTECODE=1 ./scripts/validate.sh` and `git diff --check`
   passed on macOS. Without the bytecode prefix a second local run fails on
@@ -44,7 +44,7 @@ message.
 | create-plan phrases (`M`) | 95 | one create-plan phrase checked by parts 2, 4, and 5, including relocated phrases |
 | create-plan reference links (`L01`–`L04`) | 4 | one `references/<name>` link from create-plan `SKILL.md` |
 | create-plan assertion 11 (`A11-01`–`A11-10`) | 10 | one make-it-verifiable wiring sentence in its section |
-| execute-task-end-to-end (`e2e.*`) | 58 | one phrase checked by parts 1, 6, and 12 |
+| execute-task-end-to-end (`e2e.*`) | 58 | one phrase checked by parts 1, 6, and 15 |
 | Registration (`1.*`, `4.count.*`, `5.*`) | 8 | skill directory, version, skill counts, startup hint, README row |
 
 The first full run reported 213 of 226: the runner mutated only the first file
@@ -165,6 +165,10 @@ it here.
   references were replaced by this branch's split. Validation and mutations
   cover the merged text; the evals ran on the text before the merge, and the
   `old_skill` baseline is still the base commit.
+- **Review fixes after the evals.** Round 1 of the review changed two
+  sentences: the no-question fallback in make-it-verifiable now blocks only a
+  claim that needs acceptance, and create-plan step 10 stays open on a stall or
+  cap. Validation and mutations cover both; the evals were not rerun.
 - One run per config; scores are directional.
 - Eval children loaded the owner's global agent instructions and saw the
   installed `1.13.1` plugin in both configs. Prompts banned invoking installed
