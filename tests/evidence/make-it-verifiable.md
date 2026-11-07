@@ -35,7 +35,7 @@ T3 Code runtime behavior and Codex native plugin discovery are unverified.
 
 The mutation runner breaks one validator phrase at a time in a scratch copy and
 runs `./scripts/validate.sh`. Result on the evaluated text: the unmutated
-control passed, and **227 of 227** mutations were rejected with the expected
+control passed, and **228 of 228** mutations were rejected with the expected
 message.
 
 | Group | Rows | What each row breaks |
@@ -43,7 +43,7 @@ message.
 | Part 15 contract (rows `12.1`–`12.10`) | 52 | one make-it-verifiable term, reference, host row, NOTICE or README token, create-plan section wiring, or execute-task-end-to-end gate |
 | create-plan phrases (`M`) | 95 | one create-plan phrase checked by parts 2, 4, and 5, including relocated phrases |
 | create-plan reference links (`L01`–`L04`) | 4 | one `references/<name>` link from create-plan `SKILL.md` |
-| create-plan assertion 11 (`A11-01`–`A11-10`) | 10 | one make-it-verifiable wiring sentence in its section |
+| create-plan assertion 11 (`A11-01`–`A11-11`) | 11 | one make-it-verifiable wiring sentence in its section |
 | execute-task-end-to-end (`e2e.*`) | 58 | one phrase checked by parts 1, 6, and 15 |
 | Registration (`1.*`, `4.count.*`, `5.*`) | 8 | skill directory, version, skill counts, startup hint, README row |
 
@@ -53,7 +53,9 @@ the runner was fixed to mutate every listed file, all 226 failed as expected.
 Row `12.1.25`, for the step 2 sentence added in iteration 2, makes 227. After
 the merge with #58, four create-plan rows (M004, M006, M013, M015) were repointed
 to the round-continuation phrases #58 put in their place, and the final run on
-the merged tree again rejected 227 of 227.
+the merged tree again rejected 227 of 227. Row `A11-11`, for the step 10
+exit added in review round 1, makes 228, and the run on the fixed tree
+rejected 228 of 228.
 
 ## Restyle inventory and prunes
 
