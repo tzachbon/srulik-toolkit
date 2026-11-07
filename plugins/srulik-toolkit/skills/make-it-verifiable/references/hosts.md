@@ -6,7 +6,7 @@ Read before building checks. These mappings describe capabilities, not proof tha
 | --- | --- | --- | --- | --- |
 | Claude Code | Shell tool. Plan mode runs no commands, so contract mode records `planned-red` rows. | Copy the repository under `$TMPDIR` (or `/tmp`) with the shell. | Native question tool, or a plain question in the reply. | Verified on macOS: fresh sessions that read this skill returned contracts with red evidence; implicit invocation from an installed plugin unverified |
 | Codex | Shell tool. A read-only sandbox runs reads only, so contract mode records `planned-red` rows. | Copy under the OS temporary directory when the sandbox allows writes there. | A plain question in the reply. | Model execution verified: one contract-mode run on macOS returned a complete contract with red evidence on every row; native plugin discovery unverified |
-| T3 Code | The underlying provider's shell. Plan interaction mode is read-only. | The provider's shell, under the OS temporary directory. | The provider's question capability. A child with no user to ask answers from its brief or keeps rows `blocked`. | unverified |
+| T3 Code | The underlying provider's shell. Plan interaction mode is read-only. | The provider's shell, under the OS temporary directory. | The provider's question capability. A child with no user to ask records acceptance only when its brief quotes the user accepting that claim; otherwise the claim stays `blocked`. | unverified |
 | Cursor | Agent terminal commands. Ask mode runs no commands. | The agent terminal, under the OS temporary directory. | A plain question in the reply. | unverified |
 
 ## Temporary storage

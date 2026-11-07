@@ -17,7 +17,7 @@ T3 Code runtime behavior and Codex native plugin discovery are unverified.
 | --- | --- | --- |
 | `skills/make-it-verifiable/SKILL.md` | `cd8cda096d04e4c1` | 4943 |
 | `skills/make-it-verifiable/references/feedback-loops.md` | `7d7f3e8fbcf73ef8` | 3492 |
-| `skills/make-it-verifiable/references/hosts.md` | `3442be811278ff82` | 2046 |
+| `skills/make-it-verifiable/references/hosts.md` | `aab21f538756e529` | 2112 |
 | `skills/create-plan/SKILL.md` | `cd84086700b0d591` | 18084 |
 | `skills/execute-task-end-to-end/SKILL.md` | `89aacc5b39683f80` | 12898 |
 | `scripts/validate/15_make_it_verifiable.py` | `5db6e57533abf179` | 6360 |
@@ -54,8 +54,8 @@ Row `12.1.25`, for the step 2 sentence added in iteration 2, makes 227. After
 the merge with #58, four create-plan rows (M004, M006, M013, M015) were repointed
 to the round-continuation phrases #58 put in their place, and the final run on
 the merged tree again rejected 227 of 227. Row `A11-11`, for the step 10
-exit added in review round 1, makes 228, and the run on the fixed tree
-rejected 228 of 228.
+exit added in review round 1, makes 228, and the run on the round 1 fixes
+(`ca168ef`) rejected 228 of 228.
 
 ## Restyle inventory and prunes
 
@@ -170,7 +170,9 @@ it here.
 - **Review fixes after the evals.** Round 1 of the review changed two
   sentences: the no-question fallback in make-it-verifiable now blocks only a
   claim that needs acceptance, and create-plan step 10 stays open on a stall or
-  cap. Validation and mutations cover both; the evals were not rerun.
+  cap. Validation and mutations cover both. Round 2 aligned the T3 Code ask
+  cell in `hosts.md` with that fallback; no validator phrase covers the cell.
+  The evals were not rerun.
 - One run per config; scores are directional.
 - Eval children loaded the owner's global agent instructions and saw the
   installed `1.13.1` plugin in both configs. Prompts banned invoking installed

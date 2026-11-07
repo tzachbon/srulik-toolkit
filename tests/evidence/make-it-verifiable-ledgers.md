@@ -31,7 +31,15 @@ Format: `P# | removed text | location | reason | covering eval expectation`.
 | --- | --- | --- | --- | --- |
 | P1 | "Use the most direct kind the change allows: … add one focused test that fails without the fix when the behavior has none." (the reproduce-fix-pass clause and the CI clause survive; see B15) | `## Proof`, line 20 | Duplicate of `make-it-verifiable` (single source of truth): its check ladder and step 3 "New claim: run it before the change; it fails" cover choosing the most direct check and a failing focused test. `## Proof` now points there ("Build proof with `$srulik-toolkit:make-it-verifiable`."). | EE1: "Step 3 is not marked complete until the claim is verified or accepted" and the audit's last check precedes the first `git push`/`gh pr create`. EE2: "The uncovered fix becomes a claim with a check." The `old_skill` expectations graded on `with_skill` catch a regression in proof choice. |
 
-Merged duplicates (B35, B46, B48 ask list, B51, B69 read-and-follow, B79) are not prunes: each maps to surviving text in e2e-inventory.md.
+Six merged duplicates are not prunes. The full inventory stayed in the eval
+workspace; the surviving text for each is below.
+
+| Row | Base text | Surviving text |
+| --- | --- | --- |
+| B35, B51, B69 | "Read and follow the installed skill and its required references" in steps 1, 4, and 7 | Boundaries: "Read each named skill and its required references at the phase where it is needed, and follow them" |
+| B46 | Reproduce the user's failing workflow and verify that same workflow after the change | `## Proof`, the single source for proof method |
+| B48 | Ask only for missing authority, decisions, or inputs | Unattended work ask list, which gains "or an input you need is unavailable" |
+| B79 | "A PR being open or CI being green alone does not prove the task is complete" | Opening paragraph: an open PR or green CI is intermediate progress |
 
 ## execute-task-end-to-end validator mapping (T5)
 
