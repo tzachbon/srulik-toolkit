@@ -12,7 +12,7 @@ PR. Resolve the owner/repository from the actual remote. GitHub examples below
 assume the repository permits squash merges:
 
 ```sh
-gh pr view <number> --repo <owner/repo> --json headRefOid,baseRefName,mergeStateStatus,reviewDecision,statusCheckRollup
+gh pr view <number> --repo <owner/repo> --json headRefOid,baseRefName,isDraft,mergeStateStatus,reviewDecision,statusCheckRollup
 gh pr merge <number> --repo <owner/repo> --squash --match-head-commit <validated-head-sha>
 gh release create <tag> --repo <owner/repo> --target <merged-commit-sha> --title <release-title> --notes-file <notes-file>
 ```
@@ -20,6 +20,8 @@ gh release create <tag> --repo <owner/repo> --target <merged-commit-sha> --title
 Inspect existing remote tags/releases before creation, including peeled commit
 identity for annotated tags. Never move a published tag. Read back PR merge state,
 release published state and tag commit after writes; inspect state before retries.
+Check unresolved review conversations separately through the host's PR tools or
+GitHub GraphQL `reviewThreads`; the command above does not include them.
 
 Use local workspace routing for the coordinator's accounts and the owner's other
 machines. In T3 Code, call `t3_environment_links` to rediscover linked environments;
@@ -86,7 +88,7 @@ configuration or credentials between machines.
 
 Codex: start a temporary `codex app-server --stdio`, initialize JSON-RPC, then call
 `skills/list` with real project `cwds` and `forceReload: true`. Check enabled
-`srulik-toolkit:create-pr`, `srulik-toolkit:make-it-verifiable` and this standalone
+names for each changed `srulik-toolkit:<skill>` and this standalone
 `srulik-toolkit-release` skill. Verify resolved versions and actual source/reference
 bytes against the pinned release; report relevant discovery errors.
 

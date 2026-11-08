@@ -5,7 +5,7 @@ description: Merge and release Srulik Toolkit, then update its installed copies 
 
 # Release Srulik Toolkit on all machines
 
-Bind the requested actions first. A release-and-update request authorizes the
+Bind the requested actions first. An explicit release-and-machine-update request authorizes the
 necessary commit, push, PR, merge, tag, release and targeted toolkit installation
 updates. Honor narrower limits; authoring this skill alone grants no operational
 authority. This repository-only maintenance skill lives under `.agents/skills/`; it is not shipped in the plugin.
@@ -13,6 +13,10 @@ authority. This repository-only maintenance skill lives under `.agents/skills/`;
 Read [machine routes and native commands](references/machines.md) before acting.
 Use the existing `create-pr` and `update-plugins` skills for their respective
 phases when available; the rules below remain required when they are absent.
+
+On a host without a matching reference, show its capability mapping, label it untested,
+and obtain user confirmation before operational actions. A missing required capability blocks that phase;
+continue only independent documented phases and report partial completion.
 
 ## 1. Pin the source
 
@@ -53,8 +57,8 @@ though it were the release.
 
 Rediscover all owner machines and current routes; never reuse stale machine IDs.
 Inventory each account's native registration, marketplace source, cache version,
-enabled state, live project overrides, standalone aliases and any installed Cursor
-copy. Save targeted metadata and customized files before writes. Use the native
+enabled state, live project overrides, standalone aliases and any installed local IDE
+plugin copy. Save targeted metadata and customized files before writes. Use the native
 manager's current help and update only Srulik Toolkit to the pinned release.
 
 Delegate remote work only through the host's bound child-task capability. Give each

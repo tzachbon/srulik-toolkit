@@ -117,12 +117,17 @@ for token in [
     "never move or delete published tags", "Preserve retired records and unrelated settings",
     "Run fresh discovery for each selected host/account and live project override",
     "means partial rollout", "Do not restart active coding sessions",
+    "show its capability mapping, label it untested",
+    "obtain user confirmation before operational actions",
+    "A missing required capability blocks that phase",
     "[machine routes and native commands](references/machines.md)",
 ]:
     if token not in release_core:
         raise SystemExit(f"repository release skill missing contract: {token}")
 if "target.environmentId" not in release_mapping or "forceReload: true" not in release_mapping:
     raise SystemExit("repository release skill is missing its machine/discovery mapping")
+if re.search(r"\b(?:T3|Claude|Codex|Cursor)\b|t3_[a-z_]+|delegate_task|orchestrator_capabilities|target\.environmentId|skills/list|forceReload|threadId|gh pr", release_core):
+    raise SystemExit("repository release skill core must keep host-specific names in its mapping")
 if (skill_root / "srulik-toolkit-release").exists():
     raise SystemExit("repository release skill must not be packaged in the plugin")
 for name, text in [("AGENTS.md", agents_guide), ("README.md", readme)]:
