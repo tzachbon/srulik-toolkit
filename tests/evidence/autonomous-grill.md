@@ -7,7 +7,7 @@ recommended option.
 
 ## Contract checks
 
-`scripts/validate/16_autonomous_grill.py` pins the mode's phrases in six files
+`scripts/validate/16_autonomous_grill.py` pins the mode's phrases in seven files
 and bans host tool names from `create-plan/references/autonomous.md`.
 
 - Red on `66f8c04`, before any skill edit: `create-plan/SKILL.md is missing
@@ -37,7 +37,7 @@ Prompt (both sides): `/srulik-toolkit:create-plan Add a --json option to the
 list command of this CLI. Be autonomous: let a subagent answer your grill
 questions on my behalf.`
 
-The expectations were fixed before the runs:
+E1-E5 were fixed before the first runs:
 
 | ID | Expectation |
 | --- | --- |
@@ -89,3 +89,6 @@ cost USD 0.23.
 - Human feedback: not collected; merge authorized by the user.
 - Target `autonomous.md` SHA-256 at the iteration-2 run:
   `774ee7b7fcb34284eea32676d7e0b4b3b2bff8af693ba0b73a60f6d0822158ae`.
+  Review fixes changed `autonomous.md` after that run: stand-in experiments
+  only in a scratch copy, user-only decisions never sent to the stand-in, and
+  the Smart Ralph offer skipped. These edits were not rerun live.
