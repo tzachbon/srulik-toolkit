@@ -26,7 +26,7 @@ PLUGIN = "srulik-toolkit@srulik-toolkit"
 MARKETPLACE = "srulik-toolkit"
 PREFIX = "srulik-toolkit:"
 CACHE_LINK = re.compile(r"^(.*[\\/]plugins[\\/]cache[\\/]srulik-toolkit[\\/]srulik-toolkit[\\/])([^\\/]+)([\\/]skills[\\/].+)$")
-RUNTIME = re.compile(r"^\.in_use/|^\.orphaned_at$|(^|/)__pycache__/")  # added to a cache by Claude or Python
+RUNTIME = re.compile(r"^\.in_use/|^\.orphaned_at$|(^|/)__pycache__/")  # Claude and Python add these
 problems = []
 
 
@@ -69,7 +69,7 @@ def expected(marketplace_root):
 
 def differing_files(source, installed):
     """Source files missing from installed or different there, ignoring line endings."""
-    # ponytail: CRLF folding also applies to binaries; fine until one differs only in line endings.
+    # ponytail: CRLF folding hits binaries too; fine until one differs only there.
     differing = []
     for file in sorted(source.rglob("*")):
         if file.is_file():
@@ -81,7 +81,7 @@ def differing_files(source, installed):
 
 
 def missing_skills(found, skills, shown):
-    """Skills a fresh process does not show with the current description, by toolkit name or alias."""
+    """Skills a fresh process does not show with the current description."""
     descriptions = {re.sub(r" \((user|project)\)$", "", text) for text in found.values()}
     return [name for name, description in skills.items()
             if found.get(PREFIX + name) != shown(description) and description not in descriptions]
@@ -165,7 +165,7 @@ def update_claude(check, cache_roots, later):
     targets = ([(None, user)] if user else []) + [(Path(entry["projectPath"]), entry) for entry in live]
     places = [place for place, entry in targets if entry.get("enabled", True)]
     if len(places) < len(targets):
-        say(f"  note: {len(targets) - len(places)} disabled, discovery not checked there")
+        say(f"  note: {len(targets) - len(places)} disabled, discovery skipped there")
     if places:
         later.append(lambda: verify_claude(exe, places, skills))
     return plugin
@@ -257,7 +257,7 @@ def update_codex(check, cache_roots):
 
 def repoint_aliases(folders, cache_roots, check):
     """Repoint skill symlinks into an older toolkit cache."""
-    # ponytail: symlinks only; Windows junctions are left alone. Add them if one turns up.
+    # ponytail: symlinks only, not Windows junctions; add those if one turns up.
     for folder in folders:
         if not folder.is_dir():
             continue
@@ -277,14 +277,14 @@ def repoint_aliases(folders, cache_roots, check):
                 os.symlink(target, temporary, target_is_directory=True)
                 try:
                     os.replace(temporary, link)
-                except PermissionError:  # Windows does not replace a directory symlink in place
+                except PermissionError:  # Windows keeps a directory symlink
                     os.unlink(link)
                     os.replace(temporary, link)
                 say(f"  alias {link} now points at {target}")
 
 
 def skill_differs(source, copy):
-    """Whether a copy's files differ from source, ignoring its own SKILL.md name line."""
+    """Whether a copy's files differ from source, except its own name line."""
     files = sorted(file.relative_to(source) for file in source.rglob("*") if file.is_file())
     if files != sorted(file.relative_to(copy) for file in copy.rglob("*") if file.is_file()):
         return True
@@ -322,27 +322,33 @@ def refresh_copies(folders, plugin, cache_roots, check):
                 fail(f"copied skill {real} is out of date and not writable here; run as its owner to refresh it")
             else:
                 name = re.search(rb"^name:.*$", (real / "SKILL.md").read_bytes(), re.M)
-                fresh, old = (real.with_name(f".{real.name}.srulik-{step}") for step in ("update", "before"))
-                try:  # build beside the old copy, then swap: a failure leaves it whole
-                    if old.exists():
-                        raise OSError(f"{old} is left from an interrupted run")
+                fresh = real.with_name(f".{real.name}.srulik-update")
+                try:
                     shutil.rmtree(fresh, ignore_errors=True)
                     shutil.copytree(source, fresh)
                     if name:
                         top = fresh / "SKILL.md"
                         top.write_bytes(re.sub(rb"^name:.*$", name.group(0), top.read_bytes(), count=1, flags=re.M))
-                    shutil.copymode(real, fresh)  # e.g. a shared copy others must read
-                    os.replace(real, old)
-                    try:
-                        os.replace(fresh, real)
-                    except OSError:
-                        os.replace(old, real)
-                        raise
-                    shutil.rmtree(old, ignore_errors=True)
+                    shutil.copymode(real, fresh)  # e.g. a shared copy
+                    shutil.rmtree(swap(fresh, real), ignore_errors=True)
                     say(f"  copied skill {real} refreshed")
                 except OSError as error:
                     shutil.rmtree(fresh, ignore_errors=True)
                     fail(f"could not refresh copied skill {real}: {error}")
+
+
+def swap(fresh, target):
+    """Rename fresh into target's place, restoring target on failure. Returns the old copy."""
+    old = target.with_name(f".{target.name}.srulik-before")
+    if old.exists():
+        raise OSError(f"{old} is left from an interrupted run")
+    os.replace(target, old)
+    try:
+        os.replace(fresh, target)
+    except OSError:
+        os.replace(old, target)
+        raise
+    return old
 
 
 def sync_cursor(plugin, check):
@@ -351,21 +357,25 @@ def sync_cursor(plugin, check):
     if not copy.is_dir():
         return
     if plugin is None:
-        fail(f"cursor copy {copy} not checked: no Claude Code or Codex install here to take the source from")
+        fail(f"cursor copy {copy} not checked: no Claude Code or Codex source here")
         return
     if not differing_files(plugin, copy) and not differing_files(copy, plugin):
-        say(f"cursor: {copy} matches the source; reload Cursor windows to load it")
+        say(f"cursor: {copy} matches the source; reload Cursor windows if needed")
         return
     if check:
         fail(f"cursor copy {copy} differs from the source")
         return
     fresh = copy.with_name(".srulik-toolkit.update")
-    shutil.rmtree(fresh, ignore_errors=True)
-    shutil.copytree(plugin, fresh)
+    try:
+        shutil.rmtree(fresh, ignore_errors=True)
+        shutil.copytree(plugin, fresh)
+        old = swap(fresh, copy)
+    except OSError as error:
+        shutil.rmtree(fresh, ignore_errors=True)
+        return fail(f"could not replace cursor copy {copy}: {error}")
     backup = Path(tempfile.mkdtemp(prefix="srulik-cursor-before-")) / "srulik-toolkit"
-    shutil.move(str(copy), str(backup))
-    os.replace(fresh, copy)
-    say(f"cursor: replaced {copy} (previous copy kept at {backup}); reload Cursor windows to load it")
+    shutil.move(str(old), str(backup))
+    say(f"cursor: replaced {copy} (previous copy at {backup}); reload Cursor windows to load it")
 
 
 def update_here(check):
@@ -394,7 +404,7 @@ def main():
     say(f"== {getpass.getuser()}@{platform.node()}" + (" (check only)" if args.check else ""))
     try:
         update_here(args.check)
-    except Exception as error:  # report and still reach the other targets
+    except Exception as error:  # report, then reach the other targets
         fail(f"{type(error).__name__}: {error}")
     results = [("this account", not problems)]
     for command in args.via:

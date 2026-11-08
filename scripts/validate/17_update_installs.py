@@ -197,6 +197,17 @@ with tempfile.TemporaryDirectory() as update_tmp:
             raise SystemExit("update-installs.py must report a Cursor copy with a skill the source dropped")
         update_module.problems.clear()
         tempfile.tempdir = str(update_tmp)  # keep the Cursor backup inside this test folder
+        update_replace = os.replace
+        os.replace = lambda a, b: (_ for _ in ()).throw(OSError("busy")) if pathlib.Path(a).name == ".srulik-toolkit.update" else update_replace(a, b)
+        try:
+            update_module.sync_cursor(update_source, False)
+        finally:
+            os.replace = update_replace
+        if len(update_module.problems) != 1 or not (update_cursor / "skills" / "retired").is_dir():
+            raise SystemExit(f"update-installs.py must restore the Cursor copy when replacing it fails: {update_module.problems}")
+        if sorted(path.name for path in update_cursor.parent.iterdir()) != ["srulik-toolkit"]:
+            raise SystemExit("update-installs.py must clean up after a failed Cursor replacement")
+        update_module.problems.clear()
         update_module.sync_cursor(update_source, False)
         if (update_cursor / "skills" / "retired").exists() or update_module.problems:
             raise SystemExit("update-installs.py must replace a Cursor copy with a skill the source dropped")
