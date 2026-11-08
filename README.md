@@ -255,6 +255,20 @@ with a fresh copy. Delete that folder to remove the plugin.
 Restart Claude Code or Cursor, or start a new Codex task, after updating. In
 Codex, open `/hooks` again and review trust if the hook changed.
 
+### Every installation at once
+
+From a clone, `python3 scripts/update-installs.py` runs the commands above for
+every installation the current account has, each from its configured source:
+Claude Code for the user and each live project, Codex, and a Cursor local copy.
+It also moves skill symlinks that point at an older toolkit cache. Then it checks
+that the installed files match the source and that a fresh Claude Code and Codex
+process loads every skill. It exits non-zero on any failure.
+
+- `--check` verifies without changing anything.
+- `--via COMMAND` repeats the run through a command that starts Python on another
+  account or machine, such as `--via "ssh my-pc python"` or
+  `--via "sudo -n -u other-user -H python3"`. Repeat it for each target.
+
 ## Windows
 
 Use the same plugin commands in the shell supported by your Claude Code or

@@ -1,0 +1,90 @@
+# scripts/update-installs.py against local fakes: no real claude or codex, no network.
+update_script = root / "scripts" / "update-installs.py"
+update_text = update_script.read_text(encoding="utf-8")
+for update_phrase in ['"plugin", "marketplace", "update", MARKETPLACE', '"plugin", "update", PLUGIN, "--scope"',
+                      '"plugin", "marketplace", "upgrade", MARKETPLACE', '"plugin", "add", PLUGIN',
+                      '"subtype": "initialize"', '"forceReload": True']:
+    if update_phrase not in update_text:
+        raise SystemExit(f"update-installs.py no longer runs the native step: {update_phrase}")
+if "update-installs.py" not in readme:
+    raise SystemExit("README must describe scripts/update-installs.py")
+
+import importlib.util
+update_spec = importlib.util.spec_from_file_location("update_installs", update_script)
+update_module = importlib.util.module_from_spec(update_spec)
+update_spec.loader.exec_module(update_module)
+
+with tempfile.TemporaryDirectory() as update_tmp:
+    update_tmp = pathlib.Path(update_tmp)
+
+    def update_skill(base, name, description, skill_name=None):
+        (base / name).mkdir(parents=True, exist_ok=True)
+        (base / name / "SKILL.md").write_text(f"---\nname: {skill_name or name}\ndescription: {description}\n---\nbody {description}\n", encoding="utf-8")
+
+    update_source = update_tmp / "source" / "plugins" / "srulik-toolkit"
+    update_skill(update_source / "skills", "alpha", "new alpha")
+    update_skill(update_source / "skills", "beta", "new beta")
+    (update_source / "VERSION").write_text("2.0.0\n", encoding="utf-8")
+    plugin_path, update_version, update_skills = update_module.expected(update_tmp / "source")
+    if update_version != "2.0.0" or update_skills != {"alpha": "new alpha", "beta": "new beta"}:
+        raise SystemExit("update-installs.py misreads the source skills")
+
+    update_copy = update_tmp / "copy"
+    shutil.copytree(update_source, update_copy)
+    (update_copy / "skills" / "beta" / "SKILL.md").write_bytes((update_source / "skills" / "beta" / "SKILL.md").read_bytes().replace(b"\n", b"\r\n"))
+    if update_module.differing_files(update_source, update_copy):
+        raise SystemExit("update-installs.py must ignore CRLF checkouts")
+    (update_copy / "skills" / "alpha" / "SKILL.md").write_text("changed", encoding="utf-8")
+    if update_module.differing_files(update_source, update_copy) != ["skills/alpha/SKILL.md"]:
+        raise SystemExit("update-installs.py missed a changed installed file")
+
+    claude_label = lambda description: "(srulik-toolkit) " + description
+    if update_module.missing_skills({"srulik-toolkit:alpha": "(srulik-toolkit) new alpha", "srulik-toolkit:beta": "(srulik-toolkit) old beta"},
+                                    update_skills, claude_label) != ["beta"]:
+        raise SystemExit("update-installs.py must flag a skill discovered with another version's description")
+    if update_module.missing_skills({"srulik-toolkit:alpha": "(srulik-toolkit) new alpha", "beta": "new beta (user)"}, update_skills, claude_label):
+        raise SystemExit("update-installs.py must accept a current skill that Claude lists under its alias")
+    if update_module.missing_skills({"srulik-toolkit:alpha": "(srulik-toolkit) new alpha", "beta": "old beta (user)"}, update_skills, claude_label) != ["beta"]:
+        raise SystemExit("update-installs.py must flag an alias that loads another version")
+
+    update_config = 'model = "x"\n[marketplaces.srulik-toolkit]\nsource_type = "git"\nsource = "https://example.invalid/r.git"\n\n[plugins."srulik-toolkit@srulik-toolkit"]\nenabled = true\n'
+    update_market = update_module.toml_section(update_config, "marketplaces.srulik-toolkit")
+    if update_module.toml_value(update_market, "source_type") != "git" or update_module.toml_value(update_market, "source") != "https://example.invalid/r.git":
+        raise SystemExit("update-installs.py misreads the Codex marketplace table")
+    if "enabled = true" not in update_module.toml_section(update_config, 'plugins."srulik-toolkit@srulik-toolkit"'):
+        raise SystemExit("update-installs.py misreads the Codex plugin table")
+
+    update_cache = update_tmp / "home" / ".claude" / "plugins" / "cache" / "srulik-toolkit" / "srulik-toolkit"
+    for update_cache_version, update_word in [("1.0.0", "old"), ("2.0.0", "new")]:
+        update_skill(update_cache / update_cache_version / "skills", "alpha", f"{update_word} alpha")
+        update_skill(update_cache / update_cache_version / "skills", "beta", f"{update_word} beta")
+    update_roots = {str(update_cache) + os.sep: "2.0.0"}
+    update_aliases = update_tmp / "home" / ".claude" / "skills"
+    update_aliases.mkdir(parents=True)
+    update_copies = update_tmp / "home" / ".agents" / "skills"
+    update_skill(update_copies, "alpha", "old alpha", "srulik-toolkit:alpha")
+    update_skill(update_copies, "beta", "my own beta")
+    update_folders = [update_aliases, update_copies]
+    can_link = True
+    try:
+        os.symlink(update_cache / "1.0.0" / "skills" / "alpha", update_aliases / "alpha", target_is_directory=True)
+    except OSError:
+        can_link = False  # Windows without symlink rights
+    update_module.problems.clear()
+    update_module.repoint_aliases(update_folders, update_roots, True)
+    update_module.refresh_copies(update_folders, plugin_path, update_roots, True)
+    if len(update_module.problems) != 1 + can_link:
+        raise SystemExit(f"update-installs.py --check must report each stale alias and copy: {update_module.problems}")
+    update_module.problems.clear()
+    update_module.repoint_aliases(update_folders, update_roots, False)
+    update_module.refresh_copies(update_folders, plugin_path, update_roots, False)
+    if update_module.problems:
+        raise SystemExit(f"update-installs.py failed on fake installs: {update_module.problems}")
+    if can_link and pathlib.Path(os.readlink(update_aliases / "alpha")) != update_cache / "2.0.0" / "skills" / "alpha":
+        raise SystemExit("update-installs.py did not repoint a stale alias")
+    update_refreshed = (update_copies / "alpha" / "SKILL.md").read_text(encoding="utf-8")
+    if "name: srulik-toolkit:alpha" not in update_refreshed or "new alpha" not in update_refreshed:
+        raise SystemExit("update-installs.py must refresh a copied skill and keep its name line")
+    if "my own beta" not in (update_copies / "beta" / "SKILL.md").read_text(encoding="utf-8"):
+        raise SystemExit("update-installs.py must leave a customized copy alone")
+print("update-installs passed")
