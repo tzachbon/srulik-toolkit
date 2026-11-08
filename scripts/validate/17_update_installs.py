@@ -147,16 +147,26 @@ with tempfile.TemporaryDirectory() as update_tmp:
 
     update_env = {key: os.environ.get(key) for key in ("HOME", "USERPROFILE")}
     os.environ["HOME"] = os.environ["USERPROFILE"] = str(update_tmp / "home")
-    (update_tmp / "home" / ".cursor" / "plugins" / "local" / "srulik-toolkit").mkdir(parents=True)
+    update_cursor = update_tmp / "home" / ".cursor" / "plugins" / "local" / "srulik-toolkit"
+    shutil.copytree(update_source, update_cursor)
+    update_skill(update_cursor / "skills", "retired", "dropped by the source")
     update_module.problems.clear()
     try:
         update_module.sync_cursor(None, True)
+        if len(update_module.problems) != 1:
+            raise SystemExit("update-installs.py must report a Cursor copy it cannot check")
+        update_module.problems.clear()
+        update_module.sync_cursor(update_source, True)
+        if len(update_module.problems) != 1:
+            raise SystemExit("update-installs.py must report a Cursor copy with a skill the source dropped")
+        update_module.problems.clear()
+        update_module.sync_cursor(update_source, False)
+        if (update_cursor / "skills" / "retired").exists() or update_module.problems:
+            raise SystemExit("update-installs.py must replace a Cursor copy with a skill the source dropped")
     finally:
         for update_name, update_value in update_env.items():
             if update_value is None:
                 os.environ.pop(update_name, None)
             else:
                 os.environ[update_name] = update_value
-    if len(update_module.problems) != 1:
-        raise SystemExit("update-installs.py must report a Cursor copy it cannot check")
 print("update-installs passed")

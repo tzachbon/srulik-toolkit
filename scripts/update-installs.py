@@ -81,7 +81,7 @@ def differing_files(source, installed):
 
 def missing_skills(found, skills, shown):
     """Skills a fresh process does not show with the current description, under the toolkit name or an alias."""
-    descriptions = {re.sub(r" \((user|project)\)$", "", text) for text in found.values()}  # Claude tags an alias's scope
+    descriptions = {re.sub(r" \((user|project)\)$", "", text) for text in found.values()}
     return [name for name, description in skills.items()
             if found.get(PREFIX + name) != shown(description) and description not in descriptions]
 
@@ -308,7 +308,7 @@ def refresh_copies(folders, plugin, cache_roots, check):
                 real = skill.resolve()
                 if real in seen or not (real / "SKILL.md").is_file() or not skill_differs(source, real):
                     continue
-            except OSError as error:  # e.g. a Windows junction this session may not follow
+            except OSError as error:  # e.g. a Windows junction
                 say(f"  note: skipped {skill}: {error}")
                 continue
             seen.add(real)
@@ -340,14 +340,14 @@ def refresh_copies(folders, plugin, cache_roots, check):
 
 
 def sync_cursor(plugin, check):
-    """Cursor has no plugin updater: replace its local copy, as CONTRIBUTING.md describes."""
+    """Cursor has no plugin updater: replace its local copy (CONTRIBUTING.md)."""
     copy = Path.home() / ".cursor" / "plugins" / "local" / "srulik-toolkit"
     if not copy.is_dir():
         return
     if plugin is None:
         fail(f"cursor copy {copy} not checked: no Claude Code or Codex install here to take the source from")
         return
-    if not differing_files(plugin, copy):
+    if not differing_files(plugin, copy) and not differing_files(copy, plugin):  # files the source dropped count
         say(f"cursor: {copy} matches the source; reload Cursor windows to load it")
         return
     if check:
