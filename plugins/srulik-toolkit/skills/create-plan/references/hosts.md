@@ -48,4 +48,4 @@ Observed with OMP 18.16.0 and Kimi K3.1 Pro on T3 Code, 2026-11-06.
   unprefixed `xd://<tool>` returns `No such tool`.
 - Autonomous stand-in: on T3 Code, `delegate_task` through
   `xd://mcp__t3_code_delegate_task`; in the OMP terminal, `task`, which runs on
-  the session's configured model and cannot pick the strongest one. Unverified.
+  the session's configured models. Unverified.

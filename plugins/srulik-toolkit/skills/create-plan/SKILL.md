@@ -131,7 +131,7 @@ Finalize only when no unresolved item could materially change scope, approach, s
 Check:
 
 - Expected outcome: the end state and why it matters are explicit in the conversation, supplied material, or an authoritative source, or a stand-in answer in autonomous mode.
-- Definition of Done: observable completion evidence and the plan-level acceptance gate are explicit, or a stand-in answer in autonomous mode, and distinct from task completion.
+- Definition of Done: observable completion evidence and the plan-level acceptance gate are explicit (or set by a stand-in answer in autonomous mode) and distinct from task completion.
 - Scope: in-scope and out-of-scope boundaries are clear.
 - Current state: the relevant starting conditions are understood.
 - Prior-art verification: `Context and evidence` satisfies the Verify prior art protocol; unresolved material leads or evidence gaps block dependent decisions.
