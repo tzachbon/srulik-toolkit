@@ -31,7 +31,8 @@ using it.
   Return the complete plan's temporary file link when writes are permitted;
   otherwise return the complete plan in the conversation.
 - Autonomous stand-in: the `Agent` tool with `model: "opus"`, `effort: "max"`
-  and `run_in_background: false`, unless the user names another model. Unverified.
+  and `run_in_background: false`, unless the user names another model.
+  Observed with Claude Code 2.1.319 on 2026-11-08.
 
 ## Oh My Pi, on T3 Code or its terminal
 
