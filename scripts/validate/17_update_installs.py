@@ -63,7 +63,7 @@ with tempfile.TemporaryDirectory() as update_tmp:
     if update_module.missing_skills({"srulik-toolkit:alpha": "(srulik-toolkit) new alpha", "beta": "old beta (user)"}, update_skills, claude_label) != ["beta"]:
         raise SystemExit("update-installs.py must flag an alias that loads another version")
 
-    update_config = 'model = "x"\n[marketplaces.srulik-toolkit]\nsource_type = "git"\nsource = "https://example.invalid/r.git"\n\n[plugins."srulik-toolkit@srulik-toolkit"]\nenabled = true\n'
+    update_config = 'model = "x"\n[marketplaces.srulik-toolkit] # local checkout\nsource_type = "git"\nsource = "https://example.invalid/r.git"\n\n[plugins."srulik-toolkit@srulik-toolkit"]\nenabled = true\n'
     update_market = update_module.toml_section(update_config, "marketplaces.srulik-toolkit")
     if update_module.toml_value(update_market, "source_type") != "git" or update_module.toml_value(update_market, "source") != "https://example.invalid/r.git":
         raise SystemExit("update-installs.py misreads the Codex marketplace table")

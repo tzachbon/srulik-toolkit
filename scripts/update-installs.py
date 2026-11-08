@@ -88,10 +88,10 @@ def missing_skills(found, skills, shown):
 
 
 def toml_section(text, header):
-    """The body of one [header] table."""
-    # ponytail: not a TOML parser (none before Python 3.11); reads key = "value" lines only.
-    match = re.search(r"^\[" + re.escape(header) + r"\][ \t]*$(.*?)(?=^\[|\Z)", text, re.M | re.S)
-    return match.group(1) if match else None
+    """One [header] table's body."""
+    # ponytail: not a TOML parser (none before 3.11); reads key = "value" lines only.
+    match = re.search(r"^\[" + re.escape(header) + r"\][ \t]*(#[^\n]*)?$(.*?)(?=^\[|\Z)", text, re.M | re.S)
+    return match.group(2) if match else None
 
 
 def toml_value(section, key):
