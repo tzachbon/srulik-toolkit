@@ -18,6 +18,9 @@ using it.
   original brief, prior findings, responses, and unresolved objections. Retain each
   `taskId` and use a distinct `clientRequestId` per round, stable across retries.
   The returned `childThreadId` is storage, not the target for another review round.
+- Autonomous stand-in: a native subagent on the strongest model and effort the
+  session allows, and wait for it; on T3 Code, `delegate_task` when the stand-in
+  needs another provider's model. Unverified.
 
 ## Claude Code
 
@@ -27,6 +30,9 @@ using it.
 - Delivery: honor the active runtime's planning and file-write restrictions.
   Return the complete plan's temporary file link when writes are permitted;
   otherwise return the complete plan in the conversation.
+- Autonomous stand-in: the `Agent` tool with `model: "opus"`, `effort: "max"`
+  and `run_in_background: false`, unless the user names another model.
+  Observed with Claude Code 2.1.319 on 2026-11-08.
 
 ## Oh My Pi, on T3 Code or its terminal
 
@@ -41,3 +47,6 @@ Observed with OMP 18.16.0 and Kimi K3.1 Pro on T3 Code, 2026-11-06.
 - T3 delegated reviews: on T3 Code, follow the Codex section's review-round
   rules, reaching `delegate_task` through `xd://mcp__t3_code_delegate_task`. An
   unprefixed `xd://<tool>` returns `No such tool`.
+- Autonomous stand-in: on T3 Code, `delegate_task` through
+  `xd://mcp__t3_code_delegate_task`; in the OMP terminal, `task`, which runs on
+  the session's configured models. Unverified.

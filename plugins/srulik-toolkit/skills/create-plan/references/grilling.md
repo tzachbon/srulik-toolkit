@@ -20,7 +20,7 @@ Extract decisions, constraints, and tacit knowledge that evidence cannot supply.
 
 ## Minimum grill invariant
 
-Unless the user explicitly forbids interaction, run at least one substantive adversarial question wave before finalizing a plan.
+Unless the user explicitly forbids interaction, run at least one substantive adversarial question wave before finalizing a plan. Autonomous mode does not forbid interaction; the stand-in answers the wave.
 
 If normal research leaves no obvious ambiguity, build a small adversarial wave around the highest-impact remaining assumptions, tradeoffs, failure modes, or definitions of success. The point is to test whether apparent completeness survives scrutiny.
 
@@ -31,7 +31,7 @@ Every plan requires two explicit and separate foundation decisions:
 - **Expected outcome:** the end state the plan must produce and why it matters.
 - **Definition of Done:** the observable evidence and plan-level acceptance gate that prove the expected outcome was achieved. It is not a list of completed implementation activities.
 
-Before constructing the first wave, inspect the conversation, supplied plans or specifications, and authoritative project artifacts for direct statements of both decisions. An explicit statement in any of those sources closes that item. An inference, recommended answer, or labeled assumption does not.
+Before constructing the first wave, inspect the conversation, supplied plans or specifications, and authoritative project artifacts for direct statements of both decisions. An explicit statement in any of those sources closes that item. An inference, recommended answer, or labeled assumption does not. In autonomous mode, a stand-in answer closes the decision it answers and counts as an explicit statement for every check in this protocol, as [autonomous.md](autonomous.md) describes.
 
 Put each missing item on the earliest eligible foundation frontier and ask separate grill questions. When both are missing, ask both as distinct questions in the same first eligible wave; do not combine them or derive one from the other. They occupy two slots within the wave's hard cap of 4, so defer lower-priority frontier questions when needed. Skip only the question whose answer is already explicit in an authoritative source.
 

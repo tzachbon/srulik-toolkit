@@ -29,6 +29,14 @@ approvals and inaccessible evidence remain incomplete. This workflow uses
 `pr-babysit`'s parent/subagent ownership and overrides its standalone stop
 conditions; it creates no separate top-level babysitter. Full end-to-end runtime behavior remains unverified.
 
+Ask `create-plan` or `execute-task-end-to-end` to be autonomous and the grill
+still runs in full, but a fresh stand-in subagent on the strongest available
+model answers each wave as you would. It does not see the planner's preferred
+option. It escalates low-confidence, hard-to-reverse decisions to you, and
+authority, unverifiable checks and stalled reviews stay yours. The plan lists
+every answer under `Answered on your behalf`. Only the Claude Code `create-plan`
+path has been run live.
+
 `create-plan` checks installed skills first. For every non-trivial plan, it runs
 one external search per material discipline even when an installed skill covers
 the work. Loading a discovered skill is optional, and installation remains a
