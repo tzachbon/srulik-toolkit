@@ -37,6 +37,19 @@ with tempfile.TemporaryDirectory() as update_tmp:
     (update_copy / "skills" / "beta" / "SKILL.md").write_bytes((update_source / "skills" / "beta" / "SKILL.md").read_bytes().replace(b"\n", b"\r\n"))
     if update_module.differing_files(update_source, update_copy):
         raise SystemExit("update-installs.py must ignore CRLF checkouts")
+    for update_extra in (".in_use/42", ".orphaned_at", "skills/alpha/__pycache__/x.pyc"):
+        (update_copy / update_extra).parent.mkdir(parents=True, exist_ok=True)
+        (update_copy / update_extra).write_text("runtime", encoding="utf-8")
+    update_module.problems.clear()
+    update_module.report_installed("test", update_copy, "2.0.0", update_source, "copy")
+    if update_module.problems:
+        raise SystemExit(f"update-installs.py must ignore files Claude or Python add to a cache: {update_module.problems}")
+    update_skill(update_copy / "skills", "retired", "dropped by the source")
+    update_module.report_installed("test", update_copy, "2.0.0", update_source, "copy")
+    if len(update_module.problems) != 1 or "retired" not in update_module.problems[0]:
+        raise SystemExit(f"update-installs.py must report an install with a skill the source dropped: {update_module.problems}")
+    update_module.problems.clear()
+    shutil.rmtree(update_copy / "skills" / "retired")
     (update_copy / "skills" / "alpha" / "SKILL.md").write_text("changed", encoding="utf-8")
     if update_module.differing_files(update_source, update_copy) != ["skills/alpha/SKILL.md"]:
         raise SystemExit("update-installs.py missed a changed installed file")

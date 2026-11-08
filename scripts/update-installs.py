@@ -5,7 +5,7 @@ Usage: update-installs.py [--check] [--via COMMAND ...]
 
 --check verifies without changing anything. --via runs this script through a command that
 starts Python elsewhere, e.g. "ssh my-pc python" or "sudo -n -u other-user -H python3".
-Exits 1 when any update or check fails. README "Every installation at once" has details.
+Exits 1 when any update or check fails. See README "Every installation at once".
 One file on purpose: --via sends it to the other Python on standard input.
 """
 import argparse
@@ -26,6 +26,7 @@ PLUGIN = "srulik-toolkit@srulik-toolkit"
 MARKETPLACE = "srulik-toolkit"
 PREFIX = "srulik-toolkit:"
 CACHE_LINK = re.compile(r"^(.*[\\/]plugins[\\/]cache[\\/]srulik-toolkit[\\/]srulik-toolkit[\\/])([^\\/]+)([\\/]skills[\\/].+)$")
+RUNTIME = re.compile(r"^\.in_use/|^\.orphaned_at$|(^|/)__pycache__/")  # added to a cache by Claude or Python
 problems = []
 
 
@@ -57,7 +58,7 @@ def native(args, cwd=None):
 
 
 def expected(marketplace_root):
-    """The plugin folder, version and {skill: description} that a marketplace checkout provides."""
+    """The plugin folder, version and {skill: description} of a marketplace checkout."""
     plugin = Path(marketplace_root) / "plugins" / "srulik-toolkit"
     skills = {}
     for skill in sorted(plugin.glob("skills/*/SKILL.md")):
@@ -67,7 +68,7 @@ def expected(marketplace_root):
 
 
 def differing_files(source, installed):
-    """Source files missing from installed or different there, ignoring line endings (Windows checkouts)."""
+    """Source files missing from installed or different there, ignoring line endings."""
     # ponytail: CRLF folding also applies to binaries; fine until one differs only in line endings.
     differing = []
     for file in sorted(source.rglob("*")):
@@ -101,7 +102,7 @@ def toml_value(section, key):
 def report_installed(name, installed, version, plugin, want):
     if installed.name != want:
         fail(f"{name} installed {installed.name}, source has {want}")
-    differing = differing_files(plugin, installed)
+    differing = differing_files(plugin, installed) + [f for f in differing_files(installed, plugin) if not RUNTIME.search(f)]
     if differing:
         fail(f"{name} install {installed} differs from source in {len(differing)} files, e.g. {differing[:3]}")
 
@@ -112,7 +113,7 @@ def describe_source(root):
 
 
 def claude_commands(exe, cwd):
-    """Commands a fresh Claude process discovers in cwd, via the initialize handshake (no model turn)."""
+    """Commands a fresh Claude process discovers in cwd (initialize handshake, no model turn)."""
     request = json.dumps({"type": "control_request", "request_id": "srulik", "request": {"subtype": "initialize", "hooks": {}}})
     result = run([exe, "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
                   "--no-session-persistence"], cwd, request + "\n", timeout=180)
@@ -160,9 +161,9 @@ def update_claude(check, cache_roots, later):
     stale = [entry for entry in entries if entry in live and entry["version"] != version]
     if stale:
         say(f"  note: {len(stale)} project records still list an older version after the native update; "
-            "the discovery check below only tells versions apart where a skill description changed")
+            "discovery below tells versions apart only where a skill description changed")
     if user and not user.get("enabled", True):
-        say("  note: disabled for this account, discovery not checked")
+        say("  note: disabled here, discovery not checked")
         return plugin
     home = [None] if user else []  # a project-only install correctly does not load in the home folder
     later.append(lambda: verify_claude(exe, home + [Path(entry["projectPath"]) for entry in live], skills))
@@ -221,7 +222,7 @@ def update_codex(check, cache_roots):
         say("codex: srulik-toolkit not installed, skipped")
         return None
     if re.search(r"^enabled\s*=\s*false", plugin_table, re.M):
-        say("codex: srulik-toolkit is disabled for this account, skipped")
+        say("codex: srulik-toolkit is disabled here, skipped")
         return None
     git = toml_value(market, "source_type") == "git"
     root = home / ".tmp" / "marketplaces" / MARKETPLACE if git else Path(toml_value(market, "source") or "")
@@ -239,14 +240,14 @@ def update_codex(check, cache_roots):
     if errors:
         fail(f"codex discovery errors: {errors[:3]}")
     ours = [skill for skill in listed.get("skills", []) if skill.get("pluginId") == PLUGIN and skill.get("enabled")]
-    caches = {Path(CACHE_LINK.match(skill["path"]).group(1) + CACHE_LINK.match(skill["path"]).group(2)) for skill in ours}
+    caches = {Path("".join(CACHE_LINK.match(skill["path"]).group(1, 2))) for skill in ours}
     if len(caches) != 1:
         fail(f"codex loads toolkit skills from {len(caches)} installs: {sorted(map(str, caches))}")
         return plugin
     installed = caches.pop()
     report_installed("codex", installed, version, plugin, version)
     cache_roots[CACHE_LINK.match(str(installed / "skills" / "x")).group(1)] = installed.name
-    missing = missing_skills({skill["name"]: skill.get("description", "") for skill in ours}, skills, lambda description: description)
+    missing = missing_skills({skill["name"]: skill.get("description", "") for skill in ours}, skills, str)
     if missing:
         fail(f"codex does not load the current {missing[:5]}")
     say(f"  checked files and discovery of {len(skills)} skills")
@@ -254,7 +255,7 @@ def update_codex(check, cache_roots):
 
 
 def repoint_aliases(folders, cache_roots, check):
-    """Repoint skill symlinks from an older toolkit cache to the installed version."""
+    """Repoint skill symlinks from an older toolkit cache."""
     # ponytail: symlinks only; Windows junctions are left alone. Add them if one turns up.
     for folder in folders:
         if not folder.is_dir():
@@ -282,7 +283,7 @@ def repoint_aliases(folders, cache_roots, check):
 
 
 def skill_differs(source, copy):
-    """Whether a copy differs from source in its files, ignoring its own SKILL.md name line."""
+    """Whether a copy's files differ from source, ignoring its own SKILL.md name line."""
     files = sorted(file.relative_to(source) for file in source.rglob("*") if file.is_file())
     if files != sorted(file.relative_to(copy) for file in copy.rglob("*") if file.is_file()):
         return True
@@ -329,7 +330,7 @@ def refresh_copies(folders, plugin, cache_roots, check):
                     if name:
                         top = fresh / "SKILL.md"
                         top.write_bytes(re.sub(rb"^name:.*$", name.group(0), top.read_bytes(), count=1, flags=re.M))
-                    shutil.copymode(real, fresh)
+                    shutil.copymode(real, fresh)  # e.g. a shared copy others must read
                     os.replace(real, old)
                     try:
                         os.replace(fresh, real)
@@ -351,7 +352,7 @@ def sync_cursor(plugin, check):
     if plugin is None:
         fail(f"cursor copy {copy} not checked: no Claude Code or Codex install here to take the source from")
         return
-    if not differing_files(plugin, copy) and not differing_files(copy, plugin):  # files the source dropped count
+    if not differing_files(plugin, copy) and not differing_files(copy, plugin):
         say(f"cursor: {copy} matches the source; reload Cursor windows to load it")
         return
     if check:
