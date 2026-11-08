@@ -20,7 +20,9 @@ Prefer the cheapest artifact that lets a reviewer verify success:
 3. Before/after metrics or structured output.
 4. Image or video for visual, rendered, interaction, or otherwise materially clearer results.
 
-For frontend or rendered changes, include visual evidence when it can be produced safely and demonstrates the changed state. For non-visual changes, use media only when it communicates proof better than text. Never create a decorative terminal screenshot or other quota-filling artifact.
+For UI changes, the PR description must include UI proof: at least one screenshot or recording of the actual changed interface, embedded or linked with a durable URL reviewers can open. Capture the state being published and explain the screen, state, viewport, and reproduction steps. Include before/after views when they help demonstrate the change. Local paths, placeholders, test logs, and promises to attach proof later do not satisfy this gate.
+
+Stop before PR creation, including drafts, if UI proof cannot be captured safely or made accessible. Report the missing environment, access, or attachment capability. For non-UI changes, media remains optional; use it only when it communicates proof better than text. Never create a decorative terminal screenshot or other quota-filling artifact.
 
 For changed behavior, reproduce the same scenario against the baseline and the
 proposed state when safely possible. Match the application instance, project,
@@ -43,6 +45,6 @@ For GitHub CLI:
 - reference the local path in body Markdown when placement matters; `gh` rewrites it to the hosted URL;
 - treat GitHub Enterprise Server and insufficient write permission as potentially unsupported even when local help lists the flag.
 
-If attachment support, permission, host support, or safe media is unavailable, continue with textual evidence and report why media was omitted. An attachment failure does not justify retrying PR creation blindly.
+If attachment support is unavailable for a UI change, use an existing safe hosted artifact or another repository-approved attachment route; if neither is available, stop before creation. For non-UI changes only, continue with textual evidence and report why media was omitted. An attachment failure does not justify retrying PR creation blindly.
 
-The evidence gate passes when required checks succeed and every PR claim maps to captured evidence from the state being published.
+The evidence gate passes when required checks succeed, every PR claim maps to captured evidence from the state being published, and UI changes have safe proof ready for inclusion in the description.

@@ -60,6 +60,9 @@ the nearest applicable heading.
 - **Evidence:** use the captured [validation evidence](evidence.md). For a behavior
   change, show the same scenario before and after, with exact outcomes and tested
   revisions. Label unavailable baseline evidence and remaining coverage honestly.
+  For UI changes, embed or link the required UI proof in the description, under
+  this section or the template's nearest applicable heading; a comment alone is
+  insufficient.
 - **Merge danger:** state whether this is a two-way door or a one-way door and why.
   A code revert may not undo deleted data, migrations, public actions, or external
   side effects. Describe recovery prerequisites when they matter; do not run a

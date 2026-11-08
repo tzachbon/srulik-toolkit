@@ -105,7 +105,7 @@ Cursor does not run this hook yet.
 | [`create-plan`](plugins/srulik-toolkit/skills/create-plan/SKILL.md) | Research, draft, review, and revise an execution-ready plan until no actionable comments remain. |
 | [`implement-plan`](plugins/srulik-toolkit/skills/implement-plan/SKILL.md) | Execute an approved plan, integrate and verify tasks, then repeat review and fixes until no actionable comments remain. |
 | [`skill-creator`](plugins/srulik-toolkit/skills/skill-creator/SKILL.md) | Create or edit a skill through mandatory planning and implementation, compare real outputs, and improve it with human review. |
-| [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request with review evidence, merge danger, and blast radius. |
+| [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request with review evidence, required UI proof in the description for UI changes, merge danger, and blast radius. |
 | [`execute-task-end-to-end`](plugins/srulik-toolkit/skills/execute-task-end-to-end/SKILL.md) | Explicitly request the full workflow: plan, issue, implementation, and a PR driven to `MERGE READY`, or verified `MERGED` when authorized, closing with a `recap`. |
 | [`ui-ux-review`](plugins/srulik-toolkit/skills/ui-ux-review/SKILL.md) | Validate every in-scope user story against actual design images, rendered screens, and the project's design system without changing it. |
 | [`make-it-verifiable`](plugins/srulik-toolkit/skills/make-it-verifiable/SKILL.md) | Before a change, pair each claim with a check that must fail before it counts, and flag claims no check can prove yet; after it, find and prove what is still unverified. |
