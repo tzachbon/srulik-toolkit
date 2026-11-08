@@ -106,3 +106,25 @@ if not all(token in standards for token in standards_contract):
     raise SystemExit(f"CODING_STANDARDS.md is missing its architecture guidance: {[t for t in standards_contract if t not in standards]}")
 if "[AGENTS.md](AGENTS.md)" not in (root / "CONTRIBUTING.md").read_text(encoding="utf-8"):
     raise SystemExit("CONTRIBUTING.md must point contributors to AGENTS.md")
+
+# The maintainer release workflow belongs to the repository, not the plugin.
+release_dir = root / ".agents/skills/srulik-toolkit-release"
+release_core = " ".join((release_dir / "SKILL.md").read_text(encoding="utf-8").split())
+release_mapping = " ".join((release_dir / "references/machines.md").read_text(encoding="utf-8").split())
+for token in [
+    "name: srulik-toolkit-release", "repository-only maintenance skill",
+    "it is not shipped in the plugin", "Merge only the validated current head",
+    "never move or delete published tags", "Preserve retired records and unrelated settings",
+    "Run fresh discovery for each selected host/account and live project override",
+    "means partial rollout", "Do not restart active coding sessions",
+    "[machine routes and native commands](references/machines.md)",
+]:
+    if token not in release_core:
+        raise SystemExit(f"repository release skill missing contract: {token}")
+if "target.environmentId" not in release_mapping or "forceReload: true" not in release_mapping:
+    raise SystemExit("repository release skill is missing its machine/discovery mapping")
+if (skill_root / "srulik-toolkit-release").exists():
+    raise SystemExit("repository release skill must not be packaged in the plugin")
+for name, text in [("AGENTS.md", agents_guide), ("README.md", readme)]:
+    if ".agents/skills/srulik-toolkit-release/SKILL.md" not in text:
+        raise SystemExit(f"{name} must link the repository-only release skill")

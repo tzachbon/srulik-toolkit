@@ -225,6 +225,10 @@ planning with Srulik Toolkit. It never installs Smart Ralph automatically.
 
 ## Update or remove
 
+Maintainers releasing this repository and updating their machines can use the
+repository-only [srulik-toolkit-release](.agents/skills/srulik-toolkit-release/SKILL.md)
+skill. It lives in `.agents/skills/` and is not included in the plugin package.
+
 ### Claude Code
 
 ```text
