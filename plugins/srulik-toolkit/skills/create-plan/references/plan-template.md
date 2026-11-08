@@ -26,6 +26,10 @@ Use this root structure unless a discipline reference calls for a small adaptati
 - Decision: <settled choice and rationale>
 - Assumption: <only if unresolved, with impact and validation method>
 
+## Answered on your behalf
+
+<Autonomous mode only: the stand-in log defined in `references/autonomous.md`.>
+
 ## Scope
 
 ### In scope

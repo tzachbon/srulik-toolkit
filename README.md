@@ -132,6 +132,7 @@ Example prompts:
 ```text
 $can-you-help Here is a Slack thread. Can you help?
 $create-plan Add offline support to this app
+$create-plan Add offline support to this app. Be autonomous and answer the grill for me.
 $implement-plan Execute the approved plan in docs/offline-plan.md
 $srulik-toolkit:skill-creator Create a skill for release notes and evaluate it on real examples
 $execute-task-end-to-end Add offline support and drive its PR to MERGE READY

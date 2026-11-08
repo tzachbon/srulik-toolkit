@@ -30,6 +30,8 @@ Ask only when you cannot continue alone:
 
 Ask through the host's question capability so the conversation shows it is waiting, and put the PR link, the blocker, and the options with your recommendation first in the question. Without that capability, or without an answer, take the safe path: leave the PR unmerged and start the handoff with the question. Decide everything else with sensible defaults and list those decisions in the handoff.
 
+**Autonomous mode.** When the user asks for autonomy, run `$srulik-toolkit:create-plan` in its autonomous mode. Later judgment questions, an ambiguous goal or a PR that another PR may make obsolete, go to a fresh stand-in briefed as create-plan's `references/autonomous.md` describes, not to the user. Questions about proof, authority or unavailable inputs still go to the user, and so does any `ask the user` answer. Copy the plan's `Answered on your behalf` log into the issue, add the later answers, and include it in the closing recap.
+
 ## Proof
 
 Proof is evidence you observed in this session. Build proof with `$srulik-toolkit:make-it-verifiable`. For a reported failure, the check is the user's failing workflow: reproduce it, apply the fix, and watch that same workflow pass. Run the checks the repository's CI runs. For UI and runtime behavior, run the app and look at it; green mocked tests do not prove the user experience.

@@ -22,9 +22,9 @@ Read `references/detailed-plans.md` before drafting or revising the final plan; 
 1. Loop:
    1.1. Research before asking questions.
    1.2. Grill before finalizing every plan. The grill is mandatory.
-2. Enforce the **Outcome and Definition of Done gate** in `references/grilling.md`. When either is not explicit in the conversation, a supplied plan or specification, or an authoritative project artifact, ask separate grill questions for the missing decisions. Only an explicit statement closes the gate; inference and assumptions leave it open.
-3. Walk the user through the discussions and research, and ask them to confirm or continue the loop.
-4. Run at least one actual adversarial grill wave, even when the request appears complete, unless the user explicitly forbids interaction.
+2. Enforce the **Outcome and Definition of Done gate** in `references/grilling.md`. When either is not explicit in the conversation, a supplied plan or specification, or an authoritative project artifact, ask separate grill questions for the missing decisions. Only an explicit statement closes the gate; inference and assumptions leave it open. In autonomous mode, a stand-in answer counts as an explicit statement for every Outcome and Definition of Done check.
+3. Walk the user through the discussions and research, and ask them (in autonomous mode, the stand-in) to confirm or continue the loop.
+4. Run at least one actual adversarial grill wave, even when the request appears complete, unless the user explicitly forbids interaction. Autonomous mode does not forbid interaction; the stand-in answers those waves.
 5. Ask only questions that require user judgment, intent, preference, ownership, approval, or unavailable context.
 6. Research whatever evidence can answer instead of asking the user.
 7. After each answered grill wave, reconcile decisions and run targeted re-research before constructing the next wave when the answers expose verifiable facts or new planning surfaces.
@@ -36,6 +36,10 @@ Read `references/detailed-plans.md` before drafting or revising the final plan; 
 13. Plan the work. Do not execute the planned work unless the user separately asks for execution. Running `make-it-verifiable` contract mode in a scratch copy outside the repository is planning evidence, not execution.
 14. Invoke `keep-it-simple` after research establishes the requirements and before selecting approaches or work items. Apply it again during plan QA. In plans, "minimal" means avoiding unnecessary complexity, not limiting ambition. Preserve completeness, safety, validation, and acceptance evidence.
 15. Every coding plan must include a `## Technical / Coding` section. Follow `references/engineering.md`: use `show-me` for the smallest useful design visual, describe system APIs when applicable, and provide an implementation-ready low-level design. A simple fix may omit irrelevant subsections, but not the root section.
+
+## Autonomous mode
+
+When the user asks you to be autonomous or to let an agent answer for them, read [references/autonomous.md](references/autonomous.md). The grill still runs in full; a fresh stand-in subagent answers each wave as the user would, and only the items that reference keeps for the user reach them. A bare request not to be asked keeps the internal-grill rule in step 7.
 
 ## Route by discipline
 
@@ -126,8 +130,8 @@ Finalize only when no unresolved item could materially change scope, approach, s
 
 Check:
 
-- Expected outcome: the end state and why it matters are explicit in the conversation, supplied material, or an authoritative source.
-- Definition of Done: observable completion evidence and the plan-level acceptance gate are explicit and distinct from task completion.
+- Expected outcome: the end state and why it matters are explicit in the conversation, supplied material, or an authoritative source, or a stand-in answer in autonomous mode.
+- Definition of Done: observable completion evidence and the plan-level acceptance gate are explicit, or a stand-in answer in autonomous mode, and distinct from task completion.
 - Scope: in-scope and out-of-scope boundaries are clear.
 - Current state: the relevant starting conditions are understood.
 - Prior-art verification: `Context and evidence` satisfies the Verify prior art protocol; unresolved material leads or evidence gaps block dependent decisions.

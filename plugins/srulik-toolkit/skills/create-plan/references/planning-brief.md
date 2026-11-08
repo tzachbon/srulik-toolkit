@@ -41,7 +41,7 @@ Use statuses: `open`, `decided`, `resolved`, `deferred`, `contradicted`.
 Use precise provenance:
 
 - Verified: directly supported by inspected evidence.
-- Decided: explicitly chosen by the user or an authoritative decision record.
+- Decided: explicitly chosen by the user, by the stand-in in autonomous mode, or by an authoritative decision record.
 - Inferred: reasoned from evidence but not directly stated.
 - Assumed: necessary for planning but unresolved.
 
