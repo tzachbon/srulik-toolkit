@@ -54,6 +54,9 @@ with tempfile.TemporaryDirectory() as update_tmp:
     update_market = update_module.toml_section(update_config, "marketplaces.srulik-toolkit")
     if update_module.toml_value(update_market, "source_type") != "git" or update_module.toml_value(update_market, "source") != "https://example.invalid/r.git":
         raise SystemExit("update-installs.py misreads the Codex marketplace table")
+    for update_line, update_path in [('source = "/home/O\'Connor/t"', "/home/O'Connor/t"), ('source = "C:\\\\a\\\\b"', "C:\\a\\b"), ("source = 'C:\\a\\b'", "C:\\a\\b")]:
+        if update_module.toml_value(update_line, "source") != update_path:
+            raise SystemExit(f"update-installs.py misreads the TOML string {update_line}")
     if "enabled = true" not in update_module.toml_section(update_config, 'plugins."srulik-toolkit@srulik-toolkit"'):
         raise SystemExit("update-installs.py misreads the Codex plugin table")
 

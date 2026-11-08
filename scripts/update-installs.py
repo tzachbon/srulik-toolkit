@@ -80,22 +80,22 @@ def differing_files(source, installed):
 
 
 def missing_skills(found, skills, shown):
-    """Skills a fresh process does not show with the current description, under the toolkit name or an alias."""
+    """Skills a fresh process does not show with the current description, by toolkit name or alias."""
     descriptions = {re.sub(r" \((user|project)\)$", "", text) for text in found.values()}
     return [name for name, description in skills.items()
             if found.get(PREFIX + name) != shown(description) and description not in descriptions]
 
 
 def toml_section(text, header):
-    """The body of one [header] table. Enough for the flat tables this script reads."""
-    # ponytail: not a TOML parser (Python 3.10 and older have none); reads plain key = "value" lines only.
+    """The body of one [header] table."""
+    # ponytail: not a TOML parser (none before Python 3.11); reads key = "value" lines only.
     match = re.search(r"^\[" + re.escape(header) + r"\][ \t]*$(.*?)(?=^\[|\Z)", text, re.M | re.S)
     return match.group(1) if match else None
 
 
 def toml_value(section, key):
-    match = re.search(r"^" + key + r"\s*=\s*[\"']([^\"']*)[\"']", section or "", re.M)
-    return match.group(1) if match else None
+    match = re.search(r"^" + key + r"""\s*=\s*("(?:[^"\\]|\\.)*"|'[^']*')""", section or "", re.M)
+    return match and (json.loads(match.group(1)) if match.group(1)[0] == '"' else match.group(1)[1:-1])
 
 
 def report_installed(name, installed, version, plugin, want):
@@ -254,7 +254,7 @@ def update_codex(check, cache_roots):
 
 
 def repoint_aliases(folders, cache_roots, check):
-    """Move symlinked skill aliases that point into an older toolkit cache to the installed version."""
+    """Repoint skill symlinks from an older toolkit cache to the installed version."""
     # ponytail: symlinks only; Windows junctions are left alone. Add them if one turns up.
     for folder in folders:
         if not folder.is_dir():
