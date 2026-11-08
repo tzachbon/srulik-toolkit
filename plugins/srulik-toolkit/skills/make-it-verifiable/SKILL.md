@@ -34,6 +34,8 @@ Done when no inspected caller or acceptance condition lacks a claim.
 
 Climb the ladder in [feedback loops](references/feedback-loops.md) and take the first rung that observes the claim directly. Assert the exact claim, not that the code ran. A check that reads a plan, spec, or other description of the change proves only that the text exists; a claim about behavior or an outcome needs a check of the effect itself, or a scripted human step. Hand a new test at a code seam to `tdd`, which owns the red-green loop there.
 
+For UI changes, plan screenshots of the actual interface, or a recording when interaction matters, so reviewers can see the claimed result. Record the screen, state, viewport, and capture steps; prefer before/after images when they make the change clearer. In audit mode, inspect the captured media and match it to the tested revision. Images supplement red-capable checks; they do not replace red/green proof. If capture is unavailable, report that evidence gap explicitly.
+
 Done when each claim names one red-capable, tight check, or one scripted human step.
 
 ## 3. Watch every check go red
@@ -54,6 +56,8 @@ Done when no row is `blocked`, or the caller knows which rows block it.
 ## 5. Return the contract
 
 Return the verification contract and the paths of its check artifacts:
+
+Link captured UI images in the contract's evidence columns, with a short caption explaining what they show. Prepare safe, reviewer-accessible copies for the PR description when handing off to `create-pr`.
 
 | # | Claim (type, source) | Check | Red evidence | Green evidence | Status |
 | - | --- | --- | --- | --- | --- |

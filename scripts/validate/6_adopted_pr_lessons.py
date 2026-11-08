@@ -83,6 +83,31 @@ for surface_name, surface in [("pr-babysit", pr_babysit), ("end-to-end", end_to_
 if re.search(r"AskUserQuestion|request_user_input|\bSol\b|gh api|GraphQL|CodeRabbit", end_to_end + pr_babysit):
     raise SystemExit("question tools and model names belong in host references, not skill cores")
 
+ui_proof_contracts = {
+    "SKILL.md": ["For UI changes, require UI proof in the PR description before creation"],
+    "references/evidence.md": [
+        "at least one screenshot or recording of the actual changed interface",
+        "embedded or linked with a durable URL reviewers can open",
+        "Local paths, placeholders, test logs, and promises to attach proof later do not satisfy this gate",
+        "Stop before PR creation, including drafts",
+        "For non-UI changes, media remains optional",
+        "For non-UI changes only, continue with textual evidence",
+    ],
+    "references/conventions.md": ["For UI changes, embed or link the required UI proof in the description"],
+    "references/publishing.md": [
+        "For UI changes, confirm the prepared body embeds or links the required proof before creation",
+        "A local path is valid only as an attachment input that the provider rewrites to a hosted URL",
+        "for UI changes, verify the description contains the required screenshot or recording and its URL is accessible to reviewers",
+    ],
+}
+for relative, phrases in ui_proof_contracts.items():
+    surface = " ".join((skill_root / "create-pr" / relative).read_text(encoding="utf-8").split())
+    for phrase in phrases:
+        if phrase not in surface:
+            raise SystemExit(f"create-pr UI proof contract missing in {relative}: {phrase}")
+if "If attachment support, permission, host support, or safe media is unavailable, continue with textual evidence" in (skill_root / "create-pr/references/evidence.md").read_text(encoding="utf-8"):
+    raise SystemExit("create-pr must not permit a text-only fallback for UI proof")
+
 # recap: read-only, plain-language session catch-up in general or focused mode.
 recap = " ".join((skill_root / "recap" / "SKILL.md").read_text(encoding="utf-8").split())
 for token in [

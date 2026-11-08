@@ -11,7 +11,7 @@ Follow this sequence:
 
 1. Read [preparation and safety](references/preparation.md). Stop if its readiness gate does not pass.
 2. Read [repository conventions](references/conventions.md). Record the chosen base, branch, commit, title, and body conventions.
-3. Read [validation and evidence](references/evidence.md). Complete validation and prepare truthful evidence before publishing.
+3. Read [validation and evidence](references/evidence.md). Complete validation and prepare truthful evidence before publishing. For UI changes, require UI proof in the PR description before creation.
 4. Read [provider publication](references/publishing.md). Commit and publish only after the earlier gates pass.
 
 If an existing PR is found during preparation, skip creation and use the read-back procedure in the publication reference. If any write has an uncertain result, inspect provider state before retrying.
