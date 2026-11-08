@@ -160,11 +160,13 @@ with tempfile.TemporaryDirectory() as update_tmp:
     if update_order != ["repair", "verify"]:
         raise SystemExit(f"update-installs.py must check Claude discovery after repairing aliases: {update_order}")
 
-    update_project = update_tmp / "project"
+    update_project, update_off = update_tmp / "project", update_tmp / "project-off"
     update_project.mkdir()
+    update_off.mkdir()
     update_answers = {"marketplace": json.dumps([{"name": "srulik-toolkit", "installLocation": str(update_tmp / "source")}]),
-                      "plugin": json.dumps([{"id": update_module.PLUGIN, "scope": "project", "projectPath": str(update_project),
-                                             "installPath": str(update_cache / "2.0.0"), "version": "2.0.0"}])}
+                      "plugin": json.dumps([{"id": update_module.PLUGIN, "scope": "project", "projectPath": str(place),
+                                             "installPath": str(update_cache / "2.0.0"), "version": "2.0.0", "enabled": place == update_project}
+                                            for place in (update_project, update_off)])}
     update_saved = (update_module.run, update_module.verify_claude, shutil.which)
     update_places, update_later = [], []
     update_module.run = lambda args, *rest, **options: types.SimpleNamespace(returncode=0 if "list" in args else 1, stderr="",
@@ -177,7 +179,7 @@ with tempfile.TemporaryDirectory() as update_tmp:
     finally:
         update_module.run, update_module.verify_claude, shutil.which = update_saved
     if update_places != [update_project]:
-        raise SystemExit(f"update-installs.py must check a project-only Claude install in its project, not home: {update_places}")
+        raise SystemExit(f"update-installs.py must check each enabled project-only Claude install there, not home: {update_places}")
 
     update_env = {key: os.environ.get(key) for key in ("HOME", "USERPROFILE")}
     os.environ["HOME"] = os.environ["USERPROFILE"] = str(update_tmp / "home")

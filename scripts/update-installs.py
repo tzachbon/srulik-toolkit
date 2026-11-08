@@ -160,13 +160,14 @@ def update_claude(check, cache_roots, later):
         cache_roots[CACHE_LINK.match(str(installed / "skills" / "x")).group(1)] = installed.name
     stale = [entry for entry in entries if entry in live and entry["version"] != version]
     if stale:
-        say(f"  note: {len(stale)} project records still list an older version after the native update; "
-            "discovery below tells versions apart only where a skill description changed")
-    if user and not user.get("enabled", True):
-        say("  note: disabled here, discovery not checked")
-        return plugin
-    home = [None] if user else []  # a project-only install correctly does not load in the home folder
-    later.append(lambda: verify_claude(exe, home + [Path(entry["projectPath"]) for entry in live], skills))
+        say(f"  note: {len(stale)} project records list an older version after the native update; "
+            "discovery tells versions apart only where a skill description changed")
+    targets = ([(None, user)] if user else []) + [(Path(entry["projectPath"]), entry) for entry in live]
+    places = [place for place, entry in targets if entry.get("enabled", True)]
+    if len(places) < len(targets):
+        say(f"  note: {len(targets) - len(places)} disabled, discovery not checked there")
+    if places:
+        later.append(lambda: verify_claude(exe, places, skills))
     return plugin
 
 
@@ -255,7 +256,7 @@ def update_codex(check, cache_roots):
 
 
 def repoint_aliases(folders, cache_roots, check):
-    """Repoint skill symlinks from an older toolkit cache."""
+    """Repoint skill symlinks into an older toolkit cache."""
     # ponytail: symlinks only; Windows junctions are left alone. Add them if one turns up.
     for folder in folders:
         if not folder.is_dir():
@@ -297,7 +298,7 @@ def skill_differs(source, copy):
 
 
 def refresh_copies(folders, plugin, cache_roots, check):
-    """Refresh copies of toolkit skills that match an installed version, keeping their name line."""
+    """Refresh copies of toolkit skills that match an installed version."""
     versions = [Path(root) / version for root in cache_roots for version in os.listdir(root)]
     seen = set()
     for folder in folders:
@@ -309,7 +310,7 @@ def refresh_copies(folders, plugin, cache_roots, check):
                 real = skill.resolve()
                 if real in seen or not (real / "SKILL.md").is_file() or not skill_differs(source, real):
                     continue
-            except OSError as error:  # e.g. a Windows junction
+            except OSError as error:  # a Windows junction
                 say(f"  note: skipped {skill}: {error}")
                 continue
             seen.add(real)
