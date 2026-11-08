@@ -13,7 +13,7 @@ The grill still runs in full: research, skill discovery, every wave from `grilli
    - the wave: each question with its options, tradeoffs and evidence. Leave out the planner's recommended option, so the stand-in judges rather than agrees.
    - every earlier question and the answer it got, so its answers stay consistent
    - where the user's intent lives: the original request and conversation, the user's own instructions and memory, and the repository's guidance. Point to these sources rather than summarizing them. It may read anything else it needs.
-   - its limits: it is read-only. It never edits files, runs no command that changes state, and contacts no one.
+   - its limits: it never edits files in the user's workspace or repository, runs no command that changes their state or external state, and contacts no one. It may run experiments in a scratch copy outside the workspace, as planning evidence.
 4. For each question it returns an answer (an option or its own wording), the reason with the source of the user's intent it relied on, and a confidence of high, medium or low. When its confidence is low and the decision is a one-way door, it returns `ask the user` instead.
 5. Treat each answer as the user's: normalize it, push back in a later wave when it conflicts with evidence or earlier answers, and re-research what it exposes. Record it in the decision ledger as `decided`, with `stand-in (<model>)` in the Evidence/driver column.
 6. Ask the user only the `ask the user` items, through the normal question path, and keep the loop moving while you wait.
