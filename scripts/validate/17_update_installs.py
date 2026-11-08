@@ -69,6 +69,8 @@ with tempfile.TemporaryDirectory() as update_tmp:
     update_aliases.mkdir(parents=True)
     update_copies = update_tmp / "home" / ".agents" / "skills"
     update_skill(update_copies, "alpha", "old alpha", "srulik-toolkit:alpha")
+    for update_base, update_word in [(update_source / "skills" / "alpha", "new"), (update_cache / "1.0.0" / "skills" / "alpha", "old"), (update_copies / "alpha", "old")]:
+        update_skill(update_base / "bundled", "inner", f"{update_word} inner")
     update_skill(update_copies, "beta", "my own beta")
     for update_base in (update_cache / "1.0.0" / "skills" / "alpha", update_copies / "alpha"):
         (update_base / "dropped.txt").write_text("dropped by 2.0.0\n", encoding="utf-8", newline="\n")
@@ -97,6 +99,16 @@ with tempfile.TemporaryDirectory() as update_tmp:
     if len(update_module.problems) != 1 or "not writable" not in update_module.problems[0]:
         raise SystemExit(f"update-installs.py must fail on an outdated copy it cannot write: {update_module.problems}")
     update_module.problems.clear()
+    update_copytree, shutil.copytree = shutil.copytree, lambda *args, **options: (_ for _ in ()).throw(OSError("disk full"))
+    try:
+        update_module.refresh_copies(update_folders, plugin_path, update_roots, False)
+    finally:
+        shutil.copytree = update_copytree
+    if len(update_module.problems) != 1 or "old alpha" not in (update_copies / "alpha" / "SKILL.md").read_text(encoding="utf-8"):
+        raise SystemExit(f"update-installs.py must fail a broken refresh and keep the old copy whole: {update_module.problems}")
+    if sorted(path.name for path in update_copies.iterdir()) != ["alpha", "beta", "gamma"]:
+        raise SystemExit("update-installs.py must clean up after a broken refresh")
+    update_module.problems.clear()
     update_module.repoint_aliases(update_folders, update_roots, False)
     update_module.refresh_copies(update_folders, plugin_path, update_roots, False)
     if update_module.problems:
@@ -106,6 +118,8 @@ with tempfile.TemporaryDirectory() as update_tmp:
     update_refreshed = (update_copies / "alpha" / "SKILL.md").read_text(encoding="utf-8")
     if "name: srulik-toolkit:alpha" not in update_refreshed or "new alpha" not in update_refreshed:
         raise SystemExit("update-installs.py must refresh a copied skill and keep its name line")
+    if "name: inner" not in (update_copies / "alpha" / "bundled" / "inner" / "SKILL.md").read_text(encoding="utf-8"):
+        raise SystemExit("update-installs.py must keep a bundled skill's own name")
     if "my own beta" not in (update_copies / "beta" / "SKILL.md").read_text(encoding="utf-8"):
         raise SystemExit("update-installs.py must leave a customized copy alone")
     if (update_copies / "alpha" / "dropped.txt").exists() or update_module.skill_differs(update_source / "skills" / "alpha", update_copies / "alpha"):
@@ -114,6 +128,10 @@ with tempfile.TemporaryDirectory() as update_tmp:
         raise SystemExit("update-installs.py must leave a copy with an added file alone")
     if os.name != "nt" and not os.stat(update_copies / "alpha" / "run.sh").st_mode & 0o100:
         raise SystemExit("update-installs.py must keep a refreshed script executable")
+    update_inner = update_copies / "alpha" / "bundled" / "inner" / "SKILL.md"
+    update_inner.write_text(update_inner.read_text(encoding="utf-8").replace("name: inner", "name: alpha"), encoding="utf-8", newline="\n")
+    if not update_module.skill_differs(update_source / "skills" / "alpha", update_copies / "alpha"):
+        raise SystemExit("update-installs.py must treat a renamed bundled skill as a difference")
 
     update_saved = {name: getattr(update_module, name) for name in ("update_claude", "update_codex", "repoint_aliases", "sync_cursor")}
     update_order = []
@@ -163,10 +181,12 @@ with tempfile.TemporaryDirectory() as update_tmp:
         if len(update_module.problems) != 1:
             raise SystemExit("update-installs.py must report a Cursor copy with a skill the source dropped")
         update_module.problems.clear()
+        tempfile.tempdir = str(update_tmp)  # keep the Cursor backup inside this test folder
         update_module.sync_cursor(update_source, False)
         if (update_cursor / "skills" / "retired").exists() or update_module.problems:
             raise SystemExit("update-installs.py must replace a Cursor copy with a skill the source dropped")
     finally:
+        tempfile.tempdir = None
         for update_name, update_value in update_env.items():
             if update_value is None:
                 os.environ.pop(update_name, None)

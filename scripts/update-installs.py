@@ -282,13 +282,13 @@ def repoint_aliases(folders, cache_roots, check):
 
 
 def skill_differs(source, copy):
-    """Whether a copy differs from source in its file set or contents, ignoring SKILL.md's name line."""
+    """Whether a copy differs from source in its files, ignoring its own SKILL.md name line."""
     files = sorted(file.relative_to(source) for file in source.rglob("*") if file.is_file())
     if files != sorted(file.relative_to(copy) for file in copy.rglob("*") if file.is_file()):
         return True
     for relative in files:
         a, b = ((root / relative).read_bytes().replace(b"\r\n", b"\n") for root in (source, copy))
-        if relative.name == "SKILL.md":
+        if relative == Path("SKILL.md"):  # not bundled skills
             a, b = (re.sub(rb"^name:.*$", b"", text, count=1, flags=re.M) for text in (a, b))
         if a != b:
             return True
@@ -316,27 +316,31 @@ def refresh_copies(folders, plugin, cache_roots, check):
                 say(f"  note: {skill} matches no installed toolkit version, left as is")
             elif check:
                 fail(f"copied skill {skill} is out of date")
-            elif not os.access(real, os.W_OK):
+            elif not os.access(real.parent, os.W_OK):
                 fail(f"copied skill {real} is out of date and not writable here; run as its owner to refresh it")
             else:
-                name = re.search(r"^name:.*$", (real / "SKILL.md").read_text(encoding="utf-8"), re.M)
-                try:
-                    for file in source.rglob("*"):
-                        if file.is_file():
-                            target = real / file.relative_to(source)
-                            target.parent.mkdir(parents=True, exist_ok=True)
-                            text = file.read_bytes()
-                            if file.name == "SKILL.md" and name:
-                                text = re.sub(rb"^name:.*$", name.group(0).encode("utf-8"), text, count=1, flags=re.M)
-                            temporary = target.with_name("." + target.name + ".srulik-update")
-                            temporary.write_bytes(text)
-                            shutil.copymode(file, temporary)  # keeps scripts such as build.sh executable
-                            os.replace(temporary, target)
-                    for extra in [file for file in real.rglob("*") if file.is_file() and not (source / file.relative_to(real)).is_file()]:
-                        extra.unlink()  # dropped by the release
+                name = re.search(rb"^name:.*$", (real / "SKILL.md").read_bytes(), re.M)
+                fresh, old = (real.with_name(f".{real.name}.srulik-{step}") for step in ("update", "before"))
+                try:  # build beside the old copy, then swap: a failure leaves it whole
+                    if old.exists():
+                        raise OSError(f"{old} is left from an interrupted run")
+                    shutil.rmtree(fresh, ignore_errors=True)
+                    shutil.copytree(source, fresh)
+                    if name:
+                        top = fresh / "SKILL.md"
+                        top.write_bytes(re.sub(rb"^name:.*$", name.group(0), top.read_bytes(), count=1, flags=re.M))
+                    shutil.copymode(real, fresh)
+                    os.replace(real, old)
+                    try:
+                        os.replace(fresh, real)
+                    except OSError:
+                        os.replace(old, real)
+                        raise
+                    shutil.rmtree(old, ignore_errors=True)
                     say(f"  copied skill {real} refreshed")
                 except OSError as error:
-                    fail(f"could not refresh copied skill {real}: {error}; rerun as its owner")
+                    shutil.rmtree(fresh, ignore_errors=True)
+                    fail(f"could not refresh copied skill {real}: {error}")
 
 
 def sync_cursor(plugin, check):
