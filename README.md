@@ -260,11 +260,12 @@ Codex, open `/hooks` again and review trust if the hook changed.
 From a clone, `python3 scripts/update-installs.py` runs the commands above for
 every installation the current account has, each from its configured source:
 Claude Code for the user and each live project, Codex, and a Cursor local copy.
-The Cursor copy is replaced from the Claude Code or Codex source, so a Cursor-only
-account reports it as unchecked. The script also moves skill symlinks that point
-at an older toolkit cache, and rewrites copied skills in the usual skill folders
-when they match an installed toolkit version, keeping each copy's `name:` line.
-Edited copies are left alone. Then it checks that the installed files match the
+The Cursor copy is replaced from the Codex source, or the Claude Code source when
+Codex has none, so a Cursor-only account reports it as unchecked. The script also
+moves skill symlinks that point at an older toolkit cache, and rewrites copied
+skills in the usual skill folders when they match an installed toolkit version,
+keeping each copy's `name:` line. Edited copies, including ones with added files,
+are left alone. Then it checks that the installed files match the
 source and that a fresh Claude Code and Codex process loads every skill. It exits
 non-zero on any failure.
 

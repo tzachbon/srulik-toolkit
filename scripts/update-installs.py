@@ -67,9 +67,8 @@ def expected(marketplace_root):
 
 
 def differing_files(source, installed):
-    """Source files missing from installed or different there. Line endings are ignored, since
-    Git on Windows may check the source out with CRLF."""
-    # ponytail: CRLF folding also applies to binary files; a false match needs a binary that differs only there.
+    """Source files missing from installed or different there, ignoring line endings (Windows checkouts)."""
+    # ponytail: CRLF folding also applies to binaries; fine until one differs only in line endings.
     differing = []
     for file in sorted(source.rglob("*")):
         if file.is_file():
@@ -81,8 +80,7 @@ def differing_files(source, installed):
 
 
 def missing_skills(found, skills, shown):
-    """Skills a fresh process does not show with the current description, under the toolkit name or a
-    short alias. Claude lists a symlinked alias instead of the toolkit name when both are one folder."""
+    """Skills a fresh process does not show with the current description, under the toolkit name or an alias."""
     descriptions = {re.sub(r" \((user|project)\)$", "", text) for text in found.values()}  # Claude tags an alias's scope
     return [name for name, description in skills.items()
             if found.get(PREFIX + name) != shown(description) and description not in descriptions]
@@ -114,7 +112,7 @@ def describe_source(root):
 
 
 def claude_commands(exe, cwd):
-    """Commands a fresh Claude process discovers in cwd. The initialize handshake runs no model turn."""
+    """Commands a fresh Claude process discovers in cwd, via the initialize handshake (no model turn)."""
     request = json.dumps({"type": "control_request", "request_id": "srulik", "request": {"subtype": "initialize", "hooks": {}}})
     result = run([exe, "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
                   "--no-session-persistence"], cwd, request + "\n", timeout=180)
@@ -195,7 +193,7 @@ def codex_skills(exe, cwd):
                         {"id": 2, "method": "skills/list", "params": {"cwds": [str(cwd)], "forceReload": True}}):
             process.stdin.write(json.dumps(message) + "\n")
         process.stdin.flush()
-        for line in process.stdout:  # app-server quits on end of input, so stdin stays open until the answer
+        for line in process.stdout:  # stdin stays open: app-server quits on end of input
             try:
                 item = json.loads(line)
             except ValueError:
@@ -257,7 +255,7 @@ def update_codex(check, cache_roots):
 
 def repoint_aliases(folders, cache_roots, check):
     """Move symlinked skill aliases that point into an older toolkit cache to the installed version."""
-    # ponytail: symlinks only. Copied aliases and Windows junctions are left alone; add them if one turns up.
+    # ponytail: symlinks only; Windows junctions are left alone. Add them if one turns up.
     for folder in folders:
         if not folder.is_dir():
             continue
@@ -284,15 +282,13 @@ def repoint_aliases(folders, cache_roots, check):
 
 
 def skill_differs(source, copy):
-    """Whether a copied skill differs from source, ignoring its SKILL.md name line, which a copy may rename."""
-    for file in source.rglob("*"):
-        if not file.is_file():
-            continue
-        other = copy / file.relative_to(source)
-        if not other.is_file():
-            return True
-        a, b = (path.read_bytes().replace(b"\r\n", b"\n") for path in (file, other))
-        if file.name == "SKILL.md":
+    """Whether a copy differs from source in its file set or contents, ignoring SKILL.md's name line."""
+    files = sorted(file.relative_to(source) for file in source.rglob("*") if file.is_file())
+    if files != sorted(file.relative_to(copy) for file in copy.rglob("*") if file.is_file()):
+        return True
+    for relative in files:
+        a, b = ((root / relative).read_bytes().replace(b"\r\n", b"\n") for root in (source, copy))
+        if relative.name == "SKILL.md":
             a, b = (re.sub(rb"^name:.*$", b"", text, count=1, flags=re.M) for text in (a, b))
         if a != b:
             return True
@@ -300,7 +296,7 @@ def skill_differs(source, copy):
 
 
 def refresh_copies(folders, plugin, cache_roots, check):
-    """Refresh plain copies of toolkit skills that match some installed version, keeping each copy's name line."""
+    """Refresh copies of toolkit skills that match an installed version, keeping their name line."""
     versions = [Path(root) / version for root in cache_roots for version in os.listdir(root)]
     seen = set()
     for folder in folders:
@@ -321,7 +317,7 @@ def refresh_copies(folders, plugin, cache_roots, check):
             elif check:
                 fail(f"copied skill {skill} is out of date")
             elif not os.access(real, os.W_OK):
-                say(f"  note: copied skill {real} is out of date and not writable here; run as its owner to refresh it")
+                fail(f"copied skill {real} is out of date and not writable here; run as its owner to refresh it")
             else:
                 name = re.search(r"^name:.*$", (real / "SKILL.md").read_text(encoding="utf-8"), re.M)
                 try:
@@ -336,6 +332,8 @@ def refresh_copies(folders, plugin, cache_roots, check):
                             temporary.write_bytes(text)
                             shutil.copymode(file, temporary)  # keeps scripts such as build.sh executable
                             os.replace(temporary, target)
+                    for extra in [file for file in real.rglob("*") if file.is_file() and not (source / file.relative_to(real)).is_file()]:
+                        extra.unlink()  # dropped by the release
                     say(f"  copied skill {real} refreshed")
                 except OSError as error:
                     fail(f"could not refresh copied skill {real}: {error}; rerun as its owner")
@@ -376,7 +374,7 @@ def update_here(check):
     if plugin:
         refresh_copies(folders, plugin, cache_roots, check)
     sync_cursor(plugin, check)
-    for verify in later:  # Claude may list an alias instead of the toolkit skill, so check after the repairs
+    for verify in later:  # after the repairs, since Claude may list an alias
         verify()
 
 

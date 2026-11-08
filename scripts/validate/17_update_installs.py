@@ -67,6 +67,13 @@ with tempfile.TemporaryDirectory() as update_tmp:
     update_copies = update_tmp / "home" / ".agents" / "skills"
     update_skill(update_copies, "alpha", "old alpha", "srulik-toolkit:alpha")
     update_skill(update_copies, "beta", "my own beta")
+    for update_base in (update_cache / "1.0.0" / "skills" / "alpha", update_copies / "alpha"):
+        (update_base / "dropped.txt").write_text("dropped by 2.0.0\n", encoding="utf-8", newline="\n")
+    update_skill(update_source / "skills", "gamma", "new gamma")
+    (update_source / "skills" / "gamma" / "run.sh").write_text("released\n", encoding="utf-8", newline="\n")
+    update_skill(update_cache / "1.0.0" / "skills", "gamma", "old gamma")
+    update_skill(update_copies, "gamma", "old gamma")
+    (update_copies / "gamma" / "run.sh").write_text("my own script\n", encoding="utf-8", newline="\n")
     update_folders = [update_aliases, update_copies]
     can_link = True
     try:
@@ -79,6 +86,14 @@ with tempfile.TemporaryDirectory() as update_tmp:
     if len(update_module.problems) != 1 + can_link:
         raise SystemExit(f"update-installs.py --check must report each stale alias and copy: {update_module.problems}")
     update_module.problems.clear()
+    update_access, os.access = os.access, lambda *args, **options: False
+    try:
+        update_module.refresh_copies(update_folders, plugin_path, update_roots, False)
+    finally:
+        os.access = update_access
+    if len(update_module.problems) != 1 or "not writable" not in update_module.problems[0]:
+        raise SystemExit(f"update-installs.py must fail on an outdated copy it cannot write: {update_module.problems}")
+    update_module.problems.clear()
     update_module.repoint_aliases(update_folders, update_roots, False)
     update_module.refresh_copies(update_folders, plugin_path, update_roots, False)
     if update_module.problems:
@@ -90,6 +105,10 @@ with tempfile.TemporaryDirectory() as update_tmp:
         raise SystemExit("update-installs.py must refresh a copied skill and keep its name line")
     if "my own beta" not in (update_copies / "beta" / "SKILL.md").read_text(encoding="utf-8"):
         raise SystemExit("update-installs.py must leave a customized copy alone")
+    if (update_copies / "alpha" / "dropped.txt").exists() or update_module.skill_differs(update_source / "skills" / "alpha", update_copies / "alpha"):
+        raise SystemExit("update-installs.py must leave a refreshed copy identical to the source")
+    if (update_copies / "gamma" / "run.sh").read_text(encoding="utf-8") != "my own script\n":
+        raise SystemExit("update-installs.py must leave a copy with an added file alone")
     if os.name != "nt" and not os.stat(update_copies / "alpha" / "run.sh").st_mode & 0o100:
         raise SystemExit("update-installs.py must keep a refreshed script executable")
 
