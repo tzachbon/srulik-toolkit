@@ -360,7 +360,7 @@ def sync_cursor(plugin, check):
         fail(f"cursor copy {copy} not checked: no Claude Code or Codex source here")
         return
     if not differing_files(plugin, copy) and not differing_files(copy, plugin):
-        say(f"cursor: {copy} matches the source; reload Cursor windows if needed")
+        say(f"cursor: {copy} matches the source")
         return
     if check:
         fail(f"cursor copy {copy} differs from the source")
@@ -370,12 +370,12 @@ def sync_cursor(plugin, check):
         shutil.rmtree(fresh, ignore_errors=True)
         shutil.copytree(plugin, fresh)
         old = swap(fresh, copy)
+        backup = Path(tempfile.mkdtemp(prefix="srulik-cursor-before-")) / "srulik-toolkit"
+        shutil.move(str(old), str(backup))
     except OSError as error:
         shutil.rmtree(fresh, ignore_errors=True)
-        return fail(f"could not replace cursor copy {copy}: {error}")
-    backup = Path(tempfile.mkdtemp(prefix="srulik-cursor-before-")) / "srulik-toolkit"
-    shutil.move(str(old), str(backup))
-    say(f"cursor: replaced {copy} (previous copy at {backup}); reload Cursor windows to load it")
+        return fail(f"cursor copy {copy}: {error}; a previous copy may remain beside it")
+    say(f"cursor: replaced {copy} (previous copy at {backup}); reload Cursor windows")
 
 
 def update_here(check):

@@ -208,6 +208,17 @@ with tempfile.TemporaryDirectory() as update_tmp:
         if sorted(path.name for path in update_cursor.parent.iterdir()) != ["srulik-toolkit"]:
             raise SystemExit("update-installs.py must clean up after a failed Cursor replacement")
         update_module.problems.clear()
+        update_mkdtemp, tempfile.mkdtemp = tempfile.mkdtemp, lambda **options: (_ for _ in ()).throw(OSError("temp full"))
+        try:
+            update_module.sync_cursor(update_source, False)
+        finally:
+            tempfile.mkdtemp = update_mkdtemp
+        if len(update_module.problems) != 1 or (update_cursor / "skills" / "retired").exists():
+            raise SystemExit(f"update-installs.py must report a Cursor backup it cannot move: {update_module.problems}")
+        shutil.rmtree(update_cursor.with_name(".srulik-toolkit.srulik-before"))
+        shutil.copytree(update_source, update_cursor, dirs_exist_ok=True)
+        update_skill(update_cursor / "skills", "retired", "dropped by the source")
+        update_module.problems.clear()
         update_module.sync_cursor(update_source, False)
         if (update_cursor / "skills" / "retired").exists() or update_module.problems:
             raise SystemExit("update-installs.py must replace a Cursor copy with a skill the source dropped")
