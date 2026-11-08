@@ -161,7 +161,8 @@ def update_claude(check, cache_roots, later):
         cache_roots[CACHE_LINK.match(str(installed / "skills" / "x")).group(1)] = installed.name
     stale = [entry for entry in entries if entry in live and entry["version"] != version]
     if stale:
-        say(f"  note: {len(stale)} project records still list an older version; Claude loads the current one, checked below")
+        say(f"  note: {len(stale)} project records still list an older version after the native update; "
+            "the discovery check below only tells versions apart where a skill description changed")
     if user and not user.get("enabled", True):
         say("  note: disabled for this account, discovery not checked")
         return plugin
