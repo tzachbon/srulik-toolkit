@@ -19,11 +19,13 @@ with tempfile.TemporaryDirectory() as update_tmp:
 
     def update_skill(base, name, description, skill_name=None):
         (base / name).mkdir(parents=True, exist_ok=True)
-        (base / name / "SKILL.md").write_text(f"---\nname: {skill_name or name}\ndescription: {description}\n---\nbody {description}\n", encoding="utf-8")
+        (base / name / "SKILL.md").write_text(f"---\nname: {skill_name or name}\ndescription: {description}\n---\nbody {description}\n", encoding="utf-8", newline="\n")
 
     update_source = update_tmp / "source" / "plugins" / "srulik-toolkit"
     update_skill(update_source / "skills", "alpha", "new alpha")
     update_skill(update_source / "skills", "beta", "new beta")
+    (update_source / "skills" / "alpha" / "run.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+    os.chmod(update_source / "skills" / "alpha" / "run.sh", 0o755)
     (update_source / "VERSION").write_text("2.0.0\n", encoding="utf-8")
     plugin_path, update_version, update_skills = update_module.expected(update_tmp / "source")
     if update_version != "2.0.0" or update_skills != {"alpha": "new alpha", "beta": "new beta"}:
@@ -80,11 +82,42 @@ with tempfile.TemporaryDirectory() as update_tmp:
     update_module.refresh_copies(update_folders, plugin_path, update_roots, False)
     if update_module.problems:
         raise SystemExit(f"update-installs.py failed on fake installs: {update_module.problems}")
-    if can_link and pathlib.Path(os.readlink(update_aliases / "alpha")) != update_cache / "2.0.0" / "skills" / "alpha":
+    if can_link and pathlib.Path(update_module.link_target(update_aliases / "alpha")) != update_cache / "2.0.0" / "skills" / "alpha":
         raise SystemExit("update-installs.py did not repoint a stale alias")
     update_refreshed = (update_copies / "alpha" / "SKILL.md").read_text(encoding="utf-8")
     if "name: srulik-toolkit:alpha" not in update_refreshed or "new alpha" not in update_refreshed:
         raise SystemExit("update-installs.py must refresh a copied skill and keep its name line")
     if "my own beta" not in (update_copies / "beta" / "SKILL.md").read_text(encoding="utf-8"):
         raise SystemExit("update-installs.py must leave a customized copy alone")
+    if os.name != "nt" and not os.stat(update_copies / "alpha" / "run.sh").st_mode & 0o100:
+        raise SystemExit("update-installs.py must keep a refreshed script executable")
+
+    update_saved = {name: getattr(update_module, name) for name in ("update_claude", "update_codex", "repoint_aliases", "sync_cursor")}
+    update_order = []
+    update_module.update_claude = lambda check, roots, later: later.append(lambda: update_order.append("verify"))
+    update_module.update_codex = lambda check, roots: None
+    update_module.repoint_aliases = lambda *args: update_order.append("repair")
+    update_module.sync_cursor = lambda *args: None
+    try:
+        update_module.update_here(False)
+    finally:
+        for update_name, update_value in update_saved.items():
+            setattr(update_module, update_name, update_value)
+    if update_order != ["repair", "verify"]:
+        raise SystemExit(f"update-installs.py must check Claude discovery after repairing aliases: {update_order}")
+
+    update_env = {key: os.environ.get(key) for key in ("HOME", "USERPROFILE")}
+    os.environ["HOME"] = os.environ["USERPROFILE"] = str(update_tmp / "home")
+    (update_tmp / "home" / ".cursor" / "plugins" / "local" / "srulik-toolkit").mkdir(parents=True)
+    update_module.problems.clear()
+    try:
+        update_module.sync_cursor(None, True)
+    finally:
+        for update_name, update_value in update_env.items():
+            if update_value is None:
+                os.environ.pop(update_name, None)
+            else:
+                os.environ[update_name] = update_value
+    if len(update_module.problems) != 1:
+        raise SystemExit("update-installs.py must report a Cursor copy it cannot check")
 print("update-installs passed")

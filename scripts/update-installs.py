@@ -3,16 +3,10 @@
 
 Usage: update-installs.py [--check] [--via COMMAND ...]
 
-Claude Code and Codex are updated with their own plugin commands, each from the source
-it is already configured with. Then the script checks that the installed files match that
-source and that a fresh Claude or Codex process discovers every skill, in the home folder
-and in each live Claude project override. Symlinked skill aliases that point into an older
-toolkit cache are moved to the current one. Copied skill folders that match an installed
-version are refreshed, keeping their name line, and a Cursor local copy is synced.
-
---check verifies without changing anything. --via runs the same script through a command
-that starts Python somewhere else, for example "ssh my-pc python" or
-"sudo -n -u other-user -H python3". Exits 1 when any update or check fails.
+--check verifies without changing anything. --via runs this script through a command that
+starts Python elsewhere, e.g. "ssh my-pc python" or "sudo -n -u other-user -H python3".
+Exits 1 when any update or check fails. README "Every installation at once" has details.
+One file on purpose: --via sends it to the other Python on standard input.
 """
 import argparse
 import getpass
@@ -33,6 +27,12 @@ MARKETPLACE = "srulik-toolkit"
 PREFIX = "srulik-toolkit:"
 CACHE_LINK = re.compile(r"^(.*[\\/]plugins[\\/]cache[\\/]srulik-toolkit[\\/]srulik-toolkit[\\/])([^\\/]+)([\\/]skills[\\/].+)$")
 problems = []
+
+
+def link_target(path):
+    """A symlink's target as written; Windows reports it with a \\\\?\\ prefix."""
+    target = os.readlink(path)
+    return target[4:] if target.startswith("\\\\?\\") else target
 
 
 def say(message):
@@ -128,7 +128,7 @@ def claude_commands(exe, cwd):
     return None
 
 
-def update_claude(check, cache_roots):
+def update_claude(check, cache_roots, later):
     exe = shutil.which("claude")
     listing = run([exe, "plugin", "list", "--json"]) if exe else None
     if not listing or listing.returncode:
@@ -165,7 +165,11 @@ def update_claude(check, cache_roots):
     if user and not user.get("enabled", True):
         say("  note: disabled for this account, discovery not checked")
         return plugin
-    places = [None] + [Path(entry["projectPath"]) for entry in live]
+    later.append(lambda: verify_claude(exe, [None] + [Path(entry["projectPath"]) for entry in live], skills))
+    return plugin
+
+
+def verify_claude(exe, places, skills):
     for place in places:
         found = claude_commands(exe, place)
         if found is None:
@@ -174,8 +178,7 @@ def update_claude(check, cache_roots):
         missing = missing_skills(found, skills, lambda description: "(srulik-toolkit) " + description)
         if missing:
             fail(f"claude in {place or 'home'} does not load the current {missing[:5]}")
-    say(f"  checked files and discovery of {len(skills)} skills in home and {len(places) - 1} projects")
-    return plugin
+    say(f"claude: checked discovery of {len(skills)} skills in home and {len(places) - 1} projects")
 
 
 def codex_skills(exe, cwd):
@@ -256,7 +259,7 @@ def repoint_aliases(folders, cache_roots, check):
         if not folder.is_dir():
             continue
         for link in sorted(folder.iterdir()):
-            match = CACHE_LINK.match(os.readlink(link)) if link.is_symlink() else None
+            match = CACHE_LINK.match(link_target(link)) if link.is_symlink() else None
             if not match or match.group(1) not in cache_roots or match.group(2) == cache_roots[match.group(1)]:
                 continue
             target = match.group(1) + cache_roots[match.group(1)] + match.group(3)
@@ -268,8 +271,12 @@ def repoint_aliases(folders, cache_roots, check):
                 temporary = link.with_name("." + link.name + ".srulik-update")
                 if temporary.is_symlink() or temporary.exists():
                     temporary.unlink()
-                os.symlink(target, temporary)
-                os.replace(temporary, link)
+                os.symlink(target, temporary, target_is_directory=True)
+                try:
+                    os.replace(temporary, link)
+                except PermissionError:  # Windows does not replace a directory symlink in place
+                    os.unlink(link)
+                    os.replace(temporary, link)
                 say(f"  alias {link} now points at {target}")
 
 
@@ -297,7 +304,7 @@ def refresh_copies(folders, plugin, cache_roots, check):
         for skill in sorted(folder.iterdir()) if folder.is_dir() else []:
             source = plugin / "skills" / skill.name
             try:
-                if not source.is_dir() or (skill.is_symlink() and CACHE_LINK.match(os.readlink(skill))):
+                if not source.is_dir() or (skill.is_symlink() and CACHE_LINK.match(link_target(skill))):
                     continue
                 real = skill.resolve()
                 if real in seen or not (real / "SKILL.md").is_file() or not skill_differs(source, real):
@@ -324,6 +331,7 @@ def refresh_copies(folders, plugin, cache_roots, check):
                                 text = re.sub(rb"^name:.*$", name.group(0).encode("utf-8"), text, count=1, flags=re.M)
                             temporary = target.with_name("." + target.name + ".srulik-update")
                             temporary.write_bytes(text)
+                            shutil.copymode(file, temporary)  # keeps scripts such as build.sh executable
                             os.replace(temporary, target)
                     say(f"  copied skill {real} refreshed")
                 except OSError as error:
@@ -333,7 +341,10 @@ def refresh_copies(folders, plugin, cache_roots, check):
 def sync_cursor(plugin, check):
     """Cursor has no plugin updater: replace its local copy, as CONTRIBUTING.md describes."""
     copy = Path.home() / ".cursor" / "plugins" / "local" / "srulik-toolkit"
-    if not copy.is_dir() or plugin is None:
+    if not copy.is_dir():
+        return
+    if plugin is None:
+        fail(f"cursor copy {copy} not checked: no Claude Code or Codex install here to take the source from")
         return
     if not differing_files(plugin, copy):
         say(f"cursor: {copy} matches the source; reload Cursor windows to load it")
@@ -351,8 +362,8 @@ def sync_cursor(plugin, check):
 
 
 def update_here(check):
-    cache_roots = {}
-    plugin = update_claude(check, cache_roots)
+    cache_roots, later = {}, []
+    plugin = update_claude(check, cache_roots, later)
     plugin = update_codex(check, cache_roots) or plugin
     home = Path.home()
     claude_home = Path(os.environ.get("CLAUDE_CONFIG_DIR") or home / ".claude")
@@ -362,6 +373,8 @@ def update_here(check):
     if plugin:
         refresh_copies(folders, plugin, cache_roots, check)
     sync_cursor(plugin, check)
+    for verify in later:  # Claude may list an alias instead of the toolkit skill, so check after the repairs
+        verify()
 
 
 def main():
