@@ -10,6 +10,7 @@ if "update-installs.py" not in readme:
     raise SystemExit("README must describe scripts/update-installs.py")
 
 import importlib.util
+import types
 update_spec = importlib.util.spec_from_file_location("update_installs", update_script)
 update_module = importlib.util.module_from_spec(update_spec)
 update_spec.loader.exec_module(update_module)
@@ -105,6 +106,25 @@ with tempfile.TemporaryDirectory() as update_tmp:
             setattr(update_module, update_name, update_value)
     if update_order != ["repair", "verify"]:
         raise SystemExit(f"update-installs.py must check Claude discovery after repairing aliases: {update_order}")
+
+    update_project = update_tmp / "project"
+    update_project.mkdir()
+    update_answers = {"marketplace": json.dumps([{"name": "srulik-toolkit", "installLocation": str(update_tmp / "source")}]),
+                      "plugin": json.dumps([{"id": update_module.PLUGIN, "scope": "project", "projectPath": str(update_project),
+                                             "installPath": str(update_cache / "2.0.0"), "version": "2.0.0"}])}
+    update_saved = (update_module.run, update_module.verify_claude, shutil.which)
+    update_places, update_later = [], []
+    update_module.run = lambda args, *rest, **options: types.SimpleNamespace(returncode=0 if "list" in args else 1, stderr="",
+                                                                            stdout=update_answers["marketplace" if "marketplace" in args else "plugin"])
+    update_module.verify_claude = lambda exe, places, skills: update_places.extend(places)
+    shutil.which = lambda name: name
+    try:
+        update_module.update_claude(True, {}, update_later)
+        [verify() for verify in update_later]
+    finally:
+        update_module.run, update_module.verify_claude, shutil.which = update_saved
+    if update_places != [update_project]:
+        raise SystemExit(f"update-installs.py must check a project-only Claude install in its project, not home: {update_places}")
 
     update_env = {key: os.environ.get(key) for key in ("HOME", "USERPROFILE")}
     os.environ["HOME"] = os.environ["USERPROFILE"] = str(update_tmp / "home")

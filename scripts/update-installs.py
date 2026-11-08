@@ -166,7 +166,8 @@ def update_claude(check, cache_roots, later):
     if user and not user.get("enabled", True):
         say("  note: disabled for this account, discovery not checked")
         return plugin
-    later.append(lambda: verify_claude(exe, [None] + [Path(entry["projectPath"]) for entry in live], skills))
+    home = [None] if user else []  # a project-only install correctly does not load in the home folder
+    later.append(lambda: verify_claude(exe, home + [Path(entry["projectPath"]) for entry in live], skills))
     return plugin
 
 
@@ -179,7 +180,8 @@ def verify_claude(exe, places, skills):
         missing = missing_skills(found, skills, lambda description: "(srulik-toolkit) " + description)
         if missing:
             fail(f"claude in {place or 'home'} does not load the current {missing[:5]}")
-    say(f"claude: checked discovery of {len(skills)} skills in home and {len(places) - 1} projects")
+    say(f"claude: checked discovery of {len(skills)} skills in {'home and ' if None in places else ''}"
+        f"{len([place for place in places if place])} projects")
 
 
 def codex_skills(exe, cwd):
