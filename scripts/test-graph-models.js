@@ -12,6 +12,7 @@ module.exports = {
     assert.equal(matchName('claude-opus-5-5', ['Claude Opus 5.5 (Max)', 'claude-opus-5-5-x']), 'Claude Opus 5.5 (Max)', 'parentheses dropped: exact beats a longer prefix');
     assert.equal(matchName('gpt-6.1-sol', ['gpt-6-1-sol-mini-high', 'gpt-6-1-sol-max']), 'gpt-6-1-sol-max', 'shortest boundary match wins');
     assert.equal(matchName('gpt-6', ['gpt-6-1-sol']), null, 'no match across a version token');
+    assert.equal(matchName('gemini-4-argon-high', ['gemini-4-argon', 'gemini-4']), 'gemini-4-argon', 'a trailing effort level is ignored');
   },
 
   // R5/R7/R9: resolver
@@ -160,5 +161,17 @@ module.exports = {
       [['gpt-6.1-sol', 'code-review', true], ['gpt-6.1-sol', 'ui-ux', false], ['kimi-k3-1-pro', 'code', false]]);
     assert.ok(all.every(o => Object.keys(o).sort().join() === 'kind,model,ok,src,t'));
     assert.equal(scoreThreads(threads, { now: NOW, since: NOW - 5 }).length, 2);
+  },
+
+  // Review round 1 (Moonshot): the quota filter covers every provider, not only Claude and OpenAI
+  C12() {
+    const { pick } = mod('pick.js'); const d = data();
+    const gem = [{ provider: 'antigravity', model: 'gemini-4-argon-high', effort: 'high' }, ...cands];
+    const withGem = { ...d, aa: [...d.aa, { slug: 'gemini-4-argon', creator: 'Google', intelligence_index: 58, input_usd_per_million_tokens: 0.1, output_usd_per_million_tokens: 0.1, benchmarks: { terminal_bench_4_0: 0.59 } }] };
+    assert.equal(pick({ kind: 'code', pick: { tier: 'cheap' } }, gem, withGem).model, 'gemini-4-argon-high');
+    const hot = { ...withGem, usage: { accounts: [{ provider: 'gemini', windows: [{ used_percent: 95 }] }] } };
+    assert.notEqual(pick({ kind: 'code', pick: { tier: 'cheap' } }, gem, hot).model, 'gemini-4-argon-high', 'a Google account at 95% filters Gemini');
+    const byInstance = { ...withGem, usage: { accounts: [{ provider: 'oh-my-pi', windows: [{ used_percent: 90 }] }] } };
+    assert.notEqual(pick({ kind: 'code', pick: { tier: 'cheap' } }, cands, byInstance).provider, 'oh-my-pi', 'a provider-instance account filters its models');
   }
 };

@@ -3,7 +3,7 @@
 
 const SPEC_KEYS = new Set(['name', 'inputs', 'limits', 'writes', 'nodes']);
 const NODE_KEYS = new Set(['run', 'agent', 'kind', 'in', 'needs', 'for_each', 'pick', 'model', 'out', 'gate', 'write']);
-const KINDS = new Set(['code', 'code-review', 'architecture', 'ui-ux', 'agentic', 'reasoning', 'long-context', 'writing']);
+const KINDS = new Set(['code', 'code-review', 'debugging', 'architecture', 'ui-ux', 'agentic', 'reasoning', 'long-context', 'writing']);
 const REF = /\$\{([a-z0-9_-]+)\.([A-Za-z_]\w*)\}/gi;
 const GATE = /^\s*([A-Za-z_]\w*)\s*==\s*(true|false|-?\d+(?:\.\d+)?|"[^"]*")\s*$/;
 const WHOLE_INPUT = /^\$\{inputs\.([A-Za-z_]\w*)\}$/;
@@ -30,6 +30,7 @@ function check(raw) {
   const limits = { max_agents: max, explore: raw.limits.explore !== false };
   const writes = raw.writes || {};
   for (const [name, w] of Object.entries(writes)) {
+    if (!/^[a-z0-9-]+$/.test(name)) fail(`writes.${name}: name must match [a-z0-9-]+`);
     if (!Number.isInteger(w?.max) || w.max < 1) fail(`writes.${name}: max must be a positive integer`);
     checkArgv(`writes.${name}`, w.run, true);
   }
@@ -42,6 +43,14 @@ function check(raw) {
   for (const [name, node] of Object.entries(nodes)) {
     for (const key of Object.keys(node)) if (!NODE_KEYS.has(key)) fail(`${name}: unknown key "${key}"`);
     if (('run' in node) === ('agent' in node)) fail(`${name}: needs exactly one of run or agent`);
+    if ('agent' in node && typeof node.agent !== 'string') fail(`${name}: agent must be a string`);
+    for (const k of ['kind', 'model', 'gate', 'write']) if (k in node && typeof node[k] !== 'string') fail(`${name}: ${k} must be a string`);
+    for (const k of ['needs', 'out']) if (k in node && !(Array.isArray(node[k]) && node[k].every(v => typeof v === 'string'))) fail(`${name}: ${k} must be a list of names`);
+    if (node.pick !== undefined) {
+      if (!node.pick || typeof node.pick !== 'object' || Array.isArray(node.pick)) fail(`${name}: pick must be a map`);
+      for (const k of Object.keys(node.pick)) if (!['tier', 'differ_from'].includes(k)) fail(`${name}: unknown pick key "${k}"`);
+      if (node.pick.tier !== undefined && !['cheap', 'standard', 'strong', 'strongest'].includes(node.pick.tier)) fail(`${name}: unknown tier "${node.pick.tier}"`);
+    }
     const isRun = 'run' in node;
     if (isRun) {
       checkArgv(name, node.run, false);
@@ -58,7 +67,8 @@ function check(raw) {
     if (node.write !== undefined && !Object.hasOwn(writes, node.write)) fail(`${name}: unknown write "${node.write}"`);
     const ins = [].concat(node.in ?? []);
     const found = [...ins.flatMap(refs), ...refs(node.agent), ...(typeof node.for_each === 'string' ? refs(node.for_each) : [])];
-    if (typeof node.for_each === 'string' && !refs(node.for_each).length) fail(`${name}: for_each must be a list or a \${node.field} reference`);
+    if (typeof node.for_each === 'string' && !/^\$\{(?!inputs\.)[a-z0-9_-]+\.[A-Za-z_]\w*\}$/i.test(node.for_each)) fail(`${name}: for_each must be a list or one \${node.field} reference`);
+    if ('for_each' in node && typeof node.for_each !== 'string' && !Array.isArray(node.for_each)) fail(`${name}: for_each must be a list or one \${node.field} reference`);
     for (const { node: dep } of found) {
       if (dep === 'inputs') continue;
       if (!Object.hasOwn(nodes, dep)) fail(`${name}: unknown node "${dep}"`);

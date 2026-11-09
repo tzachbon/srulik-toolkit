@@ -16,10 +16,12 @@ function norm(value) {
   return v.replace(/[._\s]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 }
 
+const EFFORT = /-(minimal|low|medium|high|xhigh|max|ultra)$/;
 function matchName(id, names) {
   const n = norm(id);
   const exact = names.find(c => norm(c) === n);
   if (exact !== undefined) return exact;
+  if (EFFORT.test(n)) return matchName(n.replace(EFFORT, ''), names); // `-high` names an effort, not a model
   const boundary = names.filter(c => { const m = norm(c); return m.startsWith(`${n}-`) && !/^[0-9]/.test(m.slice(n.length + 1)); });
   return boundary.sort((a, b) => norm(a).length - norm(b).length)[0] ?? null;
 }
@@ -31,8 +33,9 @@ function noteFor(notes, model) {
   return notes[keys.sort((a, b) => b.length - a.length)[0]] ?? {};
 }
 
-const PROVIDER_CREATORS = { claudeagent: 'Anthropic', claude: 'Anthropic', codex: 'OpenAI', openai: 'OpenAI' };
-const creatorKey = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const { providerKey } = require('../models.js');
+const PROVIDER_CREATORS = { claudeagent: 'Anthropic', codex: 'OpenAI', antigravity: 'Google' };
+const creatorKey = v => providerKey(String(v ?? ''));
 const blendedPrice = m => [m?.input_usd_per_million_tokens, m?.output_usd_per_million_tokens].every(Number.isFinite)
   ? (3 * m.input_usd_per_million_tokens + m.output_usd_per_million_tokens) / 4 : Infinity;
 
@@ -41,6 +44,7 @@ function signalFor(kind, data) {
   const arena = (cfg, f) => ({ name: `arena.${cfg}`, values: (data.arena?.[cfg] ?? []).map(r => [r.model_name, r[f]]) });
   const chain = {
     'ui-ux': [arena('webdev', 'rating')], 'code-review': [aa('terminal_bench_4_0')], architecture: [aa('intelligence_index')],
+    debugging: [aa('terminal_bench_4_0'), arena('agent', 'score')],
     agentic: [arena('agent', 'score'), aa('automation_bench')], code: [aa('terminal_bench_4_0'), arena('agent', 'score')],
     reasoning: [aa('humanitys_last_exam')], 'long-context': [aa('long_context_reasoning')], writing: [aa('gdpval_elo')],
   }[kind] ?? [aa('intelligence_index')];
@@ -84,9 +88,9 @@ function pick(node, candidates, data, ctx = {}) {
   drop('avoid', c => !(c.note.avoid ?? []).includes(kind));
   drop('creator', c => !(ctx.exclude_creators ?? []).map(creatorKey).includes(creatorKey(c.creator)));
   drop('excluded', c => !(ctx.exclude_models ?? []).includes(c.model));
-  const hot = new Set((data.usage?.accounts ?? []).filter(a => (a.windows ?? []).some(w => w.used_percent >= QUOTA_LIMIT))
-    .map(a => PROVIDER_CREATORS[creatorKey(a.provider)]).filter(Boolean).map(creatorKey));
-  drop('quota', c => !hot.has(creatorKey(c.creator)));
+  // An account at the limit filters every candidate whose creator or provider instance it names.
+  const hot = new Set((data.usage?.accounts ?? []).filter(a => (a.windows ?? []).some(w => w.used_percent >= QUOTA_LIMIT)).map(a => creatorKey(a.provider)));
+  drop('quota', c => !hot.has(creatorKey(c.creator)) && !hot.has(creatorKey(c.provider)));
 
   if (node.model) {
     const [model, effort] = node.model.split(' @ ');

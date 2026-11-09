@@ -200,8 +200,11 @@ exploration or for work one loop handles; a graph costs one child per node
 instance. A graph is a YAML file; read [graph spec](references/graph-spec.md)
 for its keys, the YAML subset, model resolution, and the run log.
 
-The parent is the orchestrator. Run the plugin's `scripts/graph.js` from the
-plugin root, two directories above this skill file:
+The parent is the orchestrator. Run the plugin's `scripts/graph.js` by its
+absolute path (the plugin root is two directories above this skill file) from
+the project the graph works on. The first `next` records that directory, and
+every command and write in the run executes there; pass `--cwd` to choose
+another.
 
 1. `check` the spec. Fix every reported error before any child starts.
 2. Start `view` on a new run directory and open the printed local page for the
@@ -211,7 +214,9 @@ plugin root, two directories above this skill file:
    delegate the task to a child with exactly that provider, model and effort,
    then record the child's JSON with `done`.
 4. Apply each write that `done` returns with `apply`. Writes declared by the
-   graph are applied automatically; never post one by other means.
+   graph are applied automatically; never post one by other means. If `apply`
+   reports an unknown outcome, check the target and record it with `--mark`
+   instead of running the write again.
 5. Finish with `status` and report what completed, what degraded, what gates
    dropped, which writes applied, and which branches were blocked.
 

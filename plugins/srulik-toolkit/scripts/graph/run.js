@@ -1,7 +1,7 @@
 // Graph scheduler. All state lives in <run-dir>/run.jsonl; every function folds the log, decides, and appends.
 // One reducer (`reduce`) applies each event, so a new event updates in-memory state exactly as a reload would.
 'use strict';
-const { appendFileSync, readFileSync, existsSync, mkdirSync, writeFileSync } = require('node:fs');
+const { appendFileSync, readFileSync, existsSync, mkdirSync, writeFileSync, openSync, closeSync, rmSync } = require('node:fs');
 const { join } = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { refs, GATE } = require('./spec.js');
@@ -13,7 +13,7 @@ const isAgent = node => 'agent' in node;
 function reduce(s, e) {
   const inst = () => (s.inst[key(e.node, e.index)] ??= { failures: 0, attempts: [] });
   switch (e.type) {
-    case 'spec': s.started = true; s.inputs = e.inputs; break;
+    case 'spec': s.started = true; s.inputs = e.inputs; s.cwd = e.cwd; break;
     case 'admit': s.admitted[e.node] = e.items; break;
     case 'cap-skipped': s.capSkipped.push(`${e.node} (${e.count} skipped)`); break;
     case 'dispatch': inst().attempts.push(e.attempt); break;
@@ -23,13 +23,14 @@ function reduce(s, e) {
     case 'failed': { const i = inst(); i.failures++; i.reason = e.reason; if (e.final) { i.final = true; i.settled = true; s.finalFailures.push(key(e.node, e.index)); } break; }
     case 'blocked': s.blocked[e.node] = e.cause; break;
     case 'write-reserved': s.writes[e.id] = { name: e.name, file: e.file, argv: e.argv, state: 'reserved' }; break;
+    case 'write-claimed': s.writes[e.id].state = 'applying'; break;
     case 'write-applied': s.writes[e.id].state = 'applied'; break;
     case 'write-failed': s.writes[e.id].state = 'failed'; break;
   }
   return s;
 }
 
-const empty = () => ({ started: false, inputs: {}, admitted: {}, inst: {}, picks: {}, blocked: {}, writes: {}, capSkipped: [], finalFailures: [] });
+const empty = () => ({ started: false, inputs: {}, cwd: null, admitted: {}, inst: {}, picks: {}, blocked: {}, writes: {}, capSkipped: [], finalFailures: [] });
 const logPath = dir => join(dir, 'run.jsonl');
 
 function fold(dir) {
@@ -61,11 +62,13 @@ function propagate(spec, dir, s) {
 
 const show = v => typeof v === 'string' ? v : JSON.stringify(v);
 function substitute(text, s, item) {
-  return text.replace(/\$\{([a-z0-9_-]+)\.([A-Za-z_]\w*)\}/gi, (m, p, f) => {
+  // One pass over the template with callback replacements, so inserted values stay literal.
+  return text.replace(/\$\{([a-z0-9_-]+)\.([A-Za-z_]\w*)\}|\{item\}/gi, (m, p, f) => {
+    if (!p) return show(item);
     if (p === 'inputs') return show(s.inputs[f]);
     const list = survivors(s, p);
     return list.length === 1 && s.admitted[p].length === 1 ? show(list[0].result[f]) : m; // fan-out values arrive via input
-  }).replaceAll('{item}', show(item));
+  });
 }
 
 function inputFor(spec, s, name) {
@@ -95,12 +98,12 @@ function admit(spec, dir, s, name) {
   emit(dir, s, { type: 'admit', node: name, count: items.length, items });
 }
 
-function next(spec, dir, overrides = {}) {
+function next(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
   const s = fold(dir);
   if (!s.started) {
     const inputs = { ...spec.inputs, ...overrides };
     for (const [k, v] of Object.entries(inputs)) if (String(v).startsWith('-')) throw new Error(`input "${k}" must not start with "-"`);
-    emit(dir, s, { type: 'spec', name: spec.name, nodes: spec.order, edges: spec.edges, inputs });
+    emit(dir, s, { type: 'spec', name: spec.name, nodes: spec.order, edges: spec.edges, inputs, cwd });
   }
   const tasks = [];
   for (const name of spec.order) {
@@ -128,7 +131,7 @@ function exec(spec, dir, name) {
   const i = s.inst[key(name)] ?? { failures: 0 };
   const attempt = i.failures + 1;
   const argv = argvFor(spec.nodes[name].run, s.started ? s : { inputs: spec.inputs });
-  const r = spawnSync(argv[0], argv.slice(1), { shell: false, encoding: 'utf8', timeout: 120000, maxBuffer: 64 * 1024 * 1024 });
+  const r = spawnSync(argv[0], argv.slice(1), { shell: false, cwd: s.cwd ?? undefined, encoding: 'utf8', timeout: 120000, maxBuffer: 64 * 1024 * 1024 });
   if (r.status === 0) return done(spec, dir, { node: name, output: { text: r.stdout } }) && { output: { text: r.stdout } };
   const reason = (r.error?.message || r.stderr || `exit ${r.status}`).trim().slice(-500);
   done(spec, dir, { node: name, failed: reason, final: attempt >= 2 });
@@ -154,45 +157,66 @@ function done(spec, dir, result) {
   const current = s.inst[key(name, index)] ?? {};
   if (current.settled) return { writes: [], duplicate: true };
   if (result.failed !== undefined) {
+    if ((current.failures ?? 0) >= (current.attempts ?? []).length) return { writes: [], duplicate: true }; // already reported
     emit(dir, s, { type: 'failed', node: name, index, attempt: (current.failures ?? 0) + 1, reason: result.failed, final: !!result.final, model: result.model });
     if (result.final) propagate(spec, dir, s);
     return { writes: [] };
   }
   for (const f of node.out ?? []) if (!(f in (result.output ?? {}))) throw new Error(`${key(name, index)}: output missing "${f}"`);
-  emit(dir, s, { type: 'result', node: name, index, output: result.output, model: result.model, provider: result.provider });
   let passed = true;
+  if (node.gate) { const [, field, literal] = GATE.exec(node.gate); passed = result.output[field] === JSON.parse(literal); }
+  // Prepare the write artifact before recording the result, so a failure leaves the instance retryable.
+  let write = null;
+  const used = node.write ? Object.values(s.writes).filter(w => w.name === node.write).length : 0;
+  if (node.write && passed && used < spec.writes[node.write].max) {
+    const id = `${node.write}#${used + 1}`;
+    const missing = [...s.finalFailures, ...s.capSkipped];
+    const header = missing.length ? `Partial run: ${missing.join(', ')} did not complete\n\n` : '';
+    const file = join(dir, 'writes', `${node.write}-${used + 1}.md`);
+    mkdirSync(join(dir, 'writes'), { recursive: true });
+    writeFileSync(file, header + show(result.output.body ?? result.output));
+    write = { id, name: node.write, file, argv: argvFor(spec.writes[node.write].run, s, file) };
+  }
+  emit(dir, s, { type: 'result', node: name, index, output: result.output, model: result.model, provider: result.provider });
   if (node.gate) {
-    const [, field, literal] = GATE.exec(node.gate);
-    passed = result.output[field] === JSON.parse(literal);
     if (!passed) emit(dir, s, { type: 'gate-dropped', node: name, index });
     const inst = instances(s, name)[index];
     if (inst?.src) recordOutcome(spec, dir, s, { node: name, index, src: inst.src }, passed);
   }
-  if (!node.write || !passed) return { writes: [] };
-  const used = Object.values(s.writes).filter(w => w.name === node.write).length;
-  if (used >= spec.writes[node.write].max) return { writes: [] };
-  const id = `${node.write}#${used + 1}`;
-  const missing = [...s.finalFailures, ...s.capSkipped];
-  const header = missing.length ? `Partial run: ${missing.join(', ')} did not complete\n\n` : '';
-  const file = join(dir, 'writes', `${node.write}-${used + 1}.md`);
-  mkdirSync(join(dir, 'writes'), { recursive: true });
-  writeFileSync(file, header + show(result.output.body ?? result.output));
-  const argv = argvFor(spec.writes[node.write].run, s, file);
-  emit(dir, s, { type: 'write-reserved', node: name, id, name: node.write, file, argv });
-  return { writes: [{ id, name: node.write, file, argv }] };
+  if (!write) return { writes: [] };
+  emit(dir, s, { type: 'write-reserved', node: name, ...write });
+  return { writes: [write] };
 }
 
-const defaultRunner = argv => spawnSync(argv[0], argv.slice(1), { shell: false, encoding: 'utf8', timeout: 120000 });
+const runnerIn = cwd => argv => spawnSync(argv[0], argv.slice(1), { shell: false, cwd: cwd ?? undefined, encoding: 'utf8', timeout: 120000 });
 
-function apply(spec, dir, id, runner = defaultRunner) {
+function apply(spec, dir, id, runner, { mark } = {}) {
   const s = fold(dir);
+  runner ??= runnerIn(s.cwd);
   const w = s.writes[id];
   if (!w) throw new Error(`${id}: not reserved`);
-  if (w.state === 'applied') throw new Error(`${id}: already applied`);
-  const r = runner(w.argv);
-  const ok = r.status === 0;
-  emit(dir, s, ok ? { type: 'write-applied', id } : { type: 'write-failed', id, reason: String(r.error?.message || r.stderr || `exit ${r.status}`).trim().slice(-500) });
-  return { ok, id };
+  if (mark) {
+    if (w.state === 'applied') throw new Error(`${id}: already applied`); // the owner checked an unknown outcome by hand and records it
+    if (!['applied', 'failed'].includes(mark)) throw new Error(`${id}: mark must be applied or failed`);
+    emit(dir, s, mark === 'applied' ? { type: 'write-applied', id, marked: true } : { type: 'write-failed', id, reason: 'marked failed by owner' });
+    return { ok: mark === 'applied', id };
+  }
+  // Claim exclusively: the lock file can be created by one process only, so two applies never both run.
+  const lock = `${w.file}.lock`;
+  try { closeSync(openSync(lock, 'wx')); } catch (error) {
+    if (error.code === 'EEXIST') throw new Error(`${id}: already being applied`);
+    throw error;
+  }
+  try {
+    const now = fold(dir).writes[id].state;
+    if (now === 'applied') throw new Error(`${id}: already applied`);
+    if (now === 'applying') throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
+    emit(dir, s, { type: 'write-claimed', id });
+    const r = runner(w.argv);
+    const ok = r.status === 0;
+    emit(dir, s, ok ? { type: 'write-applied', id } : { type: 'write-failed', id, reason: String(r.error?.message || r.stderr || `exit ${r.status}`).trim().slice(-500) });
+    return { ok, id };
+  } finally { rmSync(lock, { force: true }); }
 }
 
 function status(spec, dir) {

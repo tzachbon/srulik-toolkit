@@ -269,7 +269,7 @@ async function main() {
 }
 
 module.exports = { SOURCE, TTL, manifestFromHTML, decodeDataset, normalizeModels,
-  readCache, isFresh, updateCache, selectModels, listModels, readUsage, serveCache, frontier };
+  readCache, isFresh, updateCache, selectModels, listModels, readUsage, serveCache, frontier, providerKey };
 
 if (require.main === module) {
   main().catch(error => { console.error(`models.js: ${error.message}`); process.exitCode = 1; });

@@ -12,10 +12,10 @@ The parent agent runs the graph; the scripts never call a model.
 | `inputs` | spec | Default input values. Override with `next --input k=v`. Values starting with `-` are refused. |
 | `limits.max_agents` | spec | Required. The most agent instances the run may start. Retries and `run` nodes don't count. |
 | `limits.explore` | spec | Default `true`. Allows sampling on gated nodes that aren't verifiers. |
-| `writes.<name>` | spec | `{max, run}`. `run` is an argument list that may contain `"${inputs.<k>}"` and `"${file}"` as whole elements. |
+| `writes.<name>` | spec | Name matches `[a-z0-9-]+`. `{max, run}`. `run` is an argument list that may contain `"${inputs.<k>}"` and `"${file}"` as whole elements. |
 | `run` | node | An argument list run without a shell. Elements may be `"${inputs.<k>}"` as whole elements. Output: `{text: stdout}`. |
 | `agent` | node | The child's prompt. `{item}` becomes the current item: a string as-is, anything else as JSON. |
-| `kind` | agent node | `code`, `code-review`, `architecture`, `ui-ux`, `agentic` (default), `reasoning`, `long-context` or `writing`. |
+| `kind` | agent node | `code`, `code-review`, `debugging` (debugging, reverse-engineering, configuring apps, working around restrictions), `architecture`, `ui-ux`, `agentic` (default), `reasoning`, `long-context` or `writing`. |
 | `in` | node | `${node.field}` reference, or a list of them. Adds an edge. |
 | `needs` | node | Node names to wait for. Adds edges. |
 | `for_each` | agent node | A literal list, or a `${node.field}` reference to a list. |
@@ -55,13 +55,24 @@ Rejected with `line N: <reason>`:
 ## Scheduling
 
 - A node is ready when every node it depends on has settled. A node is settled when it has a result, a final failure, a gate drop, or a block.
-- Each attempt is offered once.
+- The first `next` records the working directory (`--cwd`, default the caller's). Every `run` node and every write executes there.
+- Each attempt is offered once. A repeated failure report for an attempt already reported is ignored.
 - Runtime fan-out is admitted once. Admission reserves the static instance count of every other agent node not yet admitted, so the total never passes `max_agents`. The overflow is logged as `cap-skipped`.
 - A final failure blocks a consumer only when the producer was a single instance, or when every one of its instances failed.
 - `status` returns `running` until every node settles. After that it returns:
   - `blocked`, when every sink failed or was blocked;
   - `partial`, after any final failure, cap skip or unapplied write;
   - `done` otherwise.
+
+## Writes
+
+`done` reserves a write and renders its body file. `apply` then:
+
+1. Refuses an unknown ID, an applied write, or a write another `apply` is running right now.
+2. Logs `write-claimed`, which moves the write to `applying`, and runs the command.
+3. Logs `write-applied` or `write-failed`. A failed write may be applied again.
+
+If a run stops between steps 2 and 3, the outcome is unknown and `apply` refuses to run the command again. Check the target, for example the PR's comments, then record what happened with `apply --mark applied` or `apply --mark failed`.
 
 ## Model resolution
 
@@ -71,7 +82,7 @@ Rejected with `line N: <reason>`:
    - the owner's `avoid` list for this kind;
    - creators excluded by `differ_from`;
    - models excluded by `--exclude`;
-   - any account with a usage window at or above 80%.
+   - any usage account at or above 80% in some window: it filters candidates whose creator (matched through the provider aliases in `models.js`) or provider instance it names.
 
    If nothing is left, the result is `BLOCKED`.
 2. **Signal by kind.** The first source with a score for the model decides:
@@ -80,6 +91,7 @@ Rejected with `line N: <reason>`:
    | --- | --- |
    | ui-ux | arena.webdev rating |
    | code-review | AA terminal_bench_4_0 |
+| debugging | AA terminal_bench_4_0, then arena.agent score |
    | architecture | AA intelligence_index |
    | agentic | arena.agent score, then AA automation_bench |
    | code | AA terminal_bench_4_0, then arena.agent score |
@@ -106,7 +118,7 @@ Rejected with `line N: <reason>`:
 
 | Event | Fields |
 | --- | --- |
-| `spec` | name, nodes, edges, inputs |
+| `spec` | name, nodes, edges, inputs, cwd |
 | `admit` | node, count, items |
 | `dispatch` | node, index, attempt, taskType, item, src |
 | `pick` | node, index, provider, model, effort, creator, explored, reason |
@@ -117,7 +129,8 @@ Rejected with `line N: <reason>`:
 | `outcome` | node, index, model, kind, ok |
 | `blocked` | node, cause |
 | `write-reserved` | node, id, name, file, argv |
-| `write-applied` | id |
+| `write-claimed` | id (the write is now `applying`) |
+| `write-applied` | id, marked |
 | `write-failed` | id, reason |
 | `end` | state |
 

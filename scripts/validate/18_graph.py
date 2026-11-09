@@ -31,4 +31,4 @@ if (root / "scripts" / "validate" / "18_graph.py").stat().st_size >= 20 * 1024:
 
 subprocess.run([node, str(plugin / "scripts" / "graph.js"), "check",
                 str(skill_root / "agent-swarm" / "graphs" / "pr-review.yaml")], check=True, timeout=30, stdout=subprocess.DEVNULL)
-subprocess.run([node, str(root / "scripts" / "test-graph.js")], check=True, timeout=120, stdout=subprocess.DEVNULL)  # also loads test-graph-run.js and test-graph-models.js
+subprocess.run([node, str(root / "scripts" / "test-graph.js")], check=True, timeout=120, stdout=subprocess.DEVNULL)  # also loads test-graph-run.js, test-graph-models.js and test-graph-review.js

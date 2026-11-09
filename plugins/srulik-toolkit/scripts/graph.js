@@ -13,11 +13,11 @@ const { scoreThreads } = require('./graph/score.js');
 
 const USAGE = `Usage: node graph.js <command> ...
   check   <spec.yaml>
-  next    <spec.yaml> <run-dir> [--input k=v ...]
+  next    <spec.yaml> <run-dir> [--input k=v ...] [--cwd <dir>]
   exec    <spec.yaml> <run-dir> <node>
   pick    <spec.yaml> <run-dir> <node> <index> --candidates <file> [--usage <file>] [--exclude <model> ...]
   done    <spec.yaml> <run-dir> <result.json>
-  apply   <spec.yaml> <run-dir> <write-id>
+  apply   <spec.yaml> <run-dir> <write-id> [--mark applied|failed]
   status  <spec.yaml> <run-dir>
   score   <threads.json> [--since <ms>]
   refresh
@@ -54,13 +54,16 @@ async function main([command, ...args]) {
   if (!command || command === '--help') { console.log(USAGE); return; }
   if (command === 'check') { if (args.length !== 1) usage(); load(args[0]); console.log('ok'); return; }
   if (command === 'next') {
-    const { found, rest } = flags(args, ['input']); if (rest.length !== 2) usage();
+    const { found, rest } = flags(args, ['input', 'cwd']); if (rest.length !== 2 || found.cwd.length > 1) usage();
     const inputs = Object.fromEntries(found.input.map(kv => { const at = kv.indexOf('='); if (at < 1) usage(); return [kv.slice(0, at), kv.slice(at + 1)]; }));
-    out(run.next(load(rest[0]), resolve(rest[1]), inputs)); return;
+    out(run.next(load(rest[0]), resolve(rest[1]), inputs, { cwd: resolve(found.cwd[0] ?? process.cwd()) })); return;
   }
   if (command === 'exec') { if (args.length !== 3) usage(); out(run.exec(load(args[0]), resolve(args[1]), args[2])); return; }
   if (command === 'done') { if (args.length !== 3) usage(); out(run.done(load(args[0]), resolve(args[1]), JSON.parse(readFileSync(args[2], 'utf8')))); return; }
-  if (command === 'apply') { if (args.length !== 3) usage(); const r = run.apply(load(args[0]), resolve(args[1]), args[2]); out(r); if (!r.ok) process.exitCode = 1; return; }
+  if (command === 'apply') {
+    const { found, rest } = flags(args, ['mark']); if (rest.length !== 3 || found.mark.length > 1) usage();
+    const r = run.apply(load(rest[0]), resolve(rest[1]), rest[2], undefined, { mark: found.mark[0] }); out(r); if (!r.ok) process.exitCode = 1; return;
+  }
   if (command === 'status') {
     if (args.length !== 2) usage();
     const spec = load(args[0]); const dir = resolve(args[1]); const st = run.status(spec, dir);
