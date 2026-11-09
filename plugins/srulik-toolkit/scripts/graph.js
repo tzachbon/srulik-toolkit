@@ -76,7 +76,7 @@ async function main([command, ...args]) {
     if (rest.length !== 4 || found.candidates.length !== 1) usage();
     const [specFile, dirArg, name, indexArg] = rest; const spec = load(specFile); const dir = resolve(dirArg);
     const node = spec.nodes[name]; if (!node || !('agent' in node)) throw new Error(`${name}: not an agent node`);
-    const data = await loadAll({ usageFile: found.usage[0] });
+    const data = await loadAll({ usageFile: found.usage[0], cwd: run.fold(dir).cwd ?? process.cwd() });
     Object.assign(data, { explore: spec.limits.explore, random: Math.random, now: Date.now() });
     const choice = pick(node, JSON.parse(readFileSync(found.candidates[0], 'utf8')), data, pickContext(spec, dir, name, found.exclude));
     if (Object.keys(data.errors).length) choice.reason.data_errors = data.errors;

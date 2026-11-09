@@ -27,10 +27,13 @@ function check(raw) {
   if (typeof raw.name !== 'string' || !/^[a-z0-9-]+$/.test(raw.name)) fail('spec: name must match [a-z0-9-]+');
   const max = raw.limits?.max_agents;
   if (!Number.isInteger(max) || max < 1) fail('spec: limits.max_agents must be a positive integer');
+  for (const k of Object.keys(raw.limits)) if (!['max_agents', 'explore'].includes(k)) fail(`limits: unknown key "${k}"`);
+  if (raw.limits.explore !== undefined && typeof raw.limits.explore !== 'boolean') fail('limits: explore must be true or false');
   const limits = { max_agents: max, explore: raw.limits.explore !== false };
   const writes = raw.writes || {};
   for (const [name, w] of Object.entries(writes)) {
     if (!/^[a-z0-9-]+$/.test(name)) fail(`writes.${name}: name must match [a-z0-9-]+`);
+    for (const k of Object.keys(w ?? {})) if (!['max', 'run'].includes(k)) fail(`writes.${name}: unknown key "${k}"`);
     if (!Number.isInteger(w?.max) || w.max < 1) fail(`writes.${name}: max must be a positive integer`);
     checkArgv(`writes.${name}`, w.run, true);
   }
@@ -45,6 +48,7 @@ function check(raw) {
     if (('run' in node) === ('agent' in node)) fail(`${name}: needs exactly one of run or agent`);
     if ('agent' in node && typeof node.agent !== 'string') fail(`${name}: agent must be a string`);
     for (const k of ['kind', 'model', 'gate', 'write']) if (k in node && typeof node[k] !== 'string') fail(`${name}: ${k} must be a string`);
+    if ('in' in node && ![].concat(node.in).every(v => typeof v === 'string' && /^\$\{[a-z0-9_-]+\.[A-Za-z_]\w*\}$/i.test(v))) fail(`${name}: in must be a \${node.field} reference or a list of them`);
     for (const k of ['needs', 'out']) if (k in node && !(Array.isArray(node[k]) && node[k].every(v => typeof v === 'string'))) fail(`${name}: ${k} must be a list of names`);
     if (node.pick !== undefined) {
       if (!node.pick || typeof node.pick !== 'object' || Array.isArray(node.pick)) fail(`${name}: pick must be a map`);

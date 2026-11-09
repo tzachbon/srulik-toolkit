@@ -11,7 +11,7 @@ The parent agent runs the graph; the scripts never call a model.
 | `name` | spec | `[a-z0-9-]+`, required. |
 | `inputs` | spec | Default input values. Override with `next --input k=v`. Values starting with `-` are refused. |
 | `limits.max_agents` | spec | Required. The most agent instances the run may start. Retries and `run` nodes don't count. |
-| `limits.explore` | spec | Default `true`. Allows sampling on gated nodes that aren't verifiers. |
+| `limits.explore` | spec | `true` or `false`, default `true`. Allows sampling on gated nodes that aren't verifiers. |
 | `writes.<name>` | spec | Name matches `[a-z0-9-]+`. `{max, run}`. `run` is an argument list that may contain `"${inputs.<k>}"` and `"${file}"` as whole elements. |
 | `run` | node | An argument list run without a shell. Elements may be `"${inputs.<k>}"` as whole elements. Output: `{text: stdout}`. |
 | `agent` | node | The child's prompt. `{item}` becomes the current item: a string as-is, anything else as JSON. |
@@ -56,7 +56,7 @@ Rejected with `line N: <reason>`:
 
 - A node is ready when every node it depends on has settled. A node is settled when it has a result, a final failure, a gate drop, or a block.
 - The first `next` records the working directory (`--cwd`, default the caller's). Every `run` node and every write executes there.
-- Each attempt is offered once. A repeated failure report for an attempt already reported is ignored.
+- Each attempt is offered once. A failure report for an attempt already reported is ignored. Pass the task's `attempt` in the result so a late report for an older attempt is recognized.
 - Runtime fan-out is admitted once. Admission reserves the static instance count of every other agent node not yet admitted, so the total never passes `max_agents`. The overflow is logged as `cap-skipped`.
 - A final failure blocks a consumer only when the producer was a single instance, or when every one of its instances failed.
 - `status` returns `running` until every node settles. After that it returns:
@@ -66,13 +66,13 @@ Rejected with `line N: <reason>`:
 
 ## Writes
 
-`done` reserves a write and renders its body file. `apply` then:
+`done` renders the write's body file, then records the result and its write reservation as one event. `apply` then:
 
 1. Refuses an unknown ID, an applied write, or a write another `apply` is running right now.
 2. Logs `write-claimed`, which moves the write to `applying`, and runs the command.
 3. Logs `write-applied` or `write-failed`. A failed write may be applied again.
 
-If a run stops between steps 2 and 3, the outcome is unknown and `apply` refuses to run the command again. Check the target, for example the PR's comments, then record what happened with `apply --mark applied` or `apply --mark failed`.
+If a run stops between steps 2 and 3, the outcome is unknown and `apply` refuses to run the command again, even if the stopped process left its lock behind. Check the target, for example the PR's comments, then record what happened with `apply --mark applied` or `apply --mark failed`. Marking clears the leftover lock; a write marked failed can then be applied again.
 
 ## Model resolution
 
@@ -122,13 +122,12 @@ If a run stops between steps 2 and 3, the outcome is unknown and `apply` refuses
 | `admit` | node, count, items |
 | `dispatch` | node, index, attempt, taskType, item, src |
 | `pick` | node, index, provider, model, effort, creator, explored, reason |
-| `result` | node, index, output, model, provider |
+| `result` | node, index, output, model, provider, write (the reserved write, if any: id, name, file, argv) |
 | `failed` | node, index, attempt, reason, final |
 | `gate-dropped` | node, index |
 | `cap-skipped` | node, count |
 | `outcome` | node, index, model, kind, ok |
 | `blocked` | node, cause |
-| `write-reserved` | node, id, name, file, argv |
 | `write-claimed` | id (the write is now `applying`) |
 | `write-applied` | id, marked |
 | `write-failed` | id, reason |
@@ -138,7 +137,7 @@ If a run stops between steps 2 and 3, the outcome is unknown and `apply` refuses
 
 State lives in `PLUGIN_DATA`. If that isn't set, it falls back to `CLAUDE_PLUGIN_DATA`, then to `~/.srulik-toolkit`.
 
-- `model-notes.yaml` holds the owner's notes. A repository's `.agents/model-notes.yaml` overrides it per key. Keys are globs on model IDs, and the longest matching key wins.
+- `model-notes.yaml` holds the owner's notes. The project's `.agents/model-notes.yaml`, read from the run's recorded working directory, overrides it per key. Keys are globs on model IDs, and the longest matching key wins.
 
   ```yaml
   models:

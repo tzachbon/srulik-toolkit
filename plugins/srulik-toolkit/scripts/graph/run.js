@@ -18,11 +18,11 @@ function reduce(s, e) {
     case 'cap-skipped': s.capSkipped.push(`${e.node} (${e.count} skipped)`); break;
     case 'dispatch': inst().attempts.push(e.attempt); break;
     case 'pick': (s.picks[e.node] ??= []).push(e); break;
-    case 'result': Object.assign(inst(), { result: e.output, model: e.model, settled: true }); break;
+    case 'result': Object.assign(inst(), { result: e.output, model: e.model, settled: true });
+      if (e.write) s.writes[e.write.id] = { name: e.write.name, file: e.write.file, argv: e.write.argv, state: 'reserved' }; break;
     case 'gate-dropped': inst().dropped = true; break;
     case 'failed': { const i = inst(); i.failures++; i.reason = e.reason; if (e.final) { i.final = true; i.settled = true; s.finalFailures.push(key(e.node, e.index)); } break; }
     case 'blocked': s.blocked[e.node] = e.cause; break;
-    case 'write-reserved': s.writes[e.id] = { name: e.name, file: e.file, argv: e.argv, state: 'reserved' }; break;
     case 'write-claimed': s.writes[e.id].state = 'applying'; break;
     case 'write-applied': s.writes[e.id].state = 'applied'; break;
     case 'write-failed': s.writes[e.id].state = 'failed'; break;
@@ -157,7 +157,8 @@ function done(spec, dir, result) {
   const current = s.inst[key(name, index)] ?? {};
   if (current.settled) return { writes: [], duplicate: true };
   if (result.failed !== undefined) {
-    if ((current.failures ?? 0) >= (current.attempts ?? []).length) return { writes: [], duplicate: true }; // already reported
+    const reported = (current.failures ?? 0) >= (current.attempts ?? []).length || (result.attempt !== undefined && result.attempt <= (current.failures ?? 0));
+    if (reported) return { writes: [], duplicate: true }; // this attempt's failure was already recorded
     emit(dir, s, { type: 'failed', node: name, index, attempt: (current.failures ?? 0) + 1, reason: result.failed, final: !!result.final, model: result.model });
     if (result.final) propagate(spec, dir, s);
     return { writes: [] };
@@ -177,15 +178,14 @@ function done(spec, dir, result) {
     writeFileSync(file, header + show(result.output.body ?? result.output));
     write = { id, name: node.write, file, argv: argvFor(spec.writes[node.write].run, s, file) };
   }
-  emit(dir, s, { type: 'result', node: name, index, output: result.output, model: result.model, provider: result.provider });
+  // The result and its write reservation are one event, so no crash can record one without the other.
+  emit(dir, s, { type: 'result', node: name, index, output: result.output, model: result.model, provider: result.provider, ...(write ? { write } : {}) });
   if (node.gate) {
     if (!passed) emit(dir, s, { type: 'gate-dropped', node: name, index });
     const inst = instances(s, name)[index];
     if (inst?.src) recordOutcome(spec, dir, s, { node: name, index, src: inst.src }, passed);
   }
-  if (!write) return { writes: [] };
-  emit(dir, s, { type: 'write-reserved', node: name, ...write });
-  return { writes: [write] };
+  return { writes: write ? [write] : [] };
 }
 
 const runnerIn = cwd => argv => spawnSync(argv[0], argv.slice(1), { shell: false, cwd: cwd ?? undefined, encoding: 'utf8', timeout: 120000 });
@@ -199,13 +199,16 @@ function apply(spec, dir, id, runner, { mark } = {}) {
     if (w.state === 'applied') throw new Error(`${id}: already applied`); // the owner checked an unknown outcome by hand and records it
     if (!['applied', 'failed'].includes(mark)) throw new Error(`${id}: mark must be applied or failed`);
     emit(dir, s, mark === 'applied' ? { type: 'write-applied', id, marked: true } : { type: 'write-failed', id, reason: 'marked failed by owner' });
+    rmSync(`${w.file}.lock`, { force: true }); // the owner resolved the claim, so a stale lock no longer blocks a retry
     return { ok: mark === 'applied', id };
   }
   // Claim exclusively: the lock file can be created by one process only, so two applies never both run.
   const lock = `${w.file}.lock`;
   try { closeSync(openSync(lock, 'wx')); } catch (error) {
-    if (error.code === 'EEXIST') throw new Error(`${id}: already being applied`);
-    throw error;
+    if (error.code !== 'EEXIST') throw error;
+    // A lock with a recorded claim was left by an apply that never finished; one without is a live apply.
+    if (fold(dir).writes[id].state === 'applying') throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
+    throw new Error(`${id}: already being applied`);
   }
   try {
     const now = fold(dir).writes[id].state;

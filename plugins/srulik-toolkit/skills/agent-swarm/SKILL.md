@@ -212,7 +212,7 @@ another.
 3. Loop: `next` returns ready tasks. Run each `run` task with `exec`. For each
    agent task, `pick` a model from the runnable models and current quota,
    delegate the task to a child with exactly that provider, model and effort,
-   then record the child's JSON with `done`.
+   then record the child's JSON with `done`, including the task's `attempt`.
 4. Apply each write that `done` returns with `apply`. Writes declared by the
    graph are applied automatically; never post one by other means. If `apply`
    reports an unknown outcome, check the target and record it with `--mark`

@@ -75,5 +75,65 @@ module.exports = {
     let held = 0;
     assert.throws(() => apply(iw, ld, 'note#1', () => { held++; return { status: 0 }; }), /note#1: already being applied/);
     assert.equal(held, 0, 'a held claim stops the write before it runs');
+  },
+
+  // Review round 2 (OpenAI): late duplicate failures, stale claims, project notes, nested keys
+  C18() {
+    const { check } = mod('spec.js'); const { next, done, apply, status } = mod('run.js');
+    // a failure report for an older attempt is ignored even after a retry was dispatched
+    const rd = temp('graph-');
+    const rs = check({ name: 'rs', limits: { max_agents: 1 }, nodes: { a: { agent: 'a' } } });
+    next(rs, rd); done(rs, rd, { node: 'a', attempt: 1, failed: 'x', model: 'm' });
+    assert.equal(next(rs, rd)[0].attempt, 2);
+    assert.equal(done(rs, rd, { node: 'a', attempt: 1, failed: 'x', model: 'm' }).duplicate, true, 'a late report for attempt 1 is ignored');
+    assert.deepEqual(next(rs, rd), [], 'attempt 2 is still running, so no attempt 3');
+    // --mark clears a claim left behind by a killed apply, so a confirmed failure can be retried
+    const kd = temp('graph-');
+    const ks = check({ name: 'ks', limits: { max_agents: 1 }, writes: { note: { max: 1, run: ['node', '-e', '0', '${file}'] } }, nodes: {
+      b: { agent: 'b', out: ['body'], write: 'note' } } });
+    next(ks, kd); done(ks, kd, { node: 'b', output: { body: 'hi' }, model: 'm' });
+    require('node:fs').appendFileSync(join(kd, 'run.jsonl'), JSON.stringify({ t: 1, type: 'write-claimed', id: 'note#1' }) + '\n');
+    writeFileSync(join(kd, 'writes', 'note-1.md.lock'), ''); // the killed process never ran its finally
+    assert.throws(() => apply(ks, kd, 'note#1', () => ({ status: 0 })), /note#1: outcome unknown/, 'a stale claim reports an unknown outcome');
+    assert.equal(apply(ks, kd, 'note#1', null, { mark: 'failed' }).ok, false);
+    let ran = 0;
+    assert.equal(apply(ks, kd, 'note#1', () => { ran++; return { status: 0 }; }).ok, true, 'a write confirmed failed can be retried');
+    assert.equal(ran, 1); assert.equal(status(ks, kd).state, 'done');
+    // limits and writes reject unknown keys; in must be references
+    assert.throws(() => check({ name: 't', limits: { max_agents: 1, explroe: false }, nodes: { a: { agent: 'a' } } }), /limits: unknown key "explroe"/);
+    assert.throws(() => check({ name: 't', limits: { max_agents: 1 }, writes: { w: { max: 1, run: ['echo'], runn: 1 } }, nodes: { a: { agent: 'a' } } }), /writes\.w: unknown key "runn"/);
+    assert.throws(() => check({ name: 't', limits: { max_agents: 1 }, nodes: { a: { agent: 'a', in: true } } }), /a: in must be a \$\{node\.field\} reference or a list of them/);
+    // Review round 2 (Moonshot): a block scalar's trailing newline does not slip past the whole-reference rule
+    assert.throws(() => check({ name: 't', limits: { max_agents: 2 }, nodes: { p: { agent: 'p', out: ['xs'] }, a: { agent: 'a', for_each: '${p.xs}\n' } } }), /a: for_each must be a list or one/);
+    // Review round 2 (Moonshot): a result and its write reservation are one event, so a crash cannot lose the write
+    const cd = temp('graph-');
+    const cs = check({ name: 'cs', limits: { max_agents: 1 }, writes: { note: { max: 1, run: ['node', '-e', '0', '${file}'] } }, nodes: {
+      b: { agent: 'b', out: ['body'], write: 'note' } } });
+    next(cs, cd);
+    const { writes } = done(cs, cd, { node: 'b', output: { body: 'hi' }, model: 'm' });
+    const logged = require('node:fs').readFileSync(join(cd, 'run.jsonl'), 'utf8').split('\n').filter(Boolean).map(JSON.parse);
+    const res = logged.find(e => e.type === 'result' && e.node === 'b');
+    assert.equal(res.write?.id, writes[0].id, 'the result event carries its write reservation');
+    assert.equal(logged.filter(e => e.type === 'write-reserved').length, 0);
+  },
+
+  async C19() {
+    const { loadAll } = mod('data.js');
+    // pick reads project notes from the run's recorded directory, not the caller's
+    const project = temp('graph-project-');
+    require('node:fs').mkdirSync(join(project, '.agents'));
+    writeFileSync(join(project, '.agents', 'model-notes.yaml'), 'models:\n  gpt-6.1-sol:\n    avoid: [code]\n');
+    const all = await loadAll({ cwd: project, aaLoader: () => [], arenaLoader: async () => ({}), usageFile: undefined });
+    assert.deepEqual(all.notes['gpt-6.1-sol'].avoid, ['code']);
+    const work = temp('graph-cli-'); const dir = join(work, 'run'); const spec = join(work, 's.yaml');
+    writeFileSync(spec, 'name: s\nlimits: { max_agents: 1, explore: false }\nnodes:\n  a:\n    agent: a\n    kind: code\n');
+    const cand = join(work, 'c.json'); writeFileSync(cand, JSON.stringify(cands.slice(0, 2)));
+    const usage = join(work, 'u.json'); writeFileSync(usage, JSON.stringify({ accounts: [], notes: [] }));
+    const cli = (...a) => spawnSync(process.execPath, [CLI, ...a], { encoding: 'utf8', cwd: work, env: process.env });
+    assert.equal(cli('next', spec, dir, '--cwd', project).status, 0);
+    writeFileSync(join(process.env.PLUGIN_DATA, 'arena.json'), JSON.stringify({ fetched_at: new Date().toISOString(), data: {} }));
+    const r = cli('pick', spec, dir, 'a', '0', '--candidates', cand, '--usage', usage, '--exclude', 'claude-opus-5-5');
+    assert.equal(r.status, 2, 'the project avoids the only remaining model');
+    assert.match(r.stderr, /avoid: gpt-6\.1-sol/);
   }
 };
