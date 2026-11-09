@@ -93,12 +93,27 @@ module.exports = {
       b: { agent: 'b', out: ['body'], write: 'note' } } });
     next(ks, kd); done(ks, kd, { node: 'b', output: { body: 'hi' }, model: 'm' });
     require('node:fs').appendFileSync(join(kd, 'run.jsonl'), JSON.stringify({ t: 1, type: 'write-claimed', id: 'note#1' }) + '\n');
-    writeFileSync(join(kd, 'writes', 'note-1.md.lock'), ''); // the killed process never ran its finally
+    const deadPid = spawnSync(process.execPath, ['-e', '0']).pid; // this process has exited
+    writeFileSync(join(kd, 'writes', 'note-1.md.lock'), JSON.stringify({ pid: deadPid, host: require('node:os').hostname() })); // the killed process never ran its finally
     assert.throws(() => apply(ks, kd, 'note#1', () => ({ status: 0 })), /note#1: outcome unknown/, 'a stale claim reports an unknown outcome');
     assert.equal(apply(ks, kd, 'note#1', null, { mark: 'failed' }).ok, false);
     let ran = 0;
     assert.equal(apply(ks, kd, 'note#1', () => { ran++; return { status: 0 }; }).ok, true, 'a write confirmed failed can be retried');
     assert.equal(ran, 1); assert.equal(status(ks, kd).state, 'done');
+    // the lock a real apply takes names this process and host
+    const od = temp('graph-');
+    next(ks, od); done(ks, od, { node: 'b', output: { body: 'hi' }, model: 'm' });
+    let seen;
+    apply(ks, od, 'note#1', () => { seen = JSON.parse(require('node:fs').readFileSync(join(od, 'writes', 'note-1.md.lock'), 'utf8')); return { status: 0 }; });
+    assert.deepEqual(seen, { pid: process.pid, host: require('node:os').hostname() }, 'the claim lock names its owner');
+    // Review round 3 (OpenAI): a claim held by a live process is never treated as abandoned
+    const ld2 = temp('graph-');
+    next(ks, ld2); done(ks, ld2, { node: 'b', output: { body: 'hi' }, model: 'm' });
+    require('node:fs').appendFileSync(join(ld2, 'run.jsonl'), JSON.stringify({ t: 1, type: 'write-claimed', id: 'note#1' }) + '\n');
+    writeFileSync(join(ld2, 'writes', 'note-1.md.lock'), JSON.stringify({ pid: process.pid, host: require('node:os').hostname() }));
+    assert.throws(() => apply(ks, ld2, 'note#1', () => ({ status: 0 })), /note#1: already being applied/, 'a live claim is not an unknown outcome');
+    assert.throws(() => apply(ks, ld2, 'note#1', null, { mark: 'failed' }), /note#1: still being applied by process/, 'marking cannot unlock a running write');
+    assert.ok(require('node:fs').existsSync(join(ld2, 'writes', 'note-1.md.lock')), 'the live lock survives');
     // limits and writes reject unknown keys; in must be references
     assert.throws(() => check({ name: 't', limits: { max_agents: 1, explroe: false }, nodes: { a: { agent: 'a' } } }), /limits: unknown key "explroe"/);
     assert.throws(() => check({ name: 't', limits: { max_agents: 1 }, writes: { w: { max: 1, run: ['echo'], runn: 1 } }, nodes: { a: { agent: 'a' } } }), /writes\.w: unknown key "runn"/);

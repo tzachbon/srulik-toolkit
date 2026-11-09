@@ -1,7 +1,8 @@
 // Graph scheduler. All state lives in <run-dir>/run.jsonl; every function folds the log, decides, and appends.
 // One reducer (`reduce`) applies each event, so a new event updates in-memory state exactly as a reload would.
 'use strict';
-const { appendFileSync, readFileSync, existsSync, mkdirSync, writeFileSync, openSync, closeSync, rmSync } = require('node:fs');
+const { appendFileSync, readFileSync, existsSync, mkdirSync, writeFileSync, openSync, closeSync, rmSync, writeSync } = require('node:fs');
+const { hostname } = require('node:os');
 const { join } = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { refs, GATE } = require('./spec.js');
@@ -188,6 +189,15 @@ function done(spec, dir, result) {
   return { writes: write ? [write] : [] };
 }
 
+// A claim lock names its owner. It is live while that process runs on this host; a lock from another
+// host, or one that can't be read, is treated as live, so recovery never unlocks a write that may be running.
+function lockOwnerAlive(lock) {
+  let owner;
+  try { owner = JSON.parse(readFileSync(lock, 'utf8')); } catch { return true; }
+  if (owner?.host !== hostname() || !Number.isInteger(owner?.pid)) return true;
+  try { process.kill(owner.pid, 0); return true; } catch (error) { return error.code === 'EPERM'; }
+}
+
 const runnerIn = cwd => argv => spawnSync(argv[0], argv.slice(1), { shell: false, cwd: cwd ?? undefined, encoding: 'utf8', timeout: 120000 });
 
 function apply(spec, dir, id, runner, { mark } = {}) {
@@ -195,21 +205,24 @@ function apply(spec, dir, id, runner, { mark } = {}) {
   runner ??= runnerIn(s.cwd);
   const w = s.writes[id];
   if (!w) throw new Error(`${id}: not reserved`);
-  if (mark) {
-    if (w.state === 'applied') throw new Error(`${id}: already applied`); // the owner checked an unknown outcome by hand and records it
+  const lock = `${w.file}.lock`;
+  if (mark) { // the owner checked an unknown outcome by hand and records it
+    if (w.state === 'applied') throw new Error(`${id}: already applied`);
+    if (existsSync(lock) && lockOwnerAlive(lock)) throw new Error(`${id}: still being applied by process ${readFileSync(lock, 'utf8').trim() || 'unknown'}; wait for it to finish`);
     if (!['applied', 'failed'].includes(mark)) throw new Error(`${id}: mark must be applied or failed`);
     emit(dir, s, mark === 'applied' ? { type: 'write-applied', id, marked: true } : { type: 'write-failed', id, reason: 'marked failed by owner' });
-    rmSync(`${w.file}.lock`, { force: true }); // the owner resolved the claim, so a stale lock no longer blocks a retry
+    rmSync(lock, { force: true }); // the claim's owner is gone and the owner resolved it, so a retry may proceed
     return { ok: mark === 'applied', id };
   }
   // Claim exclusively: the lock file can be created by one process only, so two applies never both run.
-  const lock = `${w.file}.lock`;
-  try { closeSync(openSync(lock, 'wx')); } catch (error) {
+  let fd;
+  try { fd = openSync(lock, 'wx'); } catch (error) {
     if (error.code !== 'EEXIST') throw error;
-    // A lock with a recorded claim was left by an apply that never finished; one without is a live apply.
-    if (fold(dir).writes[id].state === 'applying') throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
+    // Only a claim whose owner is gone is abandoned; a live owner is still applying.
+    if (fold(dir).writes[id].state === 'applying' && !lockOwnerAlive(lock)) throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
     throw new Error(`${id}: already being applied`);
   }
+  try { writeSync(fd, JSON.stringify({ pid: process.pid, host: hostname() })); } finally { closeSync(fd); }
   try {
     const now = fold(dir).writes[id].state;
     if (now === 'applied') throw new Error(`${id}: already applied`);

@@ -72,7 +72,7 @@ Rejected with `line N: <reason>`:
 2. Logs `write-claimed`, which moves the write to `applying`, and runs the command.
 3. Logs `write-applied` or `write-failed`. A failed write may be applied again.
 
-If a run stops between steps 2 and 3, the outcome is unknown and `apply` refuses to run the command again, even if the stopped process left its lock behind. Check the target, for example the PR's comments, then record what happened with `apply --mark applied` or `apply --mark failed`. Marking clears the leftover lock; a write marked failed can then be applied again.
+The claim lock records the process that holds it. While that process is still running, `apply` reports the write as being applied and `--mark` is refused, so a slow write is never unlocked mid-run. If the process stopped between steps 2 and 3, the outcome is unknown and `apply` refuses to run the command again. Check the target, for example the PR's comments, then record what happened with `apply --mark applied` or `apply --mark failed`. Marking clears the leftover lock; a write marked failed can then be applied again.
 
 ## Model resolution
 
