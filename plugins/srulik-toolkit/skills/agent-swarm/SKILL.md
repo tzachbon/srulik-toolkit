@@ -192,6 +192,45 @@ results, or any mutation whose failure would be costly. A verifier tests the
 artifact and tries to refute the claim. It does not repeat the author's brief
 as a second opinion.
 
+## Graph mode
+
+Use graph mode when the same multi-stage shape repeats and later stages check
+earlier ones: review, then verify, then report. Don't use it for open-ended
+exploration or for work one loop handles; a graph costs one child per node
+instance. A graph is a YAML file; read [graph spec](references/graph-spec.md)
+for its keys, the YAML subset, model resolution, and the run log.
+
+The parent is the orchestrator. Run the plugin's `scripts/graph.js` from the
+plugin root, two directories above this skill file:
+
+1. `check` the spec. Fix every reported error before any child starts.
+2. Start `view` on a new run directory and open the printed local page for the
+   owner.
+3. Loop: `next` returns ready tasks. Run each `run` task with `exec`. For each
+   agent task, `pick` a model from the runnable models and current quota,
+   delegate the task to a child with exactly that provider, model and effort,
+   then record the child's JSON with `done`.
+4. Apply each write that `done` returns with `apply`. Writes declared by the
+   graph are applied automatically; never post one by other means.
+5. Finish with `status` and report what completed, what degraded, what gates
+   dropped, which writes applied, and which branches were blocked.
+
+When a child fails, retry once with the failure reason in its brief. If it
+fails again, `pick` again with that model excluded and retry once more. Then
+record the failure as final. A child that cannot start is a final failure. A
+final failure blocks only the work that depends on it; keep running
+independent branches. Stop only when nothing more can run.
+
+When the owner states an opinion about a model's strengths or weaknesses for a
+kind of work, record that opinion in the model notes file as `prefer` or `avoid`
+for that kind, with the conversation as its source, and confirm in one line.
+
+Host details, such as how to list runnable models, read quota, delegate, open
+the page, and schedule the refresh and scoring jobs, live in the host
+reference beside this skill, such as [this one](references/t3-code.md). On a host without a reference,
+show the capability mapping, say graph mode is untested there, and proceed
+only after the owner confirms.
+
 ## Phase 4: Report
 
 Close ledger items only after the parent accepts their evidence. Report one

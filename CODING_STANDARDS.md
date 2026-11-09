@@ -35,3 +35,8 @@ recursively starting the request flow again.
 ## Utilities
 
 Utilities in `plugins/srulik-toolkit/scripts/` use only the Node.js standard library. Resolve paths from the plugin root, never the caller's working directory. Read state from `PLUGIN_DATA`, falling back to `CLAUDE_PLUGIN_DATA`, then a temporary directory. An optional external service needs a user-supplied key only when it requires authentication: exit with code 2 when a required key is missing so callers fall back. Add attribution to [NOTICE.md](NOTICE.md).
+
+Durable graph state (model notes, model stats, the LMArena cache and the score
+watermark) falls back to `~/.srulik-toolkit` instead of the temporary directory,
+because losing it erases evidence. The Artificial Analysis cache keeps the
+temporary-directory fallback.

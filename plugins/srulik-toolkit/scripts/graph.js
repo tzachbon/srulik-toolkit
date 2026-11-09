@@ -1,0 +1,113 @@
+#!/usr/bin/env node
+// Graph mode CLI for agent-swarm. Exit codes: 0 ok, 1 spec or usage error, 2 BLOCKED.
+'use strict';
+const { readFileSync, writeFileSync, appendFileSync, mkdirSync } = require('node:fs');
+const { join, resolve } = require('node:path');
+const { spawnSync } = require('node:child_process');
+const { parse } = require('./graph/yaml.js');
+const { check } = require('./graph/spec.js');
+const run = require('./graph/run.js');
+const { pick } = require('./graph/pick.js');
+const { loadAll, loadArena, stateDir } = require('./graph/data.js');
+const { scoreThreads } = require('./graph/score.js');
+
+const USAGE = `Usage: node graph.js <command> ...
+  check   <spec.yaml>
+  next    <spec.yaml> <run-dir> [--input k=v ...]
+  exec    <spec.yaml> <run-dir> <node>
+  pick    <spec.yaml> <run-dir> <node> <index> --candidates <file> [--usage <file>] [--exclude <model> ...]
+  done    <spec.yaml> <run-dir> <result.json>
+  apply   <spec.yaml> <run-dir> <write-id>
+  status  <spec.yaml> <run-dir>
+  score   <threads.json> [--since <ms>]
+  refresh
+  view    <run-dir> [--port N]`;
+
+const usage = () => { throw Object.assign(new Error(USAGE), { code: 1 }); };
+const load = file => check(parse(readFileSync(file, 'utf8')));
+const out = value => process.stdout.write(JSON.stringify(value, null, 2) + '\n');
+
+function flags(args, names) {
+  const found = Object.fromEntries(names.map(n => [n, []])); const rest = [];
+  for (let i = 0; i < args.length; i++) {
+    const name = args[i].startsWith('--') && args[i].slice(2);
+    if (name && names.includes(name)) { if (i + 1 >= args.length) usage(); found[name].push(args[++i]); }
+    else if (name) usage(); else rest.push(args[i]);
+  }
+  return { found, rest };
+}
+
+function pickContext(spec, dir, name, excludes) {
+  const s = run.fold(dir);
+  const node = spec.nodes[name];
+  const consumers = spec.order.filter(n => (spec.nodes[n].for_each ?? '').toString().includes(`\${${name}.`));
+  const differ = node.pick?.differ_from;
+  return {
+    gated: !!node.gate || consumers.some(n => spec.nodes[n].gate),
+    verifier: !!differ,
+    exclude_creators: differ ? [...new Set((s.picks[differ] ?? []).map(p => p.creator))] : [],
+    exclude_models: excludes,
+  };
+}
+
+async function main([command, ...args]) {
+  if (!command || command === '--help') { console.log(USAGE); return; }
+  if (command === 'check') { if (args.length !== 1) usage(); load(args[0]); console.log('ok'); return; }
+  if (command === 'next') {
+    const { found, rest } = flags(args, ['input']); if (rest.length !== 2) usage();
+    const inputs = Object.fromEntries(found.input.map(kv => { const at = kv.indexOf('='); if (at < 1) usage(); return [kv.slice(0, at), kv.slice(at + 1)]; }));
+    out(run.next(load(rest[0]), resolve(rest[1]), inputs)); return;
+  }
+  if (command === 'exec') { if (args.length !== 3) usage(); out(run.exec(load(args[0]), resolve(args[1]), args[2])); return; }
+  if (command === 'done') { if (args.length !== 3) usage(); out(run.done(load(args[0]), resolve(args[1]), JSON.parse(readFileSync(args[2], 'utf8')))); return; }
+  if (command === 'apply') { if (args.length !== 3) usage(); const r = run.apply(load(args[0]), resolve(args[1]), args[2]); out(r); if (!r.ok) process.exitCode = 1; return; }
+  if (command === 'status') {
+    if (args.length !== 2) usage();
+    const spec = load(args[0]); const dir = resolve(args[1]); const st = run.status(spec, dir);
+    const log = join(dir, 'run.jsonl');
+    if (st.state !== 'running' && !readFileSync(log, 'utf8').includes(`"type":"end"`)) appendFileSync(log, JSON.stringify({ t: Date.now(), type: 'end', state: st.state }) + '\n');
+    out(st); return;
+  }
+  if (command === 'pick') {
+    const { found, rest } = flags(args, ['candidates', 'usage', 'exclude']);
+    if (rest.length !== 4 || found.candidates.length !== 1) usage();
+    const [specFile, dirArg, name, indexArg] = rest; const spec = load(specFile); const dir = resolve(dirArg);
+    const node = spec.nodes[name]; if (!node || !('agent' in node)) throw new Error(`${name}: not an agent node`);
+    const data = await loadAll({ usageFile: found.usage[0] });
+    Object.assign(data, { explore: spec.limits.explore, random: Math.random, now: Date.now() });
+    const choice = pick(node, JSON.parse(readFileSync(found.candidates[0], 'utf8')), data, pickContext(spec, dir, name, found.exclude));
+    if (Object.keys(data.errors).length) choice.reason.data_errors = data.errors;
+    mkdirSync(dir, { recursive: true });
+    appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: Date.now(), type: 'pick', node: name, index: Number(indexArg), ...choice }) + '\n');
+    out(choice); return;
+  }
+  if (command === 'score') {
+    const { found, rest } = flags(args, ['since']); if (rest.length !== 1) usage();
+    const state = stateDir(process.env); const mark = join(state, 'score-watermark.json');
+    let since = Number(found.since[0] ?? NaN);
+    if (!Number.isFinite(since)) { try { since = JSON.parse(readFileSync(mark, 'utf8')).since; } catch { since = 0; } }
+    const now = Date.now(); const threads = JSON.parse(readFileSync(rest[0], 'utf8'));
+    const outcomes = scoreThreads(threads, { now, since });
+    mkdirSync(state, { recursive: true, mode: 0o700 });
+    if (outcomes.length) appendFileSync(join(state, 'model-stats.jsonl'), outcomes.map(o => JSON.stringify(o)).join('\n') + '\n');
+    writeFileSync(mark, JSON.stringify({ since: Math.max(since, ...threads.map(t => t.updated ?? 0)) }));
+    out({ scored: outcomes.length, skipped: threads.length - outcomes.length }); return;
+  }
+  if (command === 'refresh') {
+    const aa = spawnSync(process.execPath, [join(__dirname, 'models.js'), '--update'], { encoding: 'utf8', timeout: 120000 });
+    const arena = await loadArena({ cachePath: join(stateDir(process.env), 'arena.json'), force: true });
+    const report = { aa: aa.status === 0 ? 'ok' : (aa.stderr || `exit ${aa.status}`).trim(), arena: arena.stale ? `failed: ${arena.error}` : 'ok' };
+    out(report); if (report.aa !== 'ok' || report.arena !== 'ok') process.exitCode = 1; return;
+  }
+  if (command === 'view') {
+    const { found, rest } = flags(args, ['port']); if (rest.length !== 1) usage();
+    const server = await require('./graph/view.js').serve(resolve(rest[0]), Number(found.port[0] ?? 0));
+    console.log(`http://127.0.0.1:${server.address().port}/`); return;
+  }
+  usage();
+}
+
+main(process.argv.slice(2)).catch(error => {
+  console.error(error.message);
+  process.exitCode = error.code === 1 ? 1 : /^BLOCKED/.test(error.message) ? 2 : 1;
+});
