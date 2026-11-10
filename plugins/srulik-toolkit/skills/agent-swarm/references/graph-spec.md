@@ -16,10 +16,10 @@ The parent agent runs the graph; the scripts never call a model.
 | `run` | node | An argument list run without a shell. Elements may be `"${inputs.<k>}"` as whole elements. Output: `{text: stdout}`. |
 | `agent` | node | The child's prompt. `{item}` becomes the current item: a string as-is, anything else as JSON. |
 | `kind` | agent node | `code`, `code-review`, `debugging` (debugging, reverse-engineering, configuring apps, working around restrictions), `architecture`, `ui-ux`, `agentic` (default), `reasoning`, `long-context` or `writing`. |
-| `in` | node | `${node.field}` reference, or a list of them. Adds an edge. |
+| `in` | node | `${node.field}` reference, or a list of them. Adds an edge. A `run` node's only field is `text`. |
 | `needs` | node | Node names to wait for. Adds edges. |
 | `for_each` | agent node | A literal list, or a `${node.field}` reference to a list. |
-| `pick` | agent node | `{tier, differ_from}`. `tier` defaults to `standard`. `differ_from` names an agent node whose creators this node must not use, and adds an edge. |
+| `pick` | agent node | `{tier, differ_from}`. `tier` defaults to `standard`. `differ_from` names an agent node and adds an edge. When this instance's item came from that node, only the creator of the instance that produced it is excluded; otherwise every creator that node used is excluded. |
 | `model` | agent node | `"<model-id> @ <effort>"`. Pinned, but still subject to `avoid`, exclusions and quota. Can't be combined with `pick`. |
 | `out` | agent node | Fields the child's JSON must contain. |
 | `gate` | node with `out` | `field == literal`, where the literal is `true`, `false`, a number or a `"string"`. A failing item is dropped. |
@@ -30,7 +30,7 @@ Any other key is an error.
 ## YAML subset
 
 Supported:
-- block maps and block lists of scalars
+- block maps and block lists of scalars; a block list may sit at its key's indent
 - plain, single-quoted and double-quoted scalars
 - `true`, `false`, `null` and numbers
 - `|` block scalars
@@ -49,14 +49,15 @@ Rejected with `line N: <reason>`:
 ## What a task receives
 
 - `in: ${p.f}` from a single-instance producer gives `input.p = {f: value}`.
-- From a fan-out producer, it gives `input.p = [{index, item, value}]` over the surviving instances.
+- From a fan-out producer, it gives `input.p = [{index, item, f: value}]` over the surviving instances, with one key per field the consumer references.
 - `needs: [p]` gives `input.p = [{index, item, output}]` over the surviving instances. The list may be empty; an empty review is still a result.
 
 ## Scheduling
 
 - A node is ready when every node it depends on has settled. A node is settled when it has a result, a final failure, a gate drop, or a block.
 - The first `next` records the working directory (`--cwd`, default the caller's). Every `run` node and every write executes there.
-- Each attempt is offered once. A failure report for an attempt already reported is ignored. Pass the task's `attempt` in the result so a late report for an older attempt is recognized.
+- `next` and `done` hold `<run-dir>/run.lock` while they read and append, so parallel calls never act on the same stale state. A lock whose recorded process is gone is cleared.
+- Each attempt is offered once. A failure report for an attempt already reported is ignored. Pass the task's `attempt` in every result, success or failure, so a late report for an older attempt is ignored.
 - Runtime fan-out is admitted once. Admission reserves the static instance count of every other agent node not yet admitted, so the total never passes `max_agents`. The overflow is logged as `cap-skipped`.
 - A final failure blocks a consumer only when the producer was a single instance, or when every one of its instances failed.
 - `status` returns `running` until every node settles. After that it returns:
@@ -70,7 +71,7 @@ Rejected with `line N: <reason>`:
 
 1. Refuses an unknown ID, an applied write, or a write another `apply` is running right now.
 2. Logs `write-claimed`, which moves the write to `applying`, and runs the command.
-3. Logs `write-applied` or `write-failed`. A failed write may be applied again.
+3. Logs `write-applied` or `write-failed`. A failed write may be applied again. A command killed by a timeout or a signal logs neither: its effect may have happened, so it stays an unknown outcome until the owner records it with `--mark`.
 
 The claim lock records the process that holds it. While that process is still running, `apply` reports the write as being applied and `--mark` is refused, so a slow write is never unlocked mid-run. If the process stopped between steps 2 and 3, the outcome is unknown and `apply` refuses to run the command again. Check the target, for example the PR's comments, then record what happened with `apply --mark applied` or `apply --mark failed`. Marking clears the leftover lock; a write marked failed can then be applied again.
 
@@ -91,7 +92,7 @@ The claim lock records the process that holds it. While that process is still ru
    | --- | --- |
    | ui-ux | arena.webdev rating |
    | code-review | AA terminal_bench_4_0 |
-| debugging | AA terminal_bench_4_0, then arena.agent score |
+   | debugging | AA terminal_bench_4_0, then arena.agent score |
    | architecture | AA intelligence_index |
    | agentic | arena.agent score, then AA automation_bench |
    | code | AA terminal_bench_4_0, then arena.agent score |
@@ -122,9 +123,9 @@ The claim lock records the process that holds it. While that process is still ru
 | `admit` | node, count, items |
 | `dispatch` | node, index, attempt, taskType, item, src |
 | `pick` | node, index, provider, model, effort, creator, explored, reason |
-| `result` | node, index, output, model, provider, write (the reserved write, if any: id, name, file, argv) |
+| `result` | node, index, output, model, provider, write (the reserved write, if any: id, name, file, argv), dropped (when the gate failed) |
 | `failed` | node, index, attempt, reason, final |
-| `gate-dropped` | node, index |
+| `gate-dropped` | node, index (for the live view; the result event's `dropped` is authoritative) |
 | `cap-skipped` | node, count |
 | `outcome` | node, index, model, kind, ok |
 | `blocked` | node, cause |
@@ -148,7 +149,7 @@ State lives in `PLUGIN_DATA`. If that isn't set, it falls back to `CLAUDE_PLUGIN
 
 - `model-stats.jsonl` holds one `{t, model, kind, ok, src}` per line, with `src` set to `graph` or `thread`. It stores no text and no thread IDs.
 - `arena.json` holds the LMArena cache, refreshed at most daily or when `refresh` runs.
-- `score-watermark.json` records the newest thread time already scored.
+- `score-watermark.json` records how far scoring has read: up to just before the oldest thread still undecided, so that thread is read again next time.
 - The usage file passed with `--usage` has the same shape as `aa-models usage` output: `{accounts: [{provider, windows: [{used_percent}]}], notes: []}`.
 
 ## Thread scoring

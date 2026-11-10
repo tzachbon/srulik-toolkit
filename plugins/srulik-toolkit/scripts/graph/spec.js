@@ -73,9 +73,10 @@ function check(raw) {
     const found = [...ins.flatMap(refs), ...refs(node.agent), ...(typeof node.for_each === 'string' ? refs(node.for_each) : [])];
     if (typeof node.for_each === 'string' && !/^\$\{(?!inputs\.)[a-z0-9_-]+\.[A-Za-z_]\w*\}$/i.test(node.for_each)) fail(`${name}: for_each must be a list or one \${node.field} reference`);
     if ('for_each' in node && typeof node.for_each !== 'string' && !Array.isArray(node.for_each)) fail(`${name}: for_each must be a list or one \${node.field} reference`);
-    for (const { node: dep } of found) {
+    for (const { node: dep, field } of found) {
       if (dep === 'inputs') continue;
       if (!Object.hasOwn(nodes, dep)) fail(`${name}: unknown node "${dep}"`);
+      if ('run' in nodes[dep] && field !== 'text') fail(`${name}: run node "${dep}" outputs only "text"`);
       deps[name].add(dep);
     }
     for (const dep of node.needs ?? []) {

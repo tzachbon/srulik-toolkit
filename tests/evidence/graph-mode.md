@@ -4,9 +4,9 @@ Plugin version: 1.18.0. Base: 3cb1a721416173aef06833265987f68d3aa59078. Issue: #
 
 ## Contract
 
-`scripts/test-graph.js` loads `test-graph-run.js`, `test-graph-models.js` and
-`test-graph-review.js`. Shared setup is in `graph-fixtures.js`. There are 19
-groups, all using local fakes: no network, no real model calls. The tests set a
+`scripts/test-graph.js` loads `test-graph-run.js`, `test-graph-models.js`,
+`test-graph-review.js` and `test-graph-e2e.js`. Shared setup is in
+`graph-fixtures.js`. There are 23 groups, all using local fakes: no network, no real model calls. The tests set a
 temporary `PLUGIN_DATA` before any graph module loads, so they never touch real
 notes or stats. `scripts/validate/18_graph.py` checks the skill and reference
 text, the NOTICE attribution, the standards paragraph, that there are no
@@ -21,17 +21,21 @@ C13 failed on its first CLI exit-status assertion.
 Each behavior assertion has a mutation in the implementation that makes it the
 first failure. The test is never changed. Each mutation ran in a pristine copy,
 then the code was restored and the group passed again. Final run at the head
-of this PR: 160 mutations, 160 failed as targeted, and 160 passed again when
+of this PR: 173 mutations, 173 failed as targeted, and 173 passed again when
 restored. The only assertion without a mutation is `length <= 100` inside the
 fake leaderboard server, which is test setup, not behavior.
 
 Each of the 12 text contracts in part 18 was also broken once in a scratch copy.
 Each time, `validate.sh` failed with that contract's message.
 
-Two real processes were run against one write, using the CLI:
+Real processes, through the CLI:
 - Two concurrent `apply` calls ran the command once.
 - A `--mark failed` sent while a slow write was still running was refused, a
   second `apply` was refused, and the command ran once.
+- A write killed by its timeout stayed an unknown outcome; the next `apply`
+  was refused, so the command ran once.
+- Two concurrent `done` calls sharing a write reserved `note#1` and `note#2`.
+  Without the run lock, both reserved `note#1`.
 
 ## Review
 
@@ -47,9 +51,21 @@ at high effort and read-only.
 
 Each finding was fixed with a failing test first, plus a mutation. The single
 round-3 finding was fixed in c06cbf3: recovery could unlock a write while its
-process was still running. That fix has its tests, its mutations and the
-two-process check above, but no fourth review round. The owner chose to open
-the PR at that point instead of starting another round.
+process was still running. The owner chose to open the PR at that point
+instead of starting a fourth panel round.
+
+On the PR, review continued from three more sources, all fixed test-first in
+the same way:
+
+| Source | Findings |
+| --- | --- |
+| Codex bot | 3: timed-out writes, stale successes, fan-out fields |
+| CodeRabbit | 7 minor: gate drop in the result event, run-node fields, view errors, docs, a test that couldn't fail |
+| This graph's own run on the PR (Opus, Kimi ×2) | 5 new (one overlapped Codex): `differ_from` scope, scoring watermark, a run-directory lock, same-indent YAML lists, a `--mark` race |
+
+The perf reviewer's three suggestions (fold the log once per pick, index
+outcomes, load sources concurrently) are optional; they affect speed only at
+large scale.
 
 ## Live view
 

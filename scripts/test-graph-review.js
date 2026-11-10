@@ -28,7 +28,7 @@ module.exports = {
     // apply claims a write exclusively: a second claim while one is running is refused
     let inner;
     const r1 = apply(ws, wd, 'note#1', () => { inner = (() => { try { apply(ws, wd, 'note#1', () => ({ status: 0 })); return 'ran'; } catch (e) { return e.message; } })(); return { status: 0 }; });
-    assert.equal(r1.ok, true); assert.match(inner, /note#1: (already being applied|outcome unknown)/, 'a second apply while one runs is refused');
+    assert.equal(r1.ok, true); assert.match(inner, /note#1: still being applied/, 'a second apply while one runs is refused');
     assert.equal(status(ws, wd).state, 'done');
     // substitution keeps data literal: $& and {item} inside values are not reinterpreted
     const sd = temp('graph-');
@@ -73,7 +73,7 @@ module.exports = {
     next(iw, ld); done(iw, ld, { node: 'b', output: { body: 'hi' }, model: 'm' });
     writeFileSync(join(ld, 'writes', 'note-1.md.lock'), '');
     let held = 0;
-    assert.throws(() => apply(iw, ld, 'note#1', () => { held++; return { status: 0 }; }), /note#1: already being applied/);
+    assert.throws(() => apply(iw, ld, 'note#1', () => { held++; return { status: 0 }; }), /note#1: still being applied/, 'an unreadable lock counts as live');
     assert.equal(held, 0, 'a held claim stops the write before it runs');
   },
 
@@ -111,7 +111,7 @@ module.exports = {
     next(ks, ld2); done(ks, ld2, { node: 'b', output: { body: 'hi' }, model: 'm' });
     require('node:fs').appendFileSync(join(ld2, 'run.jsonl'), JSON.stringify({ t: 1, type: 'write-claimed', id: 'note#1' }) + '\n');
     writeFileSync(join(ld2, 'writes', 'note-1.md.lock'), JSON.stringify({ pid: process.pid, host: require('node:os').hostname() }));
-    assert.throws(() => apply(ks, ld2, 'note#1', () => ({ status: 0 })), /note#1: already being applied/, 'a live claim is not an unknown outcome');
+    assert.throws(() => apply(ks, ld2, 'note#1', () => ({ status: 0 })), /note#1: still being applied/, 'a live claim is not an unknown outcome');
     assert.throws(() => apply(ks, ld2, 'note#1', null, { mark: 'failed' }), /note#1: still being applied by process/, 'marking cannot unlock a running write');
     assert.ok(require('node:fs').existsSync(join(ld2, 'writes', 'note-1.md.lock')), 'the live lock survives');
     // limits and writes reject unknown keys; in must be references
@@ -150,5 +150,36 @@ module.exports = {
     const r = cli('pick', spec, dir, 'a', '0', '--candidates', cand, '--usage', usage, '--exclude', 'claude-opus-5-5');
     assert.equal(r.status, 2, 'the project avoids the only remaining model');
     assert.match(r.stderr, /avoid: gpt-6\.1-sol/);
+  },
+
+  // PR #67 bot review (Codex): timeouts are unknown outcomes, stale successes, fan-out fields
+  C20() {
+    const { check } = mod('spec.js'); const { next, done, apply, status } = mod('run.js');
+    // a write killed by timeout or signal after it started is an unknown outcome, not a failure
+    const td = temp('graph-');
+    const ts = check({ name: 'ts', limits: { max_agents: 1 }, writes: { note: { max: 1, run: ['node', '-e', '0', '${file}'] } }, nodes: {
+      b: { agent: 'b', out: ['body'], write: 'note' } } });
+    next(ts, td); done(ts, td, { node: 'b', output: { body: 'hi' }, model: 'm' });
+    let runs = 0;
+    const timedOut = () => { runs++; return { status: null, signal: 'SIGTERM', error: Object.assign(new Error('spawnSync node ETIMEDOUT'), { code: 'ETIMEDOUT' }) }; };
+    assert.equal(apply(ts, td, 'note#1', timedOut).ok, false);
+    assert.throws(() => apply(ts, td, 'note#1', () => { runs++; return { status: 0 }; }), /note#1: outcome unknown/, 'a timed-out write is not retried blindly');
+    assert.equal(runs, 1); assert.equal(status(ts, td).state, 'partial');
+    // a late success for an older attempt is ignored; the running attempt's result is kept
+    const sd = temp('graph-');
+    const ss = check({ name: 'ss', limits: { max_agents: 1 }, nodes: { a: { agent: 'a', out: ['v'] } } });
+    next(ss, sd); done(ss, sd, { node: 'a', attempt: 1, failed: 'x', model: 'm' });
+    assert.equal(next(ss, sd)[0].attempt, 2);
+    assert.equal(done(ss, sd, { node: 'a', attempt: 1, output: { v: 'stale' }, model: 'm' }).duplicate, true, 'a stale success is ignored');
+    done(ss, sd, { node: 'a', attempt: 2, output: { v: 'fresh' }, model: 'm' });
+    assert.equal(log(sd).filter(e => e.type === 'result')[0].output.v, 'fresh');
+    // a fan-out producer referenced through two fields delivers both
+    const fd = temp('graph-');
+    const fs2 = check({ name: 'fs', limits: { max_agents: 3 }, nodes: { p: { agent: 'p {item}', for_each: ['x', 'y'], out: ['a', 'b'] },
+      c: { agent: 'c', in: ['${p.a}', '${p.b}'] } } });
+    next(fs2, fd);
+    done(fs2, fd, { node: 'p', index: 0, output: { a: 1, b: 2 }, model: 'm' });
+    done(fs2, fd, { node: 'p', index: 1, output: { a: 3, b: 4 }, model: 'm' });
+    assert.deepEqual(next(fs2, fd)[0].input.p, [{ index: 0, item: 'x', a: 1, b: 2 }, { index: 1, item: 'y', a: 3, b: 4 }], 'both fields reach the consumer');
   }
 };

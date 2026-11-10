@@ -51,7 +51,9 @@ function serve(dir, port = 0) {
     if (req.url !== '/events') { res.writeHead(404).end(); return; }
     res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
     let offset = 0; let partial = '';
-    const pump = () => {
+    // A read-only helper: a transient filesystem error skips one tick instead of stopping the server.
+    const pump = () => { try { pumpOnce(); } catch { /* retried on the next tick */ } };
+    const pumpOnce = () => {
       if (!existsSync(file)) return;
       const size = statSync(file).size;
       if (size <= offset) return;
@@ -63,7 +65,7 @@ function serve(dir, port = 0) {
     };
     pump();
     let watcher = null;
-    try { watcher = watch(dir, pump); } catch { /* the poll below covers platforms without fs.watch */ }
+    try { watcher = watch(dir, pump); watcher.on('error', () => { watcher?.close(); watcher = null; }); } catch { /* the poll below covers platforms without fs.watch */ }
     const poll = setInterval(pump, 500);
     req.on('close', () => { clearInterval(poll); watcher?.close(); });
   });

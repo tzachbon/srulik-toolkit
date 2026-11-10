@@ -201,7 +201,7 @@ instance. A graph is a YAML file; read [graph spec](references/graph-spec.md)
 for its keys, the YAML subset, model resolution, and the run log.
 
 The parent is the orchestrator. Run the plugin's `scripts/graph.js` by its
-absolute path (the plugin root is two directories above this skill file) from
+absolute path (the plugin root is two directories above this skill's directory, so `scripts/graph.js` is at `../../scripts/graph.js` from it) from
 the project the graph works on. The first `next` records that directory, and
 every command and write in the run executes there; pass `--cwd` to choose
 another.

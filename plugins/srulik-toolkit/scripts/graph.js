@@ -9,7 +9,7 @@ const { check } = require('./graph/spec.js');
 const run = require('./graph/run.js');
 const { pick } = require('./graph/pick.js');
 const { loadAll, loadArena, stateDir } = require('./graph/data.js');
-const { scoreThreads } = require('./graph/score.js');
+const { scoreThreads, nextWatermark } = require('./graph/score.js');
 
 const USAGE = `Usage: node graph.js <command> ...
   check   <spec.yaml>
@@ -22,6 +22,14 @@ const USAGE = `Usage: node graph.js <command> ...
   score   <threads.json> [--since <ms>]
   refresh
   view    <run-dir> [--port N]`;
+
+// Creators to avoid for one instance: the producer of this item when it came from the differ_from node,
+// otherwise every creator that node used.
+function differCreators(s, differ, name, index) {
+  const src = (s.admitted[name] ?? [])[index]?.src;
+  const picks = (s.picks[differ] ?? []).filter(p => !src || src.node !== differ || p.index === src.index);
+  return [...new Set(picks.map(p => p.creator))];
+}
 
 const usage = () => { throw Object.assign(new Error(USAGE), { code: 1 }); };
 const load = file => check(parse(readFileSync(file, 'utf8')));
@@ -37,7 +45,7 @@ function flags(args, names) {
   return { found, rest };
 }
 
-function pickContext(spec, dir, name, excludes) {
+function pickContext(spec, dir, name, index, excludes) {
   const s = run.fold(dir);
   const node = spec.nodes[name];
   const consumers = spec.order.filter(n => (spec.nodes[n].for_each ?? '').toString().includes(`\${${name}.`));
@@ -45,7 +53,7 @@ function pickContext(spec, dir, name, excludes) {
   return {
     gated: !!node.gate || consumers.some(n => spec.nodes[n].gate),
     verifier: !!differ,
-    exclude_creators: differ ? [...new Set((s.picks[differ] ?? []).map(p => p.creator))] : [],
+    exclude_creators: differ ? differCreators(s, differ, name, index) : [],
     exclude_models: excludes,
   };
 }
@@ -78,7 +86,7 @@ async function main([command, ...args]) {
     const node = spec.nodes[name]; if (!node || !('agent' in node)) throw new Error(`${name}: not an agent node`);
     const data = await loadAll({ usageFile: found.usage[0], cwd: run.fold(dir).cwd ?? process.cwd() });
     Object.assign(data, { explore: spec.limits.explore, random: Math.random, now: Date.now() });
-    const choice = pick(node, JSON.parse(readFileSync(found.candidates[0], 'utf8')), data, pickContext(spec, dir, name, found.exclude));
+    const choice = pick(node, JSON.parse(readFileSync(found.candidates[0], 'utf8')), data, pickContext(spec, dir, name, Number(indexArg), found.exclude));
     if (Object.keys(data.errors).length) choice.reason.data_errors = data.errors;
     mkdirSync(dir, { recursive: true });
     appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: Date.now(), type: 'pick', node: name, index: Number(indexArg), ...choice }) + '\n');
@@ -93,7 +101,7 @@ async function main([command, ...args]) {
     const outcomes = scoreThreads(threads, { now, since });
     mkdirSync(state, { recursive: true, mode: 0o700 });
     if (outcomes.length) appendFileSync(join(state, 'model-stats.jsonl'), outcomes.map(o => JSON.stringify(o)).join('\n') + '\n');
-    writeFileSync(mark, JSON.stringify({ since: Math.max(since, ...threads.map(t => t.updated ?? 0)) }));
+    writeFileSync(mark, JSON.stringify({ since: nextWatermark(threads, since) }));
     out({ scored: outcomes.length, skipped: threads.length - outcomes.length }); return;
   }
   if (command === 'refresh') {

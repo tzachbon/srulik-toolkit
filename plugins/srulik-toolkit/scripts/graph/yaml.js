@@ -110,6 +110,8 @@ function parse(text) {
     if (rest.trim()) return value(rest, n);
     skip();
     if (i < lines.length && indentOf(lines[i].raw) > indent) return node();
+    // A block list may sit at its key's indent (`needs:` then `- x`).
+    if (i < lines.length && indentOf(lines[i].raw) === indent && /^- |^-$/.test(stripComment(lines[i].raw).trim())) return list(indent);
     return null;
   }
 

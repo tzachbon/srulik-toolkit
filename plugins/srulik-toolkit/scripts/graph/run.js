@@ -19,7 +19,7 @@ function reduce(s, e) {
     case 'cap-skipped': s.capSkipped.push(`${e.node} (${e.count} skipped)`); break;
     case 'dispatch': inst().attempts.push(e.attempt); break;
     case 'pick': (s.picks[e.node] ??= []).push(e); break;
-    case 'result': Object.assign(inst(), { result: e.output, model: e.model, settled: true });
+    case 'result': Object.assign(inst(), { result: e.output, model: e.model, settled: true, ...(e.dropped ? { dropped: true } : {}) });
       if (e.write) s.writes[e.write.id] = { name: e.write.name, file: e.write.file, argv: e.write.argv, state: 'reserved' }; break;
     case 'gate-dropped': inst().dropped = true; break;
     case 'failed': { const i = inst(); i.failures++; i.reason = e.reason; if (e.final) { i.final = true; i.settled = true; s.finalFailures.push(key(e.node, e.index)); } break; }
@@ -77,7 +77,8 @@ function inputFor(spec, s, name) {
   for (const { node: p, field } of [].concat(node.in ?? []).flatMap(refs)) {
     if (p === 'inputs') continue;
     const fanOut = 'for_each' in spec.nodes[p];
-    if (fanOut) input[p] = survivors(s, p).map(i => ({ index: i.index, item: i.item, value: i.result[field] }));
+    // Each fan-out instance keeps every field the consumer asked for.
+    if (fanOut) input[p] = survivors(s, p).map((i, n) => ({ ...(input[p]?.[n] ?? { index: i.index, item: i.item }), [field]: i.result[field] }));
     else input[p] = { ...input[p], [field]: survivors(s, p)[0]?.result[field] };
   }
   for (const p of node.needs ?? []) input[p] = survivors(s, p).map(i => ({ index: i.index, item: i.item, output: i.result }));
@@ -99,7 +100,7 @@ function admit(spec, dir, s, name) {
   emit(dir, s, { type: 'admit', node: name, count: items.length, items });
 }
 
-function next(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
+function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
   const s = fold(dir);
   if (!s.started) {
     const inputs = { ...spec.inputs, ...overrides };
@@ -151,14 +152,16 @@ function recordOutcome(spec, dir, s, inst, ok) {
   } catch (error) { emit(dir, s, { type: 'stats-error', node: inst.node, reason: error.message }); }
 }
 
-function done(spec, dir, result) {
+function doneUnlocked(spec, dir, result) {
   const s = fold(dir);
   const { node: name, index = 0 } = result;
   const node = spec.nodes[name];
   const current = s.inst[key(name, index)] ?? {};
   if (current.settled) return { writes: [], duplicate: true };
+  // A report naming an attempt older than the one now running is stale, success or failure.
+  if (result.attempt !== undefined && result.attempt <= (current.failures ?? 0)) return { writes: [], duplicate: true };
   if (result.failed !== undefined) {
-    const reported = (current.failures ?? 0) >= (current.attempts ?? []).length || (result.attempt !== undefined && result.attempt <= (current.failures ?? 0));
+    const reported = (current.failures ?? 0) >= (current.attempts ?? []).length; // older attempts were rejected above
     if (reported) return { writes: [], duplicate: true }; // this attempt's failure was already recorded
     emit(dir, s, { type: 'failed', node: name, index, attempt: (current.failures ?? 0) + 1, reason: result.failed, final: !!result.final, model: result.model });
     if (result.final) propagate(spec, dir, s);
@@ -180,9 +183,10 @@ function done(spec, dir, result) {
     write = { id, name: node.write, file, argv: argvFor(spec.writes[node.write].run, s, file) };
   }
   // The result and its write reservation are one event, so no crash can record one without the other.
-  emit(dir, s, { type: 'result', node: name, index, output: result.output, model: result.model, provider: result.provider, ...(write ? { write } : {}) });
+  // The gate verdict and any write reservation travel in the result event, so a crash can't split them.
+  emit(dir, s, { type: 'result', node: name, index, output: result.output, model: result.model, provider: result.provider, ...(write ? { write } : {}), ...(passed ? {} : { dropped: true }) });
   if (node.gate) {
-    if (!passed) emit(dir, s, { type: 'gate-dropped', node: name, index });
+    if (!passed) emit(dir, s, { type: 'gate-dropped', node: name, index }); // for the live view
     const inst = instances(s, name)[index];
     if (inst?.src) recordOutcome(spec, dir, s, { node: name, index, src: inst.src }, passed);
   }
@@ -198,41 +202,69 @@ function lockOwnerAlive(lock) {
   try { process.kill(owner.pid, 0); return true; } catch (error) { return error.code === 'EPERM'; }
 }
 
+
+// One writer at a time: each state-changing call holds <run-dir>/run.lock while it folds and appends,
+// so parallel next/done calls never decide from the same stale state. The lock records its owner.
+function withRunLock(dir, fn) {
+  mkdirSync(dir, { recursive: true });
+  const lock = join(dir, 'run.lock');
+  const until = Date.now() + 30000;
+  for (;;) {
+    try { const fd = openSync(lock, 'wx'); try { writeSync(fd, JSON.stringify({ pid: process.pid, host: hostname() })); } finally { closeSync(fd); } break; }
+    catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      if (!lockOwnerAlive(lock)) { rmSync(lock, { force: true }); continue; }
+      if (Date.now() > until) throw new Error(`run directory is busy: ${lock}`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+    }
+  }
+  try { return fn(); } finally { rmSync(lock, { force: true }); }
+}
+
 const runnerIn = cwd => argv => spawnSync(argv[0], argv.slice(1), { shell: false, cwd: cwd ?? undefined, encoding: 'utf8', timeout: 120000 });
 
-function apply(spec, dir, id, runner, { mark } = {}) {
+// Take the claim lock for one write. Returns the release function. A lock whose owner is still running
+// always refuses; one whose owner is gone refuses as an unknown outcome unless `takeStale` (only --mark).
+function claim(dir, id, lock, takeStale) {
+  for (;;) {
+    try {
+      const fd = openSync(lock, 'wx');
+      try { writeSync(fd, JSON.stringify({ pid: process.pid, host: hostname() })); } finally { closeSync(fd); }
+      return () => rmSync(lock, { force: true });
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      if (lockOwnerAlive(lock)) throw new Error(`${id}: still being applied by process ${readFileSync(lock, 'utf8').trim() || 'unknown'}; wait for it to finish`);
+      if (!takeStale) throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
+      rmSync(lock, { force: true }); // the owner is gone; retry the exclusive create, which a live apply could still win
+    }
+  }
+}
+
+function apply(spec, dir, id, runner, { mark, onClaimed } = {}) {
   const s = fold(dir);
   runner ??= runnerIn(s.cwd);
   const w = s.writes[id];
   if (!w) throw new Error(`${id}: not reserved`);
-  const lock = `${w.file}.lock`;
-  if (mark) { // the owner checked an unknown outcome by hand and records it
-    if (w.state === 'applied') throw new Error(`${id}: already applied`);
-    if (existsSync(lock) && lockOwnerAlive(lock)) throw new Error(`${id}: still being applied by process ${readFileSync(lock, 'utf8').trim() || 'unknown'}; wait for it to finish`);
-    if (!['applied', 'failed'].includes(mark)) throw new Error(`${id}: mark must be applied or failed`);
-    emit(dir, s, mark === 'applied' ? { type: 'write-applied', id, marked: true } : { type: 'write-failed', id, reason: 'marked failed by owner' });
-    rmSync(lock, { force: true }); // the claim's owner is gone and the owner resolved it, so a retry may proceed
-    return { ok: mark === 'applied', id };
-  }
-  // Claim exclusively: the lock file can be created by one process only, so two applies never both run.
-  let fd;
-  try { fd = openSync(lock, 'wx'); } catch (error) {
-    if (error.code !== 'EEXIST') throw error;
-    // Only a claim whose owner is gone is abandoned; a live owner is still applying.
-    if (fold(dir).writes[id].state === 'applying' && !lockOwnerAlive(lock)) throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
-    throw new Error(`${id}: already being applied`);
-  }
-  try { writeSync(fd, JSON.stringify({ pid: process.pid, host: hostname() })); } finally { closeSync(fd); }
+  if (mark && !['applied', 'failed'].includes(mark)) throw new Error(`${id}: mark must be applied or failed`);
+  // Both paths hold the claim across the state check, the update and cleanup, so they never interleave.
+  const release = claim(dir, id, `${w.file}.lock`, !!mark);
   try {
+    onClaimed?.();
     const now = fold(dir).writes[id].state;
     if (now === 'applied') throw new Error(`${id}: already applied`);
+    if (mark) { // the owner checked an unknown outcome by hand and records it
+      emit(dir, s, mark === 'applied' ? { type: 'write-applied', id, marked: true } : { type: 'write-failed', id, reason: 'marked failed by owner' });
+      return { ok: mark === 'applied', id };
+    }
     if (now === 'applying') throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
     emit(dir, s, { type: 'write-claimed', id });
     const r = runner(w.argv);
     const ok = r.status === 0;
+    // Killed by timeout or a signal after it started: the effect may have happened, so the claim stays unresolved.
+    if (!ok && (r.status === null || r.signal)) return { ok: false, id, unknown: true };
     emit(dir, s, ok ? { type: 'write-applied', id } : { type: 'write-failed', id, reason: String(r.error?.message || r.stderr || `exit ${r.status}`).trim().slice(-500) });
     return { ok, id };
-  } finally { rmSync(lock, { force: true }); }
+  } finally { release(); }
 }
 
 function status(spec, dir) {
@@ -246,5 +278,8 @@ function status(spec, dir) {
   const unapplied = Object.values(s.writes).some(w => w.state !== 'applied');
   return { state: s.finalFailures.length || s.capSkipped.length || unapplied ? 'partial' : 'done', ...summary };
 }
+
+const next = (spec, dir, ...rest) => withRunLock(dir, () => nextUnlocked(spec, dir, ...rest));
+const done = (spec, dir, result) => withRunLock(dir, () => doneUnlocked(spec, dir, result));
 
 module.exports = { fold, next, exec, done, apply, status };

@@ -114,7 +114,7 @@ module.exports = {
     const spec = check({ name: 'x', limits: { max_agents: 1 }, inputs: { v: 'a' }, nodes: {
       x: { run: ['node', '-e', 'process.stdout.write(process.argv[1])', '${inputs.v}'] } } });
     const dir = temp('graph-'); const hostile = '1; touch pwned $(id) `id` "q"';
-    assert.equal(next(spec, dir, { v: hostile })[0].taskType, 'run');
+    assert.equal(next(spec, dir, { v: hostile }, { cwd: dir })[0].taskType, 'run'); // commands run in dir, so an injection would land there
     assert.equal(exec(spec, dir, 'x').output.text, hostile);
     assert.equal(existsSync(join(dir, 'pwned')), false);
     assert.throws(() => next(spec, temp('graph-'), { v: '--upload-pack=x' }), /input "v" must not start with "-"/);
