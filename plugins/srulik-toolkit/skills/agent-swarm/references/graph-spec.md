@@ -137,6 +137,10 @@ The claim lock records the process that holds it. While that process is still ru
 | `write-failed` | id, reason |
 | `end` | state |
 
+## Live view
+
+`graph.js view <run-dir> [--port N] [--host <address>]` serves a page that replays `run.jsonl` and streams new events. It listens on `127.0.0.1` unless `--host` names one address, such as a private Tailscale IP. `0.0.0.0` and `::` are refused. Requests whose `Host` header names any other address get 403, so a page on another site can't reach it through DNS rebinding.
+
 ## Files
 
 State lives in `PLUGIN_DATA`. If that isn't set, it falls back to `CLAUDE_PLUGIN_DATA`, then to `~/.srulik-toolkit`.

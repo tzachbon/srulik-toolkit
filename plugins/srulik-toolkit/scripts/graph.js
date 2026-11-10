@@ -22,7 +22,7 @@ const USAGE = `Usage: node graph.js <command> ...
   score   <threads.json> [--since <ms>]
   watermark
   refresh
-  view    <run-dir> [--port N]`;
+  view    <run-dir> [--port N] [--host <address>]`;
 
 // Creators to avoid for one instance: the producer of this item when it came from the differ_from node,
 // otherwise every creator that node used. Each producer instance counts only its latest pick, the attempt
@@ -127,9 +127,11 @@ async function main([command, ...args]) {
     out(report); if (report.aa !== 'ok' || report.arena !== 'ok') process.exitCode = 1; return;
   }
   if (command === 'view') {
-    const { found, rest } = flags(args, ['port']); if (rest.length !== 1) usage();
-    const server = await require('./graph/view.js').serve(resolve(rest[0]), Number(found.port[0] ?? 0));
-    console.log(`http://127.0.0.1:${server.address().port}/`); return;
+    const { found, rest } = flags(args, ['port', 'host']); if (rest.length !== 1) usage();
+    const host = found.host[0] ?? '127.0.0.1';
+    if (['0.0.0.0', '::', ''].includes(host)) throw new Error('--host must be one address, not 0.0.0.0 or ::');
+    const server = await require('./graph/view.js').serve(resolve(rest[0]), Number(found.port[0] ?? 0), host);
+    console.log(`http://${host.includes(':') ? `[${host}]` : host}:${server.address().port}/`); return;
   }
   usage();
 }

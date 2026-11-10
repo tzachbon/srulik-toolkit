@@ -96,4 +96,17 @@ module.exports = {
     done(spec, dir, { node: 'toString', output: {}, model: 'm' });
     assert.equal(status(spec, dir).state, 'done');
   },
+
+  async C34() {
+    // T3's Servers panel opens the view at the machine's own address, so `--host` adds that address
+    const { allowedHost, serve } = mod('view.js');
+    assert.equal(allowedHost('100.90.182.51:47812', '100.90.182.51', 47812), true, 'the bound address is accepted');
+    assert.equal(allowedHost('127.0.0.1:47812', '100.90.182.51', 47812), true, 'loopback still works');
+    assert.equal(allowedHost('evil.example:47812', '100.90.182.51', 47812), false, 'any other Host is refused');
+    assert.equal(allowedHost('100.90.182.51:47812', '127.0.0.1', 47812), false, 'without --host, only loopback');
+    const server = await serve(temp('view-'), 0, '127.0.0.1');
+    try { assert.equal(server.address().address, '127.0.0.1', 'the default stays on loopback'); } finally { server.close(); }
+    const r = spawnSync(process.execPath, [CLI, 'view', temp('view-'), '--host', '0.0.0.0'], { encoding: 'utf8', env: process.env, timeout: 5000 });
+    assert.match(r.stderr, /--host must be one address, not 0\.0\.0\.0 or ::/, 'a wildcard address is refused');
+  },
 };

@@ -1,5 +1,5 @@
 // Live run view: a local page plus a Server-Sent Events stream of <run-dir>/run.jsonl.
-// Loopback only, Host-checked, no CORS; the page writes every log value with textContent.
+// Loopback by default, or one named address; Host-checked, no CORS; the page writes every log value with textContent.
 'use strict';
 const http = require('node:http');
 const { openSync, readSync, closeSync, statSync, existsSync, watch } = require('node:fs');
@@ -38,11 +38,14 @@ new EventSource('events').onmessage = m => { const e = JSON.parse(m.data);
   else if (e.type==='end') stateEl.textContent = e.state; };
 </script></body></html>`;
 
-function serve(dir, port = 0) {
+// A request's Host must name loopback or the one address the server is bound to, so DNS rebinding can't reach it.
+const allowedHost = (header, host, port) => [`127.0.0.1:${port}`, `localhost:${port}`, `${host}:${port}`].includes(header);
+
+function serve(dir, port = 0, host = '127.0.0.1') {
   const file = join(dir, 'run.jsonl');
   const server = http.createServer((req, res) => {
     const { port: actual } = server.address();
-    if (![`127.0.0.1:${actual}`, `localhost:${actual}`].includes(req.headers.host)) { res.writeHead(403).end('forbidden'); return; }
+    if (!allowedHost(req.headers.host, host, actual)) { res.writeHead(403).end('forbidden'); return; }
     if (req.url === '/' ) {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
         'content-security-policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'" });
@@ -69,7 +72,7 @@ function serve(dir, port = 0) {
     const poll = setInterval(pump, 500);
     req.on('close', () => { clearInterval(poll); watcher?.close(); });
   });
-  return new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', () => resolve(server)); });
+  return new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, host, () => resolve(server)); });
 }
 
-module.exports = { serve };
+module.exports = { serve, allowedHost };
