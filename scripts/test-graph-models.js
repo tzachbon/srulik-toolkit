@@ -9,8 +9,8 @@ module.exports = {
     const { matchName } = mod('pick.js');
     assert.equal(matchName('9router/kimi/k3.1-pro', ['kimi-k3-1-pro', 'kimi-k3-low']), 'kimi-k3-1-pro');
     assert.equal(matchName('claude-opus-5-5', ['Claude Opus 5.5 (Max)', 'Claude Opus 5 (High)']), 'Claude Opus 5.5 (Max)');
-    assert.equal(matchName('claude-opus-5-5', ['Claude Opus 5.5 (Max)', 'claude-opus-5-5-x']), 'Claude Opus 5.5 (Max)', 'parentheses dropped: exact beats a longer prefix');
-    assert.equal(matchName('gpt-6.1-sol', ['gpt-6-1-sol-mini-high', 'gpt-6-1-sol-max']), 'gpt-6-1-sol-max', 'shortest boundary match wins');
+    assert.equal(matchName('claude-opus-5-5', ['Claude Opus 5.5 (Max)', 'claude-opus-5-5-x']), 'Claude Opus 5.5 (Max)', 'without an effort, the same model at an annotated effort beats a longer name');
+    assert.equal(matchName('gpt-6.1-sol', ['gpt-6-1-sol-mini-pro', 'gpt-6-1-sol-pro']), 'gpt-6-1-sol-pro', 'shortest boundary match wins');
     assert.equal(matchName('gpt-6', ['gpt-6-1-sol']), null, 'no match across a version token');
     assert.equal(matchName('gemini-4-argon-high', ['gemini-4-argon', 'gemini-4']), 'gemini-4-argon', 'a trailing effort level is ignored');
   },

@@ -1,6 +1,6 @@
 // Graph contract: later PR #67 bot findings.
 'use strict';
-const { assert, writeFileSync, join, spawnSync, temp, CLI, cands } = require('./graph-fixtures.js');
+const { assert, writeFileSync, join, spawnSync, temp, mod, CLI, cands, data } = require('./graph-fixtures.js');
 
 module.exports = {
   C29() {
@@ -29,5 +29,18 @@ module.exports = {
     const v = cli('pick', spec, dir, 'verify', '0', '--candidates', c, '--usage', u);
     assert.equal(v.status, 0, v.stderr);
     assert.equal(JSON.parse(v.stdout).creator, 'Anthropic', 'only the creator of the successful attempt is excluded');
+  },
+
+  C30() {
+    // Codex bot: an Arena effort annotation in parentheses is kept, so another effort's rating is never borrowed
+    const { matchName, pick } = mod('pick.js');
+    assert.equal(matchName('claude-opus-5-5', ['Claude Opus 5.5 (Max)', 'Claude Opus 5.5 (Low)'], 'low'), 'Claude Opus 5.5 (Low)', 'the row at the dispatched effort wins');
+    assert.equal(matchName('claude-opus-5-5', ['Claude Opus 5.5 (Max)'], 'low'), null, 'a Max rating is not used for a low-effort run');
+    assert.equal(matchName('gpt-5-5', ['GPT-5.5 (High, Codex Harness)', 'GPT-5.5 (xHigh, Codex Harness)'], 'xhigh'), 'GPT-5.5 (xHigh, Codex Harness)', 'an effort among other annotations is recognized');
+    assert.equal(matchName('claude-opus-4-1', ['Claude Opus 4.1 (20250805)'], 'high'), 'Claude Opus 4.1 (20250805)', 'a date annotation is still dropped');
+    const d = { ...data(), arena: { webdev: [{ model_name: 'Claude Opus 5.5 (Max)', rating: 1900 }, { model_name: 'Claude Opus 5.5 (Low)', rating: 1000 },
+      { model_name: 'GPT-6.1 Sol (Max)', rating: 1500 }] } };
+    assert.throws(() => pick({ kind: 'ui-ux', pick: { tier: 'strongest' } }, [{ provider: 'claudeAgent', model: 'claude-opus-5-5', effort: 'low' }], d),
+      /no candidate meets tier strongest/, 'a low-effort run is scored by its own rating');
   },
 };

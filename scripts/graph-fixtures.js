@@ -33,7 +33,7 @@ const aa = [
   aaModel('kimi-k3-1-pro', 'Moonshot AI', 46, 0.4, 0.4, 0.5, 2),
   aaModel('weak-a', 'X', 20, 0.1, 0.1, 1, 1),
   aaModel('weak-b', 'Y', 25, 0.2, 0.2, 1, 1)];
-const data = () => ({ aa, arena: { webdev: [{ model_name: 'Claude Opus 5.5 (Max)', rating: 1818 }, { model_name: 'GPT-6.1 Sol (Max)', rating: 1743 }] },
+const data = () => ({ aa, arena: { webdev: [{ model_name: 'Claude Opus 5.5 (High)', rating: 1818 }, { model_name: 'GPT-6.1 Sol (High)', rating: 1743 }] },
   notes: { 'gpt-6.1-sol': { prefer: ['code-review'], avoid: ['ui-ux'] } }, outcomes: [], usage: { accounts: [] },
   now: NOW, explore: false, random: () => { throw new Error('random used without explore'); } });
 

@@ -101,7 +101,7 @@ The claim lock records the process that holds it. While that process is still ru
    | long-context | AA long_context_reasoning |
    | writing | AA gdpval_elo |
 
-   A score is matched to the candidate's effort: an entry measured at that effort (such as `claude-opus-5-5-low` for effort `low`) wins, then the unsuffixed entry. An entry measured at a different effort is never used.
+   A score is matched to the candidate's effort: an entry measured at that effort (such as `claude-opus-5-5-low`, or `Claude Opus 5.5 (Low)` on LMArena, for effort `low`) wins, then the unsuffixed entry. An entry measured at a different effort is never used. LMArena's other parenthesized notes, such as dates or `Codex Harness`, are ignored.
 
 3. **Tier floor.** A candidate's percentile is computed against the whole population that has a score for that signal, not just the runnable candidates. The floors:
    - `standard`: 0.5 or higher;

@@ -8,15 +8,17 @@ const QUOTA_LIMIT = 80;
 const EVIDENCE_OVERRIDE = 10;
 const TIERS = { cheap: null, standard: 0.5, strong: 0.75, strongest: 'top' };
 
+const EFFORTS = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
+// `(Max)` or `(xHigh, Codex Harness)` names the effort a row was measured at, so it stays as a suffix; other annotations go
 function norm(value) {
-  let v = String(value).toLowerCase().replace(/\([^)]*\)/g, ' ').trim();
+  let v = String(value).toLowerCase().replace(/\(([^)]*)\)/g, (_, a) => ` ${a.split(',').map(x => x.trim()).find(x => EFFORTS.includes(x)) ?? ''} `).trim();
   const parts = v.split('/');
   const last = parts.at(-1);
   v = parts.length > 1 && /^([0-9]|[a-z][0-9])/.test(last) ? `${parts.at(-2)}-${last}` : last;
   return v.replace(/[._\s]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 }
 
-const EFFORT = /-(minimal|low|medium|high|xhigh|max|ultra)$/;
+const EFFORT = new RegExp(`-(${EFFORTS.join('|')})$`);
 // With an effort, a variant measured at that effort wins, and a variant measured at another effort is
 // never borrowed; the unsuffixed name (the source's default setting) still matches.
 function matchName(id, names, effort) {
@@ -28,7 +30,9 @@ function matchName(id, names, effort) {
   if (EFFORT.test(n)) return matchName(n.replace(EFFORT, ''), names, effort); // `-high` names an effort, not a model
   const boundary = names.filter(c => { const m = norm(c); const tail = m.slice(n.length + 1);
     return m.startsWith(`${n}-`) && !/^[0-9]/.test(tail) && !(effort && EFFORT.test(`-${tail}`)); });
-  return boundary.sort((a, b) => norm(a).length - norm(b).length)[0] ?? null;
+  // without an effort, the same model at some effort beats a longer, different name
+  const rank = c => [EFFORT.test(`-${norm(c).slice(n.length + 1)}`) ? 0 : 1, norm(c).length];
+  return boundary.sort((a, b) => rank(a)[0] - rank(b)[0] || rank(a)[1] - rank(b)[1])[0] ?? null;
 }
 
 const globMatch = (glob, id) => new RegExp(`^${glob.split('*').map(p => p.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*')}$`).test(id);
