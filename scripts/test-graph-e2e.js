@@ -1,7 +1,7 @@
 // Graph contract: fixes found by the graph's own review of PR #67 (differ_from scope, scoring watermark,
 // concurrent log writers, same-indent block lists), and later Codex bot findings.
 'use strict';
-const { assert, writeFileSync, readFileSync, join, spawnSync, temp, mod, CLI, cands } = require('./graph-fixtures.js');
+const { assert, writeFileSync, readFileSync, appendFileSync, join, spawnSync, temp, mod, CLI, cands, aaModel, data, log } = require('./graph-fixtures.js');
 
 module.exports = {
   C21() {
@@ -164,5 +164,27 @@ module.exports = {
       f: { run: ['node', '-e', 'process.stdout.write("hi")'], write: 'note' } } });
     next(ws, wd);
     assert.deepEqual(mod('run.js').exec(ws, wd, 'f').writes.map(w => w.id), ['note#1'], 'exec returns the write it reserved');
+  },
+
+  C26() {
+    // Codex bot: a benchmark measured at another effort is never borrowed
+    const { matchName, pick } = mod('pick.js');
+    assert.equal(matchName('ex', ['ex-max', 'ex-low'], 'low'), 'ex-low', 'the variant at the dispatched effort wins');
+    assert.equal(matchName('ex', ['ex-max'], 'low'), null, 'another effort is not borrowed');
+    const d = { ...data(), aa: [...data().aa, aaModel('ex-max', 'Z', 70, 0.9, 0.9, 1, 1), aaModel('ex-low', 'Z', 10, 0.1, 0.1, 1, 1)] };
+    const strongest = { kind: 'code-review', pick: { tier: 'strongest' } };
+    assert.throws(() => pick(strongest, [{ provider: 'z', model: 'ex', effort: 'low' }], d), /no candidate meets tier strongest/, 'a low-effort run is scored as low');
+    assert.equal(pick(strongest, [{ provider: 'z', model: 'ex', effort: 'max' }], d).model, 'ex');
+
+    // Codex bot: when the child's report omits its model, the logged pick supplies it, so the gate outcome is credited
+    const { check } = mod('spec.js'); const { next, done } = mod('run.js');
+    const dir = temp('graph-');
+    const spec = check({ name: 'o', limits: { max_agents: 2 }, nodes: { p: { agent: 'p', out: ['xs'] },
+      v: { agent: 'v {item}', for_each: '${p.xs}', out: ['ok'], gate: 'ok == true' } } });
+    next(spec, dir);
+    appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: 1, type: 'pick', node: 'p', index: 0, provider: 'codex', model: 'gpt-6.1-sol', effort: 'high' }) + '\n');
+    done(spec, dir, { node: 'p', attempt: 1, output: { xs: [1] } });
+    next(spec, dir); done(spec, dir, { node: 'v', attempt: 1, output: { ok: true } });
+    assert.deepEqual(log(dir).filter(e => e.type === 'outcome').map(e => e.model), ['gpt-6.1-sol'], 'the picked model is credited');
   },
 };

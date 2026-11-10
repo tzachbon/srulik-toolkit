@@ -159,12 +159,15 @@ function doneUnlocked(spec, dir, result) {
   const node = spec.nodes[name];
   const current = s.inst[key(name, index)] ?? {};
   if (current.settled) return { writes: [], duplicate: true };
+  // A child's report need not repeat its model: the latest pick for this instance supplies it.
+  const picked = (s.picks[name] ?? []).filter(p => p.index === index).at(-1);
+  const model = result.model ?? picked?.model; const provider = result.provider ?? picked?.provider;
   // A report naming an attempt older than the one now running is stale, success or failure.
   if (result.attempt !== undefined && result.attempt <= (current.failures ?? 0)) return { writes: [], duplicate: true };
   if (result.failed !== undefined) {
     const reported = (current.failures ?? 0) >= (current.attempts ?? []).length; // older attempts were rejected above
     if (reported) return { writes: [], duplicate: true }; // this attempt's failure was already recorded
-    emit(dir, s, { type: 'failed', node: name, index, attempt: (current.failures ?? 0) + 1, reason: result.failed, final: !!result.final, model: result.model });
+    emit(dir, s, { type: 'failed', node: name, index, attempt: (current.failures ?? 0) + 1, reason: result.failed, final: !!result.final, model });
     if (result.final) propagate(spec, dir, s);
     return { writes: [] };
   }
@@ -185,7 +188,7 @@ function doneUnlocked(spec, dir, result) {
   }
   // The result and its write reservation are one event, so no crash can record one without the other.
   // The gate verdict and any write reservation travel in the result event, so a crash can't split them.
-  emit(dir, s, { type: 'result', node: name, index, output: result.output, model: result.model, provider: result.provider, ...(write ? { write } : {}), ...(passed ? {} : { dropped: true }) });
+  emit(dir, s, { type: 'result', node: name, index, output: result.output, model, provider, ...(write ? { write } : {}), ...(passed ? {} : { dropped: true }) });
   if (node.gate) {
     if (!passed) emit(dir, s, { type: 'gate-dropped', node: name, index }); // for the live view
     const inst = instances(s, name)[index];

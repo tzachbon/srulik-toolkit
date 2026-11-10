@@ -101,6 +101,8 @@ The claim lock records the process that holds it. While that process is still ru
    | long-context | AA long_context_reasoning |
    | writing | AA gdpval_elo |
 
+   A score is matched to the candidate's effort: an entry measured at that effort (such as `claude-opus-5-5-low` for effort `low`) wins, then the unsuffixed entry. An entry measured at a different effort is never used.
+
 3. **Tier floor.** A candidate's percentile is computed against the whole population that has a score for that signal, not just the runnable candidates. The floors:
    - `standard`: 0.5 or higher;
    - `strong`: 0.75 or higher;
@@ -124,7 +126,7 @@ The claim lock records the process that holds it. While that process is still ru
 | `admit` | node, count, items |
 | `dispatch` | node, index, attempt, taskType, item, src |
 | `pick` | node, index, provider, model, effort, creator, explored, reason |
-| `result` | node, index, output, model, provider, write (the reserved write, if any: id, name, file, argv), dropped (when the gate failed) |
+| `result` | node, index, output, model and provider (from `done`, else from this instance's latest `pick`), write (the reserved write, if any: id, name, file, argv), dropped (when the gate failed) |
 | `failed` | node, index, attempt, reason, final |
 | `gate-dropped` | node, index (for the live view; the result event's `dropped` is authoritative) |
 | `cap-skipped` | node, count |

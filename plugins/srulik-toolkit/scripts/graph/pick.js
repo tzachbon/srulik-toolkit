@@ -17,12 +17,17 @@ function norm(value) {
 }
 
 const EFFORT = /-(minimal|low|medium|high|xhigh|max|ultra)$/;
-function matchName(id, names) {
+// With an effort, a variant measured at that effort wins, and a variant measured at another effort is
+// never borrowed; the unsuffixed name (the source's default setting) still matches.
+function matchName(id, names, effort) {
   const n = norm(id);
+  const atEffort = effort ? names.find(c => norm(c) === `${n}-${norm(effort)}`) : undefined;
+  if (atEffort !== undefined) return atEffort;
   const exact = names.find(c => norm(c) === n);
   if (exact !== undefined) return exact;
-  if (EFFORT.test(n)) return matchName(n.replace(EFFORT, ''), names); // `-high` names an effort, not a model
-  const boundary = names.filter(c => { const m = norm(c); return m.startsWith(`${n}-`) && !/^[0-9]/.test(m.slice(n.length + 1)); });
+  if (EFFORT.test(n)) return matchName(n.replace(EFFORT, ''), names, effort); // `-high` names an effort, not a model
+  const boundary = names.filter(c => { const m = norm(c); const tail = m.slice(n.length + 1);
+    return m.startsWith(`${n}-`) && !/^[0-9]/.test(tail) && !(effort && EFFORT.test(`-${tail}`)); });
   return boundary.sort((a, b) => norm(a).length - norm(b).length)[0] ?? null;
 }
 
@@ -70,9 +75,9 @@ function pick(node, candidates, data, ctx = {}) {
   const filtered = [];
   const signals = signalFor(kind, data);
   let pool = candidates.map(c => {
-    const aa = data.aa.find(m => m.slug === matchName(c.model, data.aa.map(x => x.slug)));
+    const aa = data.aa.find(m => m.slug === matchName(c.model, data.aa.map(x => x.slug), c.effort));
     const creator = aa?.creator ?? PROVIDER_CREATORS[creatorKey(c.provider)] ?? c.provider;
-    const own = signals.map(s => { const name = matchName(c.model, s.values.map(([n]) => n)); return name === null ? null : s.values.find(([n]) => n === name)[1]; });
+    const own = signals.map(s => { const name = matchName(c.model, s.values.map(([n]) => n), c.effort); return name === null ? null : s.values.find(([n]) => n === name)[1]; });
     const at = own.findIndex(v => v !== null);
     const sig = at === -1 ? null : signals[at];
     const score = at === -1 ? null : own[at];
