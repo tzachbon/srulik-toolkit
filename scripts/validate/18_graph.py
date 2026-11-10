@@ -7,7 +7,7 @@ graph_notice = (root / "NOTICE.md").read_text(encoding="utf-8")
 graph_standards = (root / "CODING_STANDARDS.md").read_text(encoding="utf-8")
 
 for graph_phrase in ["## Graph mode", "retry once with the failure reason", "Stop only when nothing more can run",
-                     "applied automatically", "opinion about a model", "references/graph-spec.md"]:
+                     "applied automatically", "opinion about a model", "on one fixed port", "references/graph-spec.md"]:
     if graph_phrase not in graph_skill:
         raise SystemExit(f"agent-swarm graph mode must say: {graph_phrase}")
 graph_core = graph_skill.split("## Graph mode", 1)[1].split("\n## ", 1)[0]
@@ -20,6 +20,17 @@ for graph_phrase in ["| ui-ux | arena.webdev", "30-day half-life", "whole popula
 for graph_phrase in ["delegate_task", "orchestrator_capabilities", "schedule_task", "sudo -n aa-models usage", "preview_open"]:
     if graph_phrase not in graph_t3_ref:
         raise SystemExit(f"agent-swarm T3 reference must map: {graph_phrase}")
+for graph_phrase in ["outlives the turn", "at most one view server", "--port 47812", "Never use `0.0.0.0` or a public address", "pass the printed page URL as `url` when `--host` is set", "never change or restart the T3 server"]:
+    if graph_phrase not in graph_t3_ref:
+        raise SystemExit(f"agent-swarm T3 reference must keep the live page open: {graph_phrase}")
+e2e_skill = (skill_root / "execute-task-end-to-end" / "SKILL.md").read_text(encoding="utf-8")
+e2e_t3_ref = (skill_root / "execute-task-end-to-end" / "references" / "t3-code.md").read_text(encoding="utf-8")
+for graph_phrase in ["graphs/pr-review.yaml", "after each push that fixes review findings", "confirms nothing new", "its `status` is `done`", "already decided",
+                     "like a bot finding"]:
+    if graph_phrase not in e2e_skill:
+        raise SystemExit(f"execute-task-end-to-end must run the pr-review graph: {graph_phrase}")
+if "../../agent-swarm/references/t3-code.md" not in e2e_t3_ref:
+    raise SystemExit("execute-task-end-to-end T3 mapping must point at agent-swarm's graph mapping")
 if "LMArena" not in graph_notice or "CC-BY-4.0" not in graph_notice:
     raise SystemExit("NOTICE must attribute the LMArena dataset and its CC-BY-4.0 license")
 if "Durable graph state" not in graph_standards or "~/.srulik-toolkit" not in graph_standards:

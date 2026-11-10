@@ -1,9 +1,10 @@
 // Live run view: a local page plus a Server-Sent Events stream of <run-dir>/run.jsonl.
-// Loopback only, Host-checked, no CORS; the page writes every log value with textContent.
+// Loopback by default, or one named address; Host-checked, no CORS; the page writes every log value with textContent.
 'use strict';
 const http = require('node:http');
 const { openSync, readSync, closeSync, statSync, existsSync, watch } = require('node:fs');
 const { join } = require('node:path');
+const { isIP } = require('node:net');
 
 const PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Graph run</title><style>
@@ -38,11 +39,36 @@ new EventSource('events').onmessage = m => { const e = JSON.parse(m.data);
   else if (e.type==='end') stateEl.textContent = e.state; };
 </script></body></html>`;
 
-function serve(dir, port = 0) {
+// A request's Host must name the one address the server listens on (plus `localhost` for a loopback server),
+// so DNS rebinding can't reach it.
+const allowedHost = (header, host, port) =>
+  [`${host.includes(':') ? `[${host}]` : host}:${port}`, ...(host === '127.0.0.1' ? [`localhost:${port}`] : [])].includes(header);
+
+// The address as a browser writes it in Host: IPv6 lowercased and compressed. Anything that isn't an IP becomes ''.
+function canonicalHost(host) {
+  if (!isIP(host)) return '';
+  return isIP(host) === 6 ? new URL(`http://[${host}]/`).hostname.slice(1, -1) : host;
+}
+
+// The view has no login, so it may bind only a literal loopback or private address: RFC 1918, Tailscale's
+// 100.64.0.0/10, or IPv6 unique-local. Names and unspecified addresses (any spelling of 0.0.0.0 or ::) are refused.
+function privateHost(host) {
+  if (isIP(host) === 4) {
+    const [a, b] = host.split('.').map(Number);
+    return a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
+  }
+  // fc00::/7 is the first 16-bit group 0xfc00-0xfdff; a short group like `fc` is 0x00fc, so compare the number.
+  if (isIP(host) === 6) return host === '::1' || (parseInt(host, 16) & 0xfe00) === 0xfc00;
+  return false;
+}
+
+function serve(dir, port = 0, address = '127.0.0.1') {
+  const host = canonicalHost(address);
+  if (!privateHost(host)) return Promise.reject(new Error('--host must be a loopback or private address, such as a Tailscale IP'));
   const file = join(dir, 'run.jsonl');
   const server = http.createServer((req, res) => {
     const { port: actual } = server.address();
-    if (![`127.0.0.1:${actual}`, `localhost:${actual}`].includes(req.headers.host)) { res.writeHead(403).end('forbidden'); return; }
+    if (!allowedHost(req.headers.host, host, actual)) { res.writeHead(403).end('forbidden'); return; }
     if (req.url === '/' ) {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
         'content-security-policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'" });
@@ -69,7 +95,7 @@ function serve(dir, port = 0) {
     const poll = setInterval(pump, 500);
     req.on('close', () => { clearInterval(poll); watcher?.close(); });
   });
-  return new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', () => resolve(server)); });
+  return new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, host, () => resolve(server)); });
 }
 
-module.exports = { serve };
+module.exports = { serve, allowedHost, privateHost, canonicalHost };

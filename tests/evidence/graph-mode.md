@@ -1,12 +1,12 @@
 # Graph mode: verification evidence
 
-Plugin version: 1.19.0. Base: 16573c5fed91c318c6d467ab117e2590fd92e63c. Issue: #66.
+Plugin version: 1.20.0. Base: 16573c5fed91c318c6d467ab117e2590fd92e63c. Issue: #66.
 
 ## Contract
 
 `scripts/test-graph.js` loads `test-graph-run.js`, `test-graph-models.js`,
 `test-graph-review.js`, `test-graph-e2e.js` and `test-graph-later.js`. Shared setup is in
-`graph-fixtures.js`. There are 33 groups, all using local fakes: no network, no real model calls. The tests set a
+`graph-fixtures.js`. There are 34 groups, all using local fakes: no network, no real model calls. The tests set a
 temporary `PLUGIN_DATA` before any graph module loads, so they never touch real
 notes or stats. `scripts/validate/18_graph.py` checks the skill and reference
 text, the NOTICE attribution, the standards paragraph, that there are no
@@ -21,7 +21,7 @@ C13 failed on its first CLI exit-status assertion.
 Each behavior assertion has a mutation in the implementation that makes it the
 first failure. The test is never changed. Each mutation ran in a pristine copy,
 then the code was restored and the group passed again. Final run at the head
-of this PR: 207 mutations, 207 failed as targeted, and 207 passed again when
+of this PR: 226 mutations, 226 failed as targeted, and 226 passed again when
 restored. The only assertion without a mutation is `length <= 100` inside the
 fake leaderboard server, which is test setup, not behavior.
 

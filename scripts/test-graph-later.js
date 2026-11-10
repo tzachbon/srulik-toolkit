@@ -96,4 +96,50 @@ module.exports = {
     done(spec, dir, { node: 'toString', output: {}, model: 'm' });
     assert.equal(status(spec, dir).state, 'done');
   },
+
+  async C34() {
+    // T3's Servers panel opens the view at the machine's own address, so `--host` adds that address
+    const { allowedHost, serve } = mod('view.js');
+    assert.equal(allowedHost('100.90.182.51:47812', '100.90.182.51', 47812), true, 'the bound address is accepted');
+    // pr-review graph round 4: a server bound to another address doesn't listen on loopback, so loopback Hosts are not allowed there
+    assert.equal(allowedHost('127.0.0.1:47812', '100.90.182.51', 47812), false, 'loopback is only for a loopback server');
+    assert.equal(allowedHost('localhost:47812', '127.0.0.1', 47812), true, 'localhost names a loopback server');
+    assert.equal(allowedHost('evil.example:47812', '100.90.182.51', 47812), false, 'any other Host is refused');
+    assert.equal(allowedHost('100.90.182.51:47812', '127.0.0.1', 47812), false, 'without --host, only loopback');
+    // pr-review graph: browsers send an IPv6 Host in brackets
+    assert.equal(allowedHost('[fd7a:115c:a1e0::1]:47812', 'fd7a:115c:a1e0::1', 47812), true, 'a bracketed IPv6 Host is accepted');
+    const server = await serve(temp('view-'), 0);
+    try { assert.equal(server.address().address, '127.0.0.1', 'the default stays on loopback'); } finally { server.close(); }
+    // CodeRabbit: serve itself refuses a non-private address, not only the CLI
+    const wild = await serve(temp('view-'), 0, '0.0.0.0').then(s => { s.close(); return 'bound'; }, e => e.message);
+    assert.match(wild, /must be a loopback or private address/, 'serve refuses a wildcard address');
+    const v6 = await serve(temp('view-'), 0, '0:0:0:0:0:0:0:1');
+    try {
+      // pr-review graph round 5: a stuck response fails the group in 2 s instead of hanging the suite
+      const status = await new Promise((ok, bad) => require('node:http').get({ host: '::1', port: v6.address().port, path: '/', timeout: 2000 },
+        res => { res.resume(); ok(res.statusCode); }).on('timeout', function () { this.destroy(new Error('no response within 2 s')); }).on('error', bad));
+      assert.equal(status, 200, 'serve canonicalizes its host, so the browser-style Host [::1] passes');
+    } finally { v6.close(); }
+    // pr-review graph: only a literal loopback or private address may be bound, however it is spelled
+    const { privateHost } = mod('view.js');
+    for (const h of ['127.0.0.1', '::1', '10.1.2.3', '172.16.4.1', '192.168.0.9', '100.90.182.51', 'fd7a:115c:a1e0::1'])
+      assert.equal(privateHost(h), true, `${h} is private`);
+    for (const h of ['0.0.0.0', '::', '0:0:0:0:0:0:0:0', '0', '', 'localhost', '187.124.113.123', '8.8.8.8', '100.128.0.1', '2001:db8::1', 'fc::', 'fd::', 'fc0::', 'fe00::1'])
+      assert.equal(privateHost(h), false, `${h} is refused`);
+    // pr-review graph round 3: any spelling of an allowed address is accepted, and the browser's canonical Host matches it
+    const { canonicalHost } = mod('view.js');
+    assert.equal(privateHost(canonicalHost('0:0:0:0:0:0:0:1')), true, 'expanded IPv6 loopback is loopback');
+    assert.equal(canonicalHost('FD7A:115C:A1E0:0:0:0:0:1'), 'fd7a:115c:a1e0::1', 'IPv6 is lowercased and compressed');
+    assert.equal(canonicalHost('100.90.182.51'), '100.90.182.51', 'IPv4 is unchanged');
+    assert.equal(canonicalHost('not an address'), '', 'an invalid value becomes empty, so it is refused');
+    const r = spawnSync(process.execPath, [CLI, 'view', temp('view-'), '--host', '0:0:0:0:0:0:0:0'], { encoding: 'utf8', env: process.env, timeout: 5000 });
+    assert.match(r.stderr, /--host must be a loopback or private address/, 'a wildcard spelling is refused');
+    const ok = spawnSync(process.execPath, ['-e', `process.argv=[process.argv[0], ${JSON.stringify(CLI)}, 'view', ${JSON.stringify(temp('view-'))}, '--host', '0:0:0:0:0:0:0:1'];
+      const log=console.log; console.log=(...a)=>{ log(...a); process.exit(0); }; require(${JSON.stringify(CLI)});`], { encoding: 'utf8', env: process.env, timeout: 5000 });
+    assert.match(ok.stdout, /^http:\/\/\[::1\]:\d+\/$/m, 'the CLI accepts and prints a canonical IPv6 loopback');
+    // pr-review graph round 4: without --host, the CLI serves on loopback
+    const plain = spawnSync(process.execPath, ['-e', `process.argv=[process.argv[0], ${JSON.stringify(CLI)}, 'view', ${JSON.stringify(temp('view-'))}];
+      const log=console.log; console.log=(...a)=>{ log(...a); process.exit(0); }; require(${JSON.stringify(CLI)});`], { encoding: 'utf8', env: process.env, timeout: 5000 });
+    assert.match(plain.stdout, /^http:\/\/127\.0\.0\.1:\d+\/$/m, 'the CLI defaults to loopback');
+  },
 };

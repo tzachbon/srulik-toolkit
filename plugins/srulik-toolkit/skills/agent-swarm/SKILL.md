@@ -208,7 +208,8 @@ another.
 
 1. `check` the spec. Fix every reported error before any child starts.
 2. Start `view` on a new run directory and open the printed local page for the
-   owner.
+   owner. Run it on one fixed port and leave it running after the run ends; before starting it, stop the earlier
+   `view` on that port, so a machine runs only one.
 3. Loop: `next` returns ready tasks. Run each `run` task with `exec`. For each
    agent task, `pick` a model from the runnable models and current quota,
    delegate the task to a child with exactly that provider, model and effort,
