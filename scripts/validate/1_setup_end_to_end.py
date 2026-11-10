@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.17.0":
+if version != "1.18.0":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -109,6 +109,13 @@ for token in [
     "Keep the main watch unregistered and perform no PR maintenance writes until the handoff is verified",
     "including when step 4 reuses a PR",
     "Merge authority exists only when the user explicitly asks to merge this task's PR",
+    "## No Git hosting",
+    "if its source or deployment lives in a hosted repository, change it there and run the full workflow",
+    "Never create a repository, remote, or fork only to satisfy this workflow",
+    "skip the issue, PR, ownership handoff, watch, and merge steps (2, 4, 5, and 6)",
+    "record the original state",
+    "The terminal state is **`DONE`**",
+    "The handoff carries what changed, where, the proof, and how to roll back",
 ]:
     if token not in end_to_end:
         raise SystemExit(f"end-to-end completion contract missing: {token}")
