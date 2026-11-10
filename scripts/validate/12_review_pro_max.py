@@ -27,6 +27,12 @@ rpm_contracts = {
         "Write `no score` when a reviewer gave none; never invent one",
         "advise rerunning this review after they are applied",
         "Stop advising reruns once every reviewer reports no open blocking findings",
+        "When the change alters rendered UI, also run the `ui-ux-review` skill",
+        "state why the pass was skipped",
+        "Its findings go through the verification in step 4 and this skill's blocking rule",
+        "it is not a panel seat and gets no score row",
+        "mark the affected criteria `UNVERIFIED` and report a coverage limit",
+        "A requested quick review skips the UI pass and says so",
     ],
     "code-reviewer.md": [
         "round number, prior findings with their status",
