@@ -11,3 +11,5 @@ This maps the generic steps of graph mode onto T3 Code tools.
 | Open the live page | Start `graph.js view <run-dir>` in the background and open the printed URL with `preview_open`. |
 | Daily refresh | `schedule_task`, daily: `node <plugin root>/scripts/graph.js refresh`. |
 | Weekly thread scoring | `schedule_task`, weekly, read-only. List threads updated since the last run with `t3_thread_list` (`allProjects: true`) and read each with `t3_thread_read`. Have the cheapest suitable model label each thread as `{updated, model, kind, signals}`, then run `graph.js score <threads.json>` with the file of labels. Keep no thread text. |
+
+Observed on T3 Code on 2026-11-10: `pr-review.yaml` ran on a real pull request with children on Claude (`claudeAgent`), Kimi (`oh-my-pi`) and Gemini (`antigravity`), picked by `pick` and delegated with `delegate_task`. Quota came from `sudo -n aa-models usage`. The live view was served by `graph.js view`; T3's own preview could not open it because the server runs as root, so a headless Chromium captured it instead.

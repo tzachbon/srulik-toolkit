@@ -149,7 +149,7 @@ State lives in `PLUGIN_DATA`. If that isn't set, it falls back to `CLAUDE_PLUGIN
 
 - `model-stats.jsonl` holds one `{t, model, kind, ok, src}` per line, with `src` set to `graph` or `thread`. It stores no text and no thread IDs.
 - `arena.json` holds the LMArena cache, refreshed at most daily or when `refresh` runs.
-- `score-watermark.json` records how far scoring has read: up to just before the oldest thread still undecided, so that thread is read again next time.
+- `score-watermark.json` records how far scoring has read: up to just before the oldest thread still undecided, so that thread is read again next time. Threads after the watermark wait too, so no outcome is counted twice.
 - The usage file passed with `--usage` has the same shape as `aa-models usage` output: `{accounts: [{provider, windows: [{used_percent}]}], notes: []}`.
 
 ## Thread scoring

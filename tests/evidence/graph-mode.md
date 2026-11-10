@@ -21,7 +21,7 @@ C13 failed on its first CLI exit-status assertion.
 Each behavior assertion has a mutation in the implementation that makes it the
 first failure. The test is never changed. Each mutation ran in a pristine copy,
 then the code was restored and the group passed again. Final run at the head
-of this PR: 173 mutations, 173 failed as targeted, and 173 passed again when
+of this PR: 174 mutations, 174 failed as targeted, and 174 passed again when
 restored. The only assertion without a mutation is `length <= 100` inside the
 fake leaderboard server, which is test setup, not behavior.
 
@@ -59,7 +59,7 @@ the same way:
 
 | Source | Findings |
 | --- | --- |
-| Codex bot | 3: timed-out writes, stale successes, fan-out fields |
+| Codex bot | 4: timed-out writes, stale successes, fan-out fields, outcomes rescored past a stalled watermark |
 | CodeRabbit | 7 minor: gate drop in the result event, run-node fields, view errors, docs, a test that couldn't fail |
 | This graph's own run on the PR (Opus, Kimi ×2) | 5 new (one overlapped Codex): `differ_from` scope, scoring watermark, a run-directory lock, same-indent YAML lists, a `--mark` race |
 
@@ -87,9 +87,34 @@ The sample events were written by hand, so this proves rendering, not a real
 run. The server returned 403 to a foreign `Host` header, and streamed a newly
 appended event within 2 s (C14).
 
+## Real end-to-end run on this PR
+
+`pr-review.yaml` ran on PR #67 from `graph.js` on the VPS. Every agent node was delegated through T3 Code `delegate_task` with exactly the provider, model and effort that `pick` chose. Quota came from `aa-models usage`; the highest window was 60%, so nothing was filtered for quota.
+
+| Instance | Provider | Model | Signal | Percentile | Explored | Filtered |
+| --- | --- | --- | --- | --- | --- | --- |
+| review#0 | claudeAgent | claude-opus-5-5 | aa.terminal_bench_4_0 | 0.93 | True | — |
+| review#1 | oh-my-pi | 9router/kimi/k3.1-pro | aa.terminal_bench_4_0 | 0.99 | False | — |
+| review#2 | oh-my-pi | 9router/kimi/k3.1-pro | aa.terminal_bench_4_0 | 0.99 | False | — |
+| verify#0 | antigravity | gemini-4-argon-high | aa.humanitys_last_exam | 0.97 | False | creator: claude-opus-5-5, claude-sonnet-5-5 |
+| verify#1 | antigravity | gemini-4-argon-high | aa.humanitys_last_exam | 0.97 | False | creator: claude-opus-5-5, claude-sonnet-5-5 |
+| verify#2 | antigravity | gemini-4-argon-high | aa.humanitys_last_exam | 0.97 | False | creator: claude-opus-5-5, claude-sonnet-5-5 |
+| verify#3 | antigravity | gemini-4-argon-high | aa.humanitys_last_exam | 0.97 | False | creator: claude-opus-5-5, claude-sonnet-5-5 |
+| report#0 | claudeAgent | claude-opus-5-5 | aa.gdpval_elo | 0.99 | False | — |
+
+- `fetch` ran `gh pr diff 67` (133 KB) without a shell.
+- The three reviewers returned 9 findings. With `max_agents: 8` and one slot reserved for `report`, 4 verify instances were admitted and 5 were logged `cap-skipped`.
+- All four verifiers checked findings from `review#0` (Anthropic), so `differ_from` excluded only Anthropic and Gemini was picked.
+- 3 findings were confirmed and 1 was refuted (dropped by the gate). All 3 confirmed findings were already fixed in 391e9ef.
+- 4 outcomes were credited to the producing model: 3 success, 1 failure, all `claude-opus-5-5 / code-review`.
+- `report` (Opus, writing benchmark at the 99th percentile) wrote the comment; `apply` posted it once with a `Partial run:` header, and a second `apply` was refused with `already applied`. Final status: `partial`.
+
+The graph's own reviewers also found 5 new defects in this PR that the earlier panel missed; they're fixed in 391e9ef.
+
+- `graph-mode/pr/e2e-review-running-light.png`: the live view mid-run, with three reviewers picked.
+- `graph-mode/pr/e2e-final-light.png` and `-dark.png`: the finished run.
+
 ## Limits
 
-- The full run of `pr-review.yaml` against a real PR with delegated children is
-  part of the PR's end-to-end check and is recorded on the PR.
 - Windows runs `test-graph.js` in CI. `fs.watch` and the lock's live-process
   check are exercised on Linux only.

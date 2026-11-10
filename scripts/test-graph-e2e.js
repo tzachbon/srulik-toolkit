@@ -24,7 +24,13 @@ module.exports = {
     const mark = JSON.parse(readFileSync(join(process.env.PLUGIN_DATA, 'score-watermark.json'), 'utf8')).since;
     assert.ok(mark < 200, 'an undecided thread is looked at again next week');
     assert.equal(mark, 199, 'scored up to just before the undecided thread');
-    assert.deepEqual(scoreThreads(threads, { since: mark }).map(o => o.ok), [false], 'the next run sees only threads after it');
+    assert.equal(r.stdout.includes('"scored": 1'), true, 'only the thread before the undecided one is scored now');
+    // Codex bot: a decided thread after an undecided one is not counted again on every run
+    const again = spawnSync(process.execPath, [CLI, 'score', tf], { encoding: 'utf8', env: process.env });
+    assert.match(again.stdout, /"scored": 0/, 'nothing is scored twice while the watermark waits');
+    const stats = readFileSync(join(process.env.PLUGIN_DATA, 'model-stats.jsonl'), 'utf8').split('\n').filter(Boolean).map(JSON.parse).filter(o => o.src === 'thread');
+    assert.equal(stats.length, 1, 'one outcome recorded across both runs');
+    void scoreThreads;
 
     // parallel done calls for instances that share a write never reserve the same id
     const dir = temp('graph-');
