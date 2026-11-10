@@ -24,7 +24,7 @@ svg.edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;o
 .stage>h2{font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:0}
 .stage>h2 small{display:block;text-transform:none;letter-spacing:0;font-weight:400;font-size:12px}
 .down .stage>h2{width:100%;text-align:center}
-.stage>h2{position:relative;z-index:1}.stage>h2 span{background:var(--canvas);padding:0 6px;border-radius:6px}
+.stage>h2{position:relative;z-index:1}.stage>h2 span{display:inline-block;background:var(--canvas);padding:0 6px;border-radius:6px}
 .down .node{width:clamp(160px,30%,230px)}
 .node{position:relative;text-align:left;width:230px;border:1.5px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--card);
 padding:9px 12px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06)}
