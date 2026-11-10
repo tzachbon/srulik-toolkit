@@ -82,4 +82,18 @@ module.exports = {
     const v = cli('pick', spec, dir, 'verify', '0', '--candidates', c, '--usage', u);
     assert.match(v.stderr, /BLOCKED: no candidate left after filters \(excluded: gpt-6.1-sol\)/, 'the same model on another route is not independent');
   },
+
+  C33() {
+    // Codex bot: a node named after an Object property (constructor, toString) is scheduled like any other
+    const { check } = mod('spec.js'); const { next, done, status } = mod('run.js');
+    const dir = temp('graph-');
+    const spec = check({ name: 'p', limits: { max_agents: 2 }, nodes: { constructor: { agent: 'a', out: ['xs'] },
+      toString: { agent: 'b {item}', for_each: '${constructor.xs}' } } });
+    assert.deepEqual(next(spec, dir).map(t => t.node), ['constructor'], 'an inherited name is not already blocked');
+    appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: 1, type: 'pick', node: 'constructor', index: 0, provider: 'p', model: 'm', effort: 'high', creator: 'X' }) + '\n');
+    done(spec, dir, { node: 'constructor', output: { xs: [1] } });
+    assert.deepEqual(next(spec, dir).map(t => t.node), ['toString'], 'its consumer fans out');
+    done(spec, dir, { node: 'toString', output: {}, model: 'm' });
+    assert.equal(status(spec, dir).state, 'done');
+  },
 };

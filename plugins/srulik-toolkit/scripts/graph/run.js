@@ -31,7 +31,9 @@ function reduce(s, e) {
   return s;
 }
 
-const empty = () => ({ started: false, inputs: {}, cwd: null, admitted: {}, inst: {}, picks: {}, blocked: {}, writes: {}, capSkipped: [], finalFailures: [] });
+// maps keyed by node name have no prototype, so a node named `constructor` or `toString` is never already present
+const map = () => Object.create(null);
+const empty = () => ({ started: false, inputs: {}, cwd: null, admitted: map(), inst: map(), picks: map(), blocked: map(), writes: map(), capSkipped: [], finalFailures: [] });
 const logPath = dir => join(dir, 'run.jsonl');
 
 function fold(dir) {
