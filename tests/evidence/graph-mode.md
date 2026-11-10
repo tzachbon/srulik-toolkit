@@ -1,6 +1,6 @@
 # Graph mode: verification evidence
 
-Plugin version: 1.18.0. Base: 3cb1a721416173aef06833265987f68d3aa59078. Issue: #66.
+Plugin version: 1.19.0. Base: 16573c5fed91c318c6d467ab117e2590fd92e63c. Issue: #66.
 
 ## Contract
 
