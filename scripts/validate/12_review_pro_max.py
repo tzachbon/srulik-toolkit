@@ -34,6 +34,7 @@ rpm_contracts = {
         "mark the affected criteria `UNVERIFIED` and report a coverage limit",
         "A requested quick review skips the UI pass and says so",
         "or when no earlier round recorded `COMPLETE` UI coverage",
+        "each reviewer's model and score, the UI pass's coverage verdict or skip reason",
     ],
     "code-reviewer.md": [
         "round number, prior findings with their status",
