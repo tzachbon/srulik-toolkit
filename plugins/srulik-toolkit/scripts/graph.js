@@ -25,10 +25,12 @@ const USAGE = `Usage: node graph.js <command> ...
   view    <run-dir> [--port N]`;
 
 // Creators to avoid for one instance: the producer of this item when it came from the differ_from node,
-// otherwise every creator that node used.
+// otherwise every creator that node used. Each producer instance counts only its latest pick, the attempt
+// that produced its result; a creator that failed and was retried elsewhere is not excluded.
 function differCreators(s, differ, name, index) {
   const src = (s.admitted[name] ?? [])[index]?.src;
-  const picks = (s.picks[differ] ?? []).filter(p => !src || src.node !== differ || p.index === src.index);
+  const latest = new Map((s.picks[differ] ?? []).map(p => [p.index, p]));
+  const picks = [...latest.values()].filter(p => !src || src.node !== differ || p.index === src.index);
   return [...new Set(picks.map(p => p.creator))];
 }
 

@@ -19,7 +19,7 @@ The parent agent runs the graph; the scripts never call a model.
 | `in` | node | `${node.field}` reference, or a list of them. Adds an edge. A `run` node's only field is `text`. |
 | `needs` | node | Node names to wait for. Adds edges. |
 | `for_each` | agent node | A literal list, or a `${node.field}` reference to a list. |
-| `pick` | agent node | `{tier, differ_from}`. `tier` defaults to `standard`. `differ_from` names an agent node and adds an edge. When this instance's item came from that node, only the creator of the instance that produced it is excluded; otherwise every creator that node used is excluded. |
+| `pick` | agent node | `{tier, differ_from}`. `tier` defaults to `standard`. `differ_from` names an agent node and adds an edge. When this instance's item came from that node, only the creator of the instance that produced it is excluded; otherwise every creator that node used is excluded. Each producer instance counts only its latest pick, the attempt that produced its result. |
 | `model` | agent node | `"<model-id> @ <effort>"`. Pinned, but still subject to `avoid`, exclusions and quota. Can't be combined with `pick`. |
 | `out` | agent node | Fields the child's JSON must contain. |
 | `gate` | node with `out` | `field == literal`, where the literal is `true`, `false`, a number or a `"string"`. A failing item is dropped. |
