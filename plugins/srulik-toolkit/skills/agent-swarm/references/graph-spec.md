@@ -13,7 +13,7 @@ The parent agent runs the graph; the scripts never call a model.
 | `limits.max_agents` | spec | Required. The most agent instances the run may start. Retries and `run` nodes don't count. |
 | `limits.explore` | spec | `true` or `false`, default `true`. Allows sampling on gated nodes that aren't verifiers. |
 | `writes.<name>` | spec | Name matches `[a-z0-9-]+`. `{max, run}`. `run` is an argument list that may contain `"${inputs.<k>}"` and `"${file}"` as whole elements. |
-| `run` | node | An argument list run without a shell. Elements may be `"${inputs.<k>}"` as whole elements. Output: `{text: stdout}`. |
+| `run` | node | An argument list run without a shell. Elements may be `"${inputs.<k>}"` as whole elements. Output: `{text: stdout}`, so `out` may list only `text`. |
 | `agent` | node | The child's prompt. `{item}` becomes the current item: a string as-is, anything else as JSON. `${p.f}` becomes the value from a single-instance producer, or the JSON list of surviving values from a fan-out producer. |
 | `kind` | agent node | `code`, `code-review`, `debugging` (debugging, reverse-engineering, configuring apps, working around restrictions), `architecture`, `ui-ux`, `agentic` (default), `reasoning`, `long-context` or `writing`. |
 | `in` | node | `${node.field}` reference, or a list of them. Adds an edge. A `run` node's only field is `text`. |
@@ -152,7 +152,7 @@ State lives in `PLUGIN_DATA`. If that isn't set, it falls back to `CLAUDE_PLUGIN
 
 - `model-stats.jsonl` holds one `{t, model, kind, ok, src}` per line, with `src` set to `graph` or `thread`. It stores no text and no thread IDs.
 - `arena.json` holds the LMArena cache, refreshed at most daily or when `refresh` runs.
-- `score-watermark.json` records how far scoring has read: up to just before the oldest thread still undecided, so that thread is read again next time. Threads after the watermark wait too, so no outcome is counted twice.
+- `score-watermark.json` records how far scoring has read: up to just before the oldest thread still undecided, so that thread is read again next time. Threads after the watermark wait too, so no outcome is counted twice. A thread waits only if it has a `model` and `kind` and was updated in the last 30 days, so one that never gets a signal can't stall scoring.
 - The usage file passed with `--usage` has the same shape as `aa-models usage` output: `{accounts: [{provider, windows: [{used_percent}]}], notes: []}`.
 
 ## Thread scoring

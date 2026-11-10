@@ -60,6 +60,7 @@ function check(raw) {
       checkArgv(name, node.run, false);
       if ('for_each' in node) fail(`${name}: for_each is only allowed on agent nodes`);
       for (const k of ['pick', 'model', 'kind']) if (k in node) fail(`${name}: ${k} is only allowed on agent nodes`);
+      if ((node.out ?? []).some(f => f !== 'text')) fail(`${name}: a run node's out may list only "text"`);
     }
     if (node.kind !== undefined && !KINDS.has(node.kind)) fail(`${name}: unknown kind "${node.kind}"`);
     if (node.pick && node.model) fail(`${name}: pick and model are mutually exclusive`);

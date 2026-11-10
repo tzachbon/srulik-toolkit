@@ -14,16 +14,17 @@ module.exports = {
     const { check } = mod('spec.js'); const { next, done } = mod('run.js');
     // the score watermark stops before the oldest undecided thread
     const work = temp('graph-score-');
+    const T = Date.now() - 1000; // recent, so the undecided thread is still waited for
     const threads = [
-      { updated: 100, model: 'm', kind: 'code', signals: ['pr-merged'] },
-      { updated: 200, model: 'm', kind: 'code', signals: [] },
-      { updated: 300, model: 'm', kind: 'code', signals: ['reverted'] }];
+      { updated: T + 100, model: 'm', kind: 'code', signals: ['pr-merged'] },
+      { updated: T + 200, model: 'm', kind: 'code', signals: [] },
+      { updated: T + 300, model: 'm', kind: 'code', signals: ['reverted'] }];
     const tf = join(work, 't.json'); writeFileSync(tf, JSON.stringify(threads));
     const r = spawnSync(process.execPath, [CLI, 'score', tf], { encoding: 'utf8', env: process.env });
     assert.equal(r.status, 0, r.stderr);
     const mark = JSON.parse(readFileSync(join(process.env.PLUGIN_DATA, 'score-watermark.json'), 'utf8')).since;
-    assert.ok(mark < 200, 'an undecided thread is looked at again next week');
-    assert.equal(mark, 199, 'scored up to just before the undecided thread');
+    assert.ok(mark < T + 200, 'an undecided thread is looked at again next week');
+    assert.equal(mark, T + 199, 'scored up to just before the undecided thread');
     assert.equal(r.stdout.includes('"scored": 1'), true, 'only the thread before the undecided one is scored now');
     // Codex bot: a decided thread after an undecided one is not counted again on every run
     const again = spawnSync(process.execPath, [CLI, 'score', tf], { encoding: 'utf8', env: process.env });
@@ -186,5 +187,30 @@ module.exports = {
     done(spec, dir, { node: 'p', attempt: 1, output: { xs: [1] } });
     next(spec, dir); done(spec, dir, { node: 'v', attempt: 1, output: { ok: true } });
     assert.deepEqual(log(dir).filter(e => e.type === 'outcome').map(e => e.model), ['gpt-6.1-sol'], 'the picked model is credited');
+  },
+
+  C27() {
+    // CodeRabbit: a thread that can't be scored, or has waited past the limit, no longer holds the watermark
+    const { nextWatermark } = mod('score.js');
+    const now = 100 * 864e5;
+    assert.equal(nextWatermark([{ updated: now - 10, signals: [] }, { updated: now - 5, model: 'm', kind: 'code', signals: ['pr-merged'] }], 0, now),
+      now - 5, 'a thread without model or kind is not waited for');
+    assert.equal(nextWatermark([{ updated: now - 31 * 864e5, model: 'm', kind: 'code', signals: [] }, { updated: now - 5, model: 'm', kind: 'code', signals: ['reverted'] }], 0, now),
+      now - 5, 'an undecided thread older than 30 days stops holding the watermark');
+    assert.equal(nextWatermark([{ updated: now - 29 * 864e5, model: 'm', kind: 'code', signals: [] }], 0, now), now - 29 * 864e5 - 1, 'a recent undecided thread still holds it');
+
+    // CodeRabbit: a write command that never started is a failure, not an unknown outcome
+    const { check } = mod('spec.js'); const { next, done, apply } = mod('run.js');
+    const dir = temp('graph-');
+    const spec = check({ name: 'e', limits: { max_agents: 1 }, writes: { note: { max: 1, run: ['srulik-no-such-command', '${file}'] } }, nodes: {
+      b: { agent: 'b', out: ['body'], write: 'note' } } });
+    next(spec, dir); done(spec, dir, { node: 'b', output: { body: 'hi' }, model: 'm' });
+    const r = apply(spec, dir, 'note#1');
+    assert.equal(r.unknown, undefined, 'a missing command is not an unknown outcome');
+    assert.equal(log(dir).filter(e => e.type === 'write-failed').length, 1, 'a missing command is recorded as failed');
+
+    // CodeRabbit: a run node's out may list only text
+    assert.throws(() => check({ name: 'o', limits: { max_agents: 1 }, nodes: { f: { run: ['echo'], out: ['body'] } } }), /f: a run node's out may list only "text"/);
+    check({ name: 'o', limits: { max_agents: 1 }, nodes: { f: { run: ['echo'], out: ['text'] } } });
   },
 };

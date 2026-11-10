@@ -18,9 +18,11 @@ function scoreThreads(threads, { now = Date.now(), since = 0 } = {}) {
 }
 
 // The newest time that can be marked scored: just before the oldest thread still undecided.
-function nextWatermark(threads, since) {
+// Only a scorable thread waits, and only for MAX_WAIT; one that never gets a signal stops holding the rest back.
+const MAX_WAIT = 30 * 864e5;
+function nextWatermark(threads, since, now = Date.now()) {
   const fresh = threads.filter(t => t.updated > since);
-  const undecided = fresh.filter(t => verdict(t) === null).map(t => t.updated);
+  const undecided = fresh.filter(t => t.model && t.kind && verdict(t) === null && now - t.updated < MAX_WAIT).map(t => t.updated);
   return undecided.length ? Math.max(since, Math.min(...undecided) - 1) : Math.max(since, ...fresh.map(t => t.updated));
 }
 

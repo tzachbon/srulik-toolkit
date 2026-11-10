@@ -99,7 +99,7 @@ async function main([command, ...args]) {
     if (!Number.isFinite(since)) { try { since = JSON.parse(readFileSync(mark, 'utf8')).since; } catch { since = 0; } }
     const now = Date.now(); const threads = JSON.parse(readFileSync(rest[0], 'utf8'));
     // Score only up to the safe watermark: a decided thread newer than an undecided one waits, so nothing is counted twice.
-    const until = nextWatermark(threads, since);
+    const until = nextWatermark(threads, since, now);
     const outcomes = scoreThreads(threads.filter(t => t.updated <= until), { now, since });
     mkdirSync(state, { recursive: true, mode: 0o700 });
     if (outcomes.length) appendFileSync(join(state, 'model-stats.jsonl'), outcomes.map(o => JSON.stringify(o)).join('\n') + '\n');

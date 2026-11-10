@@ -281,7 +281,8 @@ function apply(spec, dir, id, runner, { mark, onClaimed } = {}) {
     const r = runner(w.argv);
     const ok = r.status === 0;
     // Killed by timeout or a signal after it started: the effect may have happened, so the claim stays unresolved.
-    if (!ok && (r.status === null || r.signal)) return { ok: false, id, unknown: true };
+    // A command that never started (such as ENOENT) is an ordinary failure.
+    if (!ok && (r.signal || r.error?.code === 'ETIMEDOUT')) return { ok: false, id, unknown: true };
     emit(dir, s, ok ? { type: 'write-applied', id } : { type: 'write-failed', id, reason: String(r.error?.message || r.stderr || `exit ${r.status}`).trim().slice(-500) });
     return { ok, id };
   } finally { release(); }
