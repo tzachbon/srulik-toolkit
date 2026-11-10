@@ -110,6 +110,9 @@ module.exports = {
     assert.equal(allowedHost('[fd7a:115c:a1e0::1]:47812', 'fd7a:115c:a1e0::1', 47812), true, 'a bracketed IPv6 Host is accepted');
     const server = await serve(temp('view-'), 0);
     try { assert.equal(server.address().address, '127.0.0.1', 'the default stays on loopback'); } finally { server.close(); }
+    // CodeRabbit: serve itself refuses a non-private address, not only the CLI
+    const wild = await serve(temp('view-'), 0, '0.0.0.0').then(s => { s.close(); return 'bound'; }, e => e.message);
+    assert.match(wild, /must be a loopback or private address/, 'serve refuses a wildcard address');
     const v6 = await serve(temp('view-'), 0, '0:0:0:0:0:0:0:1');
     try {
       const status = await new Promise(ok => require('node:http').get({ host: '::1', port: v6.address().port, path: '/' }, res => { res.resume(); ok(res.statusCode); }));
@@ -132,5 +135,9 @@ module.exports = {
     const ok = spawnSync(process.execPath, ['-e', `process.argv=[process.argv[0], ${JSON.stringify(CLI)}, 'view', ${JSON.stringify(temp('view-'))}, '--host', '0:0:0:0:0:0:0:1'];
       const log=console.log; console.log=(...a)=>{ log(...a); process.exit(0); }; require(${JSON.stringify(CLI)});`], { encoding: 'utf8', env: process.env, timeout: 5000 });
     assert.match(ok.stdout, /^http:\/\/\[::1\]:\d+\/$/m, 'the CLI accepts and prints a canonical IPv6 loopback');
+    // pr-review graph round 4: without --host, the CLI serves on loopback
+    const plain = spawnSync(process.execPath, ['-e', `process.argv=[process.argv[0], ${JSON.stringify(CLI)}, 'view', ${JSON.stringify(temp('view-'))}];
+      const log=console.log; console.log=(...a)=>{ log(...a); process.exit(0); }; require(${JSON.stringify(CLI)});`], { encoding: 'utf8', env: process.env, timeout: 5000 });
+    assert.match(plain.stdout, /^http:\/\/127\.0\.0\.1:\d+\/$/m, 'the CLI defaults to loopback');
   },
 };

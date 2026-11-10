@@ -130,7 +130,6 @@ async function main([command, ...args]) {
     const { found, rest } = flags(args, ['port', 'host']); if (rest.length !== 1) usage();
     const view = require('./graph/view.js');
     const host = view.canonicalHost(found.host[0] ?? '127.0.0.1');
-    if (!view.privateHost(host)) throw new Error('--host must be a loopback or private address, such as a Tailscale IP');
     const server = await view.serve(resolve(rest[0]), Number(found.port[0] ?? 0), host);
     console.log(`http://${host.includes(':') ? `[${host}]` : host}:${server.address().port}/`); return;
   }

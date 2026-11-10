@@ -64,6 +64,7 @@ function privateHost(host) {
 
 function serve(dir, port = 0, address = '127.0.0.1') {
   const host = canonicalHost(address);
+  if (!privateHost(host)) return Promise.reject(new Error('--host must be a loopback or private address, such as a Tailscale IP'));
   const file = join(dir, 'run.jsonl');
   const server = http.createServer((req, res) => {
     const { port: actual } = server.address();
