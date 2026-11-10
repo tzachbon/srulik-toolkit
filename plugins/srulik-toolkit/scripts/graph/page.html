@@ -2,7 +2,7 @@
 <title>Graph run</title><style>/*CSS*/</style></head><body>
 <header>
   <h1 id="title">Graph run</h1>
-  <div id="sum" aria-live="polite"><span class="bar"><i id="fill"></i></span><span id="counts">waiting for the run log</span><span id="clock"></span></div>
+  <div id="sum"><span class="bar"><i id="fill"></i></span><span id="counts" aria-live="polite">waiting for the run log</span><span id="clock"></span></div>
   <div class="tools">
     <button class="tool" id="layout"></button>
     <button class="tool" id="theme"></button>
@@ -74,8 +74,12 @@ function card(i) {
   const b = el('button', 'node s-' + i.state); b.dataset.id = i.id; b.setAttribute('aria-pressed', String(open === i.id));
   const t = el('div', 't'); t.append(el('span', null, i.node), el('span', 'chip', i.state === 'retrying' ? 'retrying' : i.state)); b.append(t);
   const l = label(i); if (l) { b.append(el('div', 'l', l)); b.title = l; }
-  const meta = [i.model && `${i.model}${i.effort ? ' @ ' + i.effort : ''}`, i.start && dur((i.stop ?? Date.now()) - i.start)].filter(Boolean).join(' · ');
-  if (meta) b.append(el('div', 'd', meta));
+  const model = i.model ? `${i.model}${i.effort ? ' @ ' + i.effort : ''}` : '';
+  if (model || i.start) {
+    const m = el('div', 'd', model); b.append(m);
+    // a running card's duration is updated in place by tick(), so a re-render never swallows a click
+    if (i.start) { const d = el('span', 'dur', dur((i.stop ?? Date.now()) - i.start)); if (!i.stop) d.dataset.start = i.start; m.append(model ? ' · ' : '', d); }
+  }
   if (i.error || i.summary) b.append(el('div', 'd', i.error || i.summary));
   if (i.attachments?.length) b.append(el('div', 'a', '📎 ' + i.attachments.join(', ')));
   b.setAttribute('aria-label', `${i.node} ${l} ${i.state}`);
@@ -137,8 +141,9 @@ function edges(board, svg) {
 function tick() {
   if (!run.t0) return;
   $('clock').textContent = '· ' + dur((run.end ? run.end.t : Math.max(Date.now(), run.last)) - run.t0);
+  document.querySelectorAll('.dur[data-start]').forEach(d => { d.textContent = dur(Date.now() - d.dataset.start); });
 }
-setInterval(() => { if (run.spec && !run.end) { tick(); document.querySelectorAll('.s-running,.s-retrying').length && schedule(); } }, 1000);
+setInterval(() => { if (run.spec && !run.end) tick(); }, 1000);
 
 // ---- details panel
 let open = null, opener = null; // opener is a data-id or element id: re-rendering replaces the element itself

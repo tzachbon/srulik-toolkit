@@ -81,7 +81,7 @@ async function main([command, ...args]) {
     if (args.length !== 2) usage();
     const spec = load(args[0]); const dir = resolve(args[1]); const st = run.status(spec, dir);
     const log = join(dir, 'run.jsonl');
-    if (st.state !== 'running' && !readFileSync(log, 'utf8').includes(`"type":"end"`)) { appendFileSync(log, JSON.stringify({ t: Date.now(), type: 'end', state: st.state }) + '\n'); run.refreshIndex(dir); }
+    if (st.state !== 'running' && !readFileSync(log, 'utf8').includes(`"type":"end"`)) { run.withRunLock(dir, () => appendFileSync(log, JSON.stringify({ t: Date.now(), type: 'end', state: st.state }) + '\n')); run.refreshIndex(dir); }
     out(st); return;
   }
   if (command === 'pick') {
@@ -94,7 +94,7 @@ async function main([command, ...args]) {
     const choice = pick(node, JSON.parse(readFileSync(found.candidates[0], 'utf8')), data, pickContext(spec, dir, name, Number(indexArg), found.exclude));
     if (Object.keys(data.errors).length) choice.reason.data_errors = data.errors;
     mkdirSync(dir, { recursive: true });
-    appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: Date.now(), type: 'pick', node: name, index: Number(indexArg), ...choice }) + '\n');
+    run.withRunLock(dir, () => appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: Date.now(), type: 'pick', node: name, index: Number(indexArg), ...choice }) + '\n'));
     run.refreshIndex(dir); // the run index shows the model while the child works
     out(choice); return;
   }

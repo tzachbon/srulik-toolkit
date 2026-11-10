@@ -51,7 +51,7 @@ function emit(dir, s, event) {
   return e;
 }
 
-const refreshIndex = dir => writeIndex(dir, fold(dir));
+const refreshIndex = dir => withRunLock(dir, () => writeIndex(dir, fold(dir)));
 
 const survivors = (s, node) => instances(s, node).filter(i => i.result !== undefined && !i.dropped);
 const settled = (s, node) => node in s.blocked || (node in s.admitted && instances(s, node).every(i => i.settled));
@@ -163,6 +163,8 @@ function doneUnlocked(spec, dir, result) {
   const s = fold(dir);
   const { node: name, index = 0 } = result;
   const node = spec.nodes[name];
+  // index becomes part of a file path, so only an admitted instance may report
+  if (!Number.isInteger(index) || index < 0 || index >= (s.admitted[name]?.length ?? 0)) throw new Error(`${name}#${index}: no such instance`);
   const current = s.inst[key(name, index)] ?? {};
   if (current.settled) return { writes: [], duplicate: true };
   // A child's report need not repeat its model: the latest pick for this instance supplies it.

@@ -34,6 +34,7 @@ nodes:
     kind: writing
     agent: |
       Rank the confirmed findings by severity and write a concise PR comment body.
+      Each confirmed finding names its output file; read it for the evidence.
       Return JSON {"body":""}.
     needs: [verify]
     out: [body]
