@@ -42,12 +42,12 @@ function fold(dir) {
   return readFileSync(logPath(dir), 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l)).reduce(reduce, empty());
 }
 
-function emit(dir, s, event) {
+function emit(dir, s, event, index = true) {
   const e = { t: Date.now(), ...event };
   mkdirSync(dir, { recursive: true });
   appendFileSync(logPath(dir), JSON.stringify(e) + '\n');
   reduce(s, e);
-  writeIndex(dir, s);
+  if (index) writeIndex(dir, s);
   return e;
 }
 
@@ -281,22 +281,24 @@ function apply(spec, dir, id, runner, { mark, onClaimed } = {}) {
   if (mark && !['applied', 'failed'].includes(mark)) throw new Error(`${id}: mark must be applied or failed`);
   // Both paths hold the claim across the state check, the update and cleanup, so they never interleave.
   const release = claim(dir, id, `${w.file}.lock`, !!mark);
+  // apply runs outside run.lock, so its s can be older than the index: rebuild the index from the log under the lock
+  const record = event => { emit(dir, s, event, false); refreshIndex(dir); };
   try {
     onClaimed?.();
     const now = fold(dir).writes[id].state;
     if (now === 'applied') throw new Error(`${id}: already applied`);
     if (mark) { // the owner checked an unknown outcome by hand and records it
-      emit(dir, s, mark === 'applied' ? { type: 'write-applied', id, marked: true } : { type: 'write-failed', id, reason: 'marked failed by owner' });
+      record(mark === 'applied' ? { type: 'write-applied', id, marked: true } : { type: 'write-failed', id, reason: 'marked failed by owner' });
       return { ok: mark === 'applied', id };
     }
     if (now === 'applying') throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
-    emit(dir, s, { type: 'write-claimed', id });
+    record({ type: 'write-claimed', id });
     const r = runner(w.argv);
     const ok = r.status === 0;
     // Killed by timeout or a signal after it started: the effect may have happened, so the claim stays unresolved.
     // A command that never started (such as ENOENT) is an ordinary failure.
     if (!ok && (r.signal || r.error?.code === 'ETIMEDOUT')) return { ok: false, id, unknown: true };
-    emit(dir, s, ok ? { type: 'write-applied', id } : { type: 'write-failed', id, reason: String(r.error?.message || r.stderr || `exit ${r.status}`).trim().slice(-500) });
+    record(ok ? { type: 'write-applied', id } : { type: 'write-failed', id, reason: String(r.error?.message || r.stderr || `exit ${r.status}`).trim().slice(-500) });
     return { ok, id };
   } finally { release(); }
 }

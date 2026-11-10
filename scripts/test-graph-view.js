@@ -89,6 +89,14 @@ module.exports = {
     const bspec = check({ name: 'b', limits: { max_agents: 2 }, nodes: { a: { agent: 'a' }, b: { agent: 'b', needs: ['a'] } } });
     next(bspec, blocked); done(bspec, blocked, { node: 'a', attempt: 1, failed: 'x', final: true });
     assert.match(readFileSync(join(blocked, 'nodes', 'index.md'), 'utf8'), /\| b \| \| blocked by a \|/);
+    // apply holds no run lock, so a done landing while it runs must still show in the index it leaves behind
+    const { apply } = mod('run.js');
+    const d6 = temp('graph-');
+    const wspec = check({ name: 'w', limits: { max_agents: 2 }, writes: { note: { max: 1, run: [process.execPath, '-e', '0', '${file}'] } },
+      nodes: { s: { agent: 's', out: ['body'], write: 'note' }, o: { agent: 'o' } } });
+    next(wspec, d6); done(wspec, d6, { node: 's', output: { body: 'b' }, model: 'm' });
+    apply(wspec, d6, 'note#1', () => { done(wspec, d6, { node: 'o', output: {}, model: 'm' }); return { status: 0 }; });
+    assert.match(readFileSync(join(d6, 'nodes', 'index.md'), 'utf8'), /\| o#0 \| \| done \|/, 'the index keeps a result recorded during apply');
     // in: still delivers the named field inline
     const d5 = temp('graph-');
     const withIn = check({ name: 'i', limits: { max_agents: 2 }, nodes: { p: { agent: 'p', out: ['text'] }, r: { agent: 'r', in: '${p.text}' } } });
@@ -144,5 +152,6 @@ module.exports = {
     assert.match(PAGE, /@media \(prefers-reduced-motion: ?reduce\)/, 'animation stops under reduced motion');
     assert.match(PAGE, /getText\(`nodes\/\$\{i\.node\}-/, 'attachments are fetched from /nodes');
     assert.match(PAGE, /getText\('nodes\/index\.md'\)/, 'the run index is fetched from /nodes');
+    assert.match(PAGE, /case 'result':[^\n]*\n[^\n]*error: undefined|case 'result':[^\n]*error: undefined/, 'a successful retry clears the earlier attempt\'s error');
   },
 };

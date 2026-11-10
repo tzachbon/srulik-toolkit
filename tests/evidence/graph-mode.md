@@ -96,8 +96,8 @@ attachments, the `needs:` input shape and the run index, the node name rule,
 the view's read-only `/nodes` route, and the page's text-only rendering, theme,
 layout and reduced-motion rules.
 
-Red proof: 30 mutations in a scratch copy of the implementation, one per new
-assertion. All 30 failed in their targeted group, and the full contract passed
+Red proof: 33 mutations in a scratch copy of the implementation, one per new
+assertion (30, then 3 more for review fixes). All 33 failed in their targeted group, and the full contract passed
 again after each was restored. The first run found one assertion that never
 failed: its regex had unescaped `|`, so it matched any index. The regex was
 fixed and the mutation then failed as targeted.
@@ -116,6 +116,28 @@ Screenshots of the new page on a hand-written `pr-review` fixture run, at
 Text contrast is at least 5.59:1 in both themes. Keyboard checks: Enter opens a
 node, Escape closes the panel and returns focus to that node after a live
 re-render, and the theme and layout choices survive a reload.
+
+### Real run on PR #74
+
+`pr-review.yaml` ran on PR #74 (this change) with the new view. Candidates
+were Claude and Codex models at high effort, through T3 Code.
+
+| Instance | Provider | Model | Result |
+| --- | --- | --- | --- |
+| review#0 bugs | claudeAgent | claude-sonnet-5-5 | 2 findings |
+| review#1 perf | claudeAgent | claude-opus-5-5 | 0 findings, `notes.md` attachment |
+| review#2 security | claudeAgent | claude-sonnet-5-5 | 0 findings |
+| verify#0, verify#1 | codex | gpt-6-astra (`differ_from` excluded Claude) | both confirmed |
+| report#0 | claudeAgent | claude-opus-5-5 | comment body |
+
+Both confirmed findings were defects in this PR, and both are fixed with
+tests: `apply` could rewrite the run index from older state, and the page kept
+a failed attempt's error on a card after the retry succeeded. The comment
+write was reserved but not applied, so the run state is `partial`.
+
+- `graph-mode/pr/pr74-graph-light.png`, `pr74-graph-dark.png`: the finished run.
+- `graph-mode/pr/pr74-panel-light.png`: `review#0`'s panel, with its file and output.
+- `graph-mode/pr/pr74-panel-dark.png`: `review#1`'s panel, with its `notes.md` attachment open.
 
 ## Real end-to-end run on this PR
 

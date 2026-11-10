@@ -32,7 +32,7 @@ function apply(e) {
     case 'admit': run.admitted[e.node] = e.count; (e.items || []).forEach((it, i) => Object.assign(inst(e.node, i), { item: it.item, src: it.src })); break;
     case 'dispatch': { const i = inst(e.node, e.index); Object.assign(i, { state: 'running', attempt: e.attempt, item: e.item, src: e.src }); i.start ??= e.t; break; }
     case 'pick': Object.assign(inst(e.node, e.index), { model: e.model, effort: e.effort, provider: e.provider, reason: e.reason }); break;
-    case 'result': Object.assign(inst(e.node, e.index), { state: e.dropped ? 'dropped' : 'done', stop: e.t, output: e.output, file: e.file, summary: e.summary,
+    case 'result': Object.assign(inst(e.node, e.index), { state: e.dropped ? 'dropped' : 'done', stop: e.t, output: e.output, file: e.file, summary: e.summary, error: undefined,
       attachments: e.attachments || [], model: e.model ?? inst(e.node, e.index).model }); break;
     case 'gate-dropped': inst(e.node, e.index).state = 'dropped'; break;
     case 'failed': Object.assign(inst(e.node, e.index), { state: e.final ? 'failed' : 'retrying', error: e.reason, ...(e.final ? { stop: e.t } : {}) }); break;
@@ -165,7 +165,7 @@ function fillPanel(id) {
   const dl = el('dl'); const row = (k, v) => { if (v) dl.append(el('dt', null, k), el('dd', null, v)); };
   row('Status', i.state); row('Model', i.model && `${i.model}${i.effort ? ' @ ' + i.effort : ''}${i.provider ? ' · ' + i.provider : ''}`);
   row('Duration', i.start && dur((i.stop ?? Date.now()) - i.start)); row('Attempt', i.attempt > 1 && String(i.attempt));
-  row('Why this model', i.reason && Object.entries(i.reason).filter(([, v]) => v != null && typeof v !== 'object').map(([k, v]) => `${k}: ${v}`).join(' · '));
+  row('Why this model', i.reason && Object.entries(i.reason).filter(([, v]) => v != null && typeof v !== 'object').map(([k, v]) => `${k}: ${typeof v === 'number' ? +v.toFixed(2) : v}`).join(' · '));
   row('Inputs from', i.src ? key(i.src.node, i.src.index) : (run.spec.edges[i.node] || []).join(', '));
   row('Item', i.item != null && typeof i.item === 'object' ? JSON.stringify(i.item) : null);
   row('Summary', i.summary); pb.append(dl);
