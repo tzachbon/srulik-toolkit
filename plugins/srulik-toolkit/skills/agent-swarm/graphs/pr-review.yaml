@@ -1,0 +1,40 @@
+name: pr-review
+inputs:
+  pr: 0
+limits:
+  max_agents: 8
+  explore: true
+writes:
+  pr-comment:
+    max: 1
+    run: [gh, pr, comment, "${inputs.pr}", --body-file, "${file}"]
+nodes:
+  fetch:
+    run: [gh, pr, diff, "${inputs.pr}"]
+  review:
+    kind: code-review
+    agent: |
+      Review this pull request diff for {item} defects only.
+      Return JSON {"findings":[{"title":"","file":"","line":0,"why":""}]}; use an empty list when there are none.
+    in: ${fetch.text}
+    for_each: [bugs, perf, security]
+    pick: { tier: strong }
+    out: [findings]
+  verify:
+    kind: reasoning
+    agent: |
+      Try to refute this finding with evidence from the diff: {item}
+      Return JSON {"confirmed":true|false,"evidence":""}.
+    in: ${fetch.text}
+    for_each: ${review.findings}
+    pick: { tier: strong, differ_from: review }
+    out: [confirmed, evidence]
+    gate: confirmed == true
+  report:
+    kind: writing
+    agent: |
+      Rank the confirmed findings by severity and write a concise PR comment body.
+      Return JSON {"body":""}.
+    needs: [verify]
+    out: [body]
+    write: pr-comment

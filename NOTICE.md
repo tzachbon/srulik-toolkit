@@ -23,6 +23,11 @@ dataset without an API key, following the `aa-models` reader.
 Its data is not bundled and remains subject to Artificial Analysis terms, which
 require attribution.
 
+`scripts/graph/data.js` reads model leaderboards from the public
+[LMArena leaderboard dataset](https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset)
+(`lmarena-ai/leaderboard-dataset`, CC-BY-4.0) through the Hugging Face dataset
+viewer without an API key. Its data is not bundled; attribution: LMArena.
+
 CodeRabbit is an optional external tool mentioned by `review-pro-max`. It is
 not bundled with this repository and remains subject to its own terms.
 

@@ -111,7 +111,7 @@ Cursor does not run this hook yet.
 | [`make-it-verifiable`](plugins/srulik-toolkit/skills/make-it-verifiable/SKILL.md) | Before a change, pair each claim with a check that must fail before it counts, and flag claims no check can prove yet; after it, find and prove what is still unverified. |
 | [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a local diff, branch, or pull request without changing it, using a three-vendor reviewer panel with scores and rounds that carry across reruns. |
 | [`stay-in-scope`](plugins/srulik-toolkit/skills/stay-in-scope/SKILL.md) | Re-establish the requested boundary when work starts to drift. |
-| [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. |
+| [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. Graph mode runs a saved YAML graph, picking each node's model from benchmarks, leaderboards, your notes, quota and past results, with a live local view; see [`graphs/pr-review.yaml`](plugins/srulik-toolkit/skills/agent-swarm/graphs/pr-review.yaml). |
 | [`tdd`](plugins/srulik-toolkit/skills/tdd/SKILL.md) | Build one behavior at a time through red, green, and refactor. |
 | [`keep-it-simple`](plugins/srulik-toolkit/skills/keep-it-simple/SKILL.md) | Find the smallest correct plan or implementation after understanding the affected flow. |
 | [`research`](plugins/srulik-toolkit/skills/research/SKILL.md) | Investigate a question and produce a cited report with evidence gaps. |
