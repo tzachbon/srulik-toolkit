@@ -33,7 +33,10 @@ rpm_contracts = {
         "it is not a panel seat and gets no score row",
         "mark the affected criteria `UNVERIFIED` and report a coverage limit",
         "A requested quick review skips the UI pass and says so",
-        "or when no earlier round recorded `COMPLETE` UI coverage",
+        "use existing screenshots, CI artifacts, and design images that show the changed states",
+        "render from an isolated copy for any changed state they do not show",
+        "compared path by path with the prior round's pinned state",
+        "When that comparison is unavailable, rerun the pass",
         "each reviewer's model and score, the UI pass's coverage verdict or skip reason",
     ],
     "code-reviewer.md": [
