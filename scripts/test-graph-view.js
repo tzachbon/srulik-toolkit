@@ -1,7 +1,7 @@
 // Graph contract: node output files, attachments, the run index and the live view's /nodes route. Local fakes only.
 'use strict';
 const { assert, writeFileSync, readFileSync, join, http, temp, mod, log } = require('./graph-fixtures.js');
-const { mkdirSync, readdirSync, rmSync, symlinkSync } = require('node:fs');
+const { existsSync, mkdirSync, readdirSync, rmSync, symlinkSync } = require('node:fs');
 
 const get = (port, path, host = `127.0.0.1:${port}`) => new Promise((ok, bad) => http.get({ host: '127.0.0.1', port, path, headers: { host }, timeout: 2000 },
   res => { let body = ''; res.on('data', c => { body += c; }); res.on('end', () => ok({ status: res.statusCode, type: res.headers['content-type'], sniff: res.headers['x-content-type-options'], body })); })
@@ -22,11 +22,10 @@ module.exports = {
     bad([{ name: 'n.md', text: 3 }], /r#0: attachments must be a list of at most 10 \{name, text\}/);
     assert.equal(log(dir).some(e => e.type === 'result'), false, 'a rejected attachment records no result, so the instance stays retryable');
     // the index becomes part of a file path, so only an admitted instance may report
-    mkdirSync(join(dir, '..', 'victim-' + process.pid), { recursive: true });
-    for (const index of ['0/../../../victim-' + process.pid, 1, -1, 0.5])
-      assert.throws(() => done(spec, dir, { node: 'r', index, output: { text: 'x' } }), /r#.*: no such instance/, `index ${index} is refused`);
-    assert.ok(readdirSync(join(dir, '..')).includes('victim-' + process.pid), 'nothing outside the run directory is touched');
-    rmSync(join(dir, '..', 'victim-' + process.pid), { recursive: true });
+    const victim = join(dir, '..', `victim-${process.pid}.md`);
+    for (const index of [`0/../../../victim-${process.pid}`, 1, -1, 0.5])
+      assert.throws(() => done(spec, dir, { node: 'r', index, output: { findings: [] } }), /r#.*: no such instance/, `index ${index} is refused`);
+    assert.ok(!existsSync(victim), 'nothing is written outside the run directory');
     done(spec, dir, { node: 'r', index: 0, output: { findings: [{ title: 'Lock leak' }, { title: 'Off by one' }] }, model: 'opus',
       attachments: [{ name: 'notes.md', text: '# How I reviewed' }] });
     const res = log(dir).find(e => e.type === 'result');

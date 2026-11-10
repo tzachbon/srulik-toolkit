@@ -56,6 +56,8 @@ Rejected with `line N: <reason>`:
 
 A child's JSON may add `attachments: [{name, text}]`: at most 10 text files, each name matching `[A-Za-z0-9][A-Za-z0-9._-]{0,79}` and each text at most 1 MB. `done` refuses anything else, and the instance stays retryable.
 
+`done` also refuses a result whose `index` is not an admitted instance of its node, because the index becomes part of a file path.
+
 ## Node files and the run index
 
 Before recording a result, `done` writes the instance's output to `<run-dir>/nodes/<node>-<index>.md`: a `# <node>#<index>` line, the item and model, then `output.text` or `output.body` as-is, or the output as a JSON block. Attachments go to `<run-dir>/nodes/<node>-<index>/<name>`. The run log keeps the output, the file path, the summary and the attachment names, not the attachment text.
