@@ -104,9 +104,17 @@ module.exports = {
     assert.equal(allowedHost('127.0.0.1:47812', '100.90.182.51', 47812), true, 'loopback still works');
     assert.equal(allowedHost('evil.example:47812', '100.90.182.51', 47812), false, 'any other Host is refused');
     assert.equal(allowedHost('100.90.182.51:47812', '127.0.0.1', 47812), false, 'without --host, only loopback');
+    // pr-review graph: browsers send an IPv6 Host in brackets
+    assert.equal(allowedHost('[fd7a:115c:a1e0::1]:47812', 'fd7a:115c:a1e0::1', 47812), true, 'a bracketed IPv6 Host is accepted');
     const server = await serve(temp('view-'), 0, '127.0.0.1');
     try { assert.equal(server.address().address, '127.0.0.1', 'the default stays on loopback'); } finally { server.close(); }
-    const r = spawnSync(process.execPath, [CLI, 'view', temp('view-'), '--host', '0.0.0.0'], { encoding: 'utf8', env: process.env, timeout: 5000 });
-    assert.match(r.stderr, /--host must be one address, not 0\.0\.0\.0 or ::/, 'a wildcard address is refused');
+    // pr-review graph: only a literal loopback or private address may be bound, however it is spelled
+    const { privateHost } = mod('view.js');
+    for (const h of ['127.0.0.1', '::1', '10.1.2.3', '172.16.4.1', '192.168.0.9', '100.90.182.51', 'fd7a:115c:a1e0::1'])
+      assert.equal(privateHost(h), true, `${h} is private`);
+    for (const h of ['0.0.0.0', '::', '0:0:0:0:0:0:0:0', '0', '', 'localhost', '187.124.113.123', '8.8.8.8', '100.128.0.1', '2001:db8::1'])
+      assert.equal(privateHost(h), false, `${h} is refused`);
+    const r = spawnSync(process.execPath, [CLI, 'view', temp('view-'), '--host', '0:0:0:0:0:0:0:0'], { encoding: 'utf8', env: process.env, timeout: 5000 });
+    assert.match(r.stderr, /--host must be a loopback or private address/, 'a wildcard spelling is refused');
   },
 };

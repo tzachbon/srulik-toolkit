@@ -139,7 +139,7 @@ The claim lock records the process that holds it. While that process is still ru
 
 ## Live view
 
-`graph.js view <run-dir> [--port N] [--host <address>]` serves a page that replays `run.jsonl` and streams new events. It listens on `127.0.0.1` unless `--host` names one address, such as a private Tailscale IP. `0.0.0.0` and `::` are refused. Requests whose `Host` header names any other address get 403, so a page on another site can't reach it through DNS rebinding.
+`graph.js view <run-dir> [--port N] [--host <address>]` serves a page that replays `run.jsonl` and streams new events. It listens on `127.0.0.1` unless `--host` names one literal loopback or private address: `10/8`, `172.16/12`, `192.168/16`, Tailscale's `100.64/10`, or IPv6 `::1` or `fc00::/7`. Host names, public addresses and every spelling of `0.0.0.0` or `::` are refused, because the page has no login. Requests whose `Host` header names any other address get 403, so a page on another site can't reach it through DNS rebinding.
 
 ## Files
 

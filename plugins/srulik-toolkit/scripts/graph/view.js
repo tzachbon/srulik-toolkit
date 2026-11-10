@@ -4,6 +4,7 @@
 const http = require('node:http');
 const { openSync, readSync, closeSync, statSync, existsSync, watch } = require('node:fs');
 const { join } = require('node:path');
+const { isIP } = require('node:net');
 
 const PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Graph run</title><style>
@@ -39,7 +40,19 @@ new EventSource('events').onmessage = m => { const e = JSON.parse(m.data);
 </script></body></html>`;
 
 // A request's Host must name loopback or the one address the server is bound to, so DNS rebinding can't reach it.
-const allowedHost = (header, host, port) => [`127.0.0.1:${port}`, `localhost:${port}`, `${host}:${port}`].includes(header);
+const allowedHost = (header, host, port) =>
+  [`127.0.0.1:${port}`, `localhost:${port}`, `${host.includes(':') ? `[${host}]` : host}:${port}`].includes(header);
+
+// The view has no login, so it may bind only a literal loopback or private address: RFC 1918, Tailscale's
+// 100.64.0.0/10, or IPv6 unique-local. Names and unspecified addresses (any spelling of 0.0.0.0 or ::) are refused.
+function privateHost(host) {
+  if (isIP(host) === 4) {
+    const [a, b] = host.split('.').map(Number);
+    return a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
+  }
+  if (isIP(host) === 6) return host === '::1' || /^f[cd][0-9a-f]{0,2}:/i.test(host);
+  return false;
+}
 
 function serve(dir, port = 0, host = '127.0.0.1') {
   const file = join(dir, 'run.jsonl');
@@ -75,4 +88,4 @@ function serve(dir, port = 0, host = '127.0.0.1') {
   return new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, host, () => resolve(server)); });
 }
 
-module.exports = { serve, allowedHost };
+module.exports = { serve, allowedHost, privateHost };
