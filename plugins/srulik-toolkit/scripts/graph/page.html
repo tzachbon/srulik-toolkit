@@ -22,13 +22,15 @@ const clip = (v, n) => v.length > n ? v.slice(0, n - 1) + '…' : v;
 const dur = ms => { if (ms == null || ms < 0) return ''; const s = Math.round(ms / 1000); return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`; };
 
 // ---- state folded from run.jsonl
-const run = { spec: null, admitted: {}, inst: {}, blocked: {}, capSkipped: {}, writes: [], end: null, t0: null, last: 0 };
+// node-keyed maps have no prototype, so a node named `constructor` or `__proto__` is never already present
+const map = () => Object.create(null);
+const run = { spec: null, admitted: map(), inst: map(), blocked: map(), capSkipped: map(), writes: [], end: null, t0: null, last: 0 };
 const key = (node, index) => node + '#' + (index ?? 0);
 const inst = (node, index) => run.inst[key(node, index)] ??= { node, index: index ?? 0, id: key(node, index), state: 'waiting' };
 function apply(e) {
   run.last = Math.max(run.last, e.t || 0);
   switch (e.type) {
-    case 'spec': run.spec = e; run.t0 = e.t; break;
+    case 'spec': run.spec = { ...e, edges: Object.assign(map(), e.edges) }; run.t0 = e.t; break;
     case 'admit': run.admitted[e.node] = e.count; (e.items || []).forEach((it, i) => Object.assign(inst(e.node, i), { item: it.item, src: it.src })); break;
     case 'dispatch': { const i = inst(e.node, e.index); Object.assign(i, { state: 'running', attempt: e.attempt, item: e.item, src: e.src }); i.start ??= e.t; break; }
     case 'pick': Object.assign(inst(e.node, e.index), { model: e.model, effort: e.effort, provider: e.provider, reason: e.reason }); break;
@@ -45,16 +47,19 @@ function apply(e) {
 
 // ---- preferences: theme follows the system until the owner picks one; layout defaults to top-down
 const sys = matchMedia('(prefers-color-scheme: dark)');
-const theme = () => localStorage.getItem('graph-theme') || (sys.matches ? 'dark' : 'light');
-const layout = () => localStorage.getItem('graph-layout') || 'down';
+// storage can throw when the browser blocks it; the page then keeps the defaults
+const get = k => { try { return localStorage.getItem(k); } catch { return null; } };
+const put = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const theme = () => get('graph-theme') || (sys.matches ? 'dark' : 'light');
+const layout = () => get('graph-layout') || 'down';
 function prefs() {
   const t = theme(); document.documentElement.dataset.theme = t;
   $('theme').textContent = t === 'dark' ? 'Light theme' : 'Dark theme';
   $('layout').textContent = layout() === 'down' ? 'Left to right' : 'Top down';
   schedule();
 }
-$('theme').onclick = () => { localStorage.setItem('graph-theme', theme() === 'dark' ? 'light' : 'dark'); prefs(); };
-$('layout').onclick = () => { localStorage.setItem('graph-layout', layout() === 'down' ? 'right' : 'down'); prefs(); };
+$('theme').onclick = () => { put('graph-theme', theme() === 'dark' ? 'light' : 'dark'); prefs(); };
+$('layout').onclick = () => { put('graph-layout', layout() === 'down' ? 'right' : 'down'); prefs(); };
 sys.addEventListener('change', prefs);
 
 // ---- rendering

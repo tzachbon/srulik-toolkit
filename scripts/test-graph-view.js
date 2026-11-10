@@ -145,9 +145,12 @@ module.exports = {
   C39() {
     const { PAGE } = mod('view.js');
     assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(PAGE), 'the page writes values with textContent only');
-    assert.match(PAGE, /localStorage\.getItem\('graph-theme'\)/, 'the theme choice is remembered');
+    assert.match(PAGE, /get\('graph-theme'\)/, 'the theme choice is remembered');
+    assert.match(PAGE, /try \{ return localStorage\.getItem\(k\); \} catch/, 'blocked storage falls back to the defaults instead of stopping the page');
+    assert.match(PAGE, /const run = \{ spec: null, admitted: map\(\), inst: map\(\), blocked: map\(\), capSkipped: map\(\)/, 'node-keyed page state has no prototype');
+    assert.match(PAGE, /const map = \(\) => Object\.create\(null\)/);
     assert.match(PAGE, /matchMedia\('\(prefers-color-scheme: dark\)'\)/, 'without a choice, the theme follows the system');
-    assert.match(PAGE, /localStorage\.getItem\('graph-layout'\)/, 'the layout choice is remembered');
+    assert.match(PAGE, /get\('graph-layout'\)/, 'the layout choice is remembered');
     assert.match(PAGE, /\|\| 'down'/, 'top-down is the default layout');
     assert.match(PAGE, /@media \(prefers-reduced-motion: ?reduce\)/, 'animation stops under reduced motion');
     assert.match(PAGE, /getText\(`nodes\/\$\{i\.node\}-/, 'attachments are fetched from /nodes');
