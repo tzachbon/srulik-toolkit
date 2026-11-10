@@ -114,7 +114,16 @@ module.exports = {
       assert.equal(privateHost(h), true, `${h} is private`);
     for (const h of ['0.0.0.0', '::', '0:0:0:0:0:0:0:0', '0', '', 'localhost', '187.124.113.123', '8.8.8.8', '100.128.0.1', '2001:db8::1'])
       assert.equal(privateHost(h), false, `${h} is refused`);
+    // pr-review graph round 3: any spelling of an allowed address is accepted, and the browser's canonical Host matches it
+    const { canonicalHost } = mod('view.js');
+    assert.equal(privateHost(canonicalHost('0:0:0:0:0:0:0:1')), true, 'expanded IPv6 loopback is loopback');
+    assert.equal(canonicalHost('FD7A:115C:A1E0:0:0:0:0:1'), 'fd7a:115c:a1e0::1', 'IPv6 is lowercased and compressed');
+    assert.equal(canonicalHost('100.90.182.51'), '100.90.182.51', 'IPv4 is unchanged');
+    assert.equal(canonicalHost('not an address'), '', 'an invalid value becomes empty, so it is refused');
     const r = spawnSync(process.execPath, [CLI, 'view', temp('view-'), '--host', '0:0:0:0:0:0:0:0'], { encoding: 'utf8', env: process.env, timeout: 5000 });
     assert.match(r.stderr, /--host must be a loopback or private address/, 'a wildcard spelling is refused');
+    const ok = spawnSync(process.execPath, ['-e', `process.argv=[process.argv[0], ${JSON.stringify(CLI)}, 'view', ${JSON.stringify(temp('view-'))}, '--host', '0:0:0:0:0:0:0:1'];
+      const log=console.log; console.log=(...a)=>{ log(...a); process.exit(0); }; require(${JSON.stringify(CLI)});`], { encoding: 'utf8', env: process.env, timeout: 5000 });
+    assert.match(ok.stdout, /^http:\/\/\[::1\]:\d+\/$/m, 'the CLI accepts and prints a canonical IPv6 loopback');
   },
 };

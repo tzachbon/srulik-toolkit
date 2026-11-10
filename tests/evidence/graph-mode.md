@@ -21,7 +21,7 @@ C13 failed on its first CLI exit-status assertion.
 Each behavior assertion has a mutation in the implementation that makes it the
 first failure. The test is never changed. Each mutation ran in a pristine copy,
 then the code was restored and the group passed again. Final run at the head
-of this PR: 217 mutations, 217 failed as targeted, and 217 passed again when
+of this PR: 220 mutations, 220 failed as targeted, and 220 passed again when
 restored. The only assertion without a mutation is `length <= 100` inside the
 fake leaderboard server, which is test setup, not behavior.
 

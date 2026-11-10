@@ -7,7 +7,7 @@ graph_notice = (root / "NOTICE.md").read_text(encoding="utf-8")
 graph_standards = (root / "CODING_STANDARDS.md").read_text(encoding="utf-8")
 
 for graph_phrase in ["## Graph mode", "retry once with the failure reason", "Stop only when nothing more can run",
-                     "applied automatically", "opinion about a model", "references/graph-spec.md"]:
+                     "applied automatically", "opinion about a model", "on one fixed port", "references/graph-spec.md"]:
     if graph_phrase not in graph_skill:
         raise SystemExit(f"agent-swarm graph mode must say: {graph_phrase}")
 graph_core = graph_skill.split("## Graph mode", 1)[1].split("\n## ", 1)[0]

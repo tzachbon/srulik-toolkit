@@ -43,6 +43,12 @@ new EventSource('events').onmessage = m => { const e = JSON.parse(m.data);
 const allowedHost = (header, host, port) =>
   [`127.0.0.1:${port}`, `localhost:${port}`, `${host.includes(':') ? `[${host}]` : host}:${port}`].includes(header);
 
+// The address as a browser writes it in Host: IPv6 lowercased and compressed. Anything that isn't an IP becomes ''.
+function canonicalHost(host) {
+  if (!isIP(host)) return '';
+  return isIP(host) === 6 ? new URL(`http://[${host}]/`).hostname.slice(1, -1) : host;
+}
+
 // The view has no login, so it may bind only a literal loopback or private address: RFC 1918, Tailscale's
 // 100.64.0.0/10, or IPv6 unique-local. Names and unspecified addresses (any spelling of 0.0.0.0 or ::) are refused.
 function privateHost(host) {
@@ -88,4 +94,4 @@ function serve(dir, port = 0, host = '127.0.0.1') {
   return new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, host, () => resolve(server)); });
 }
 
-module.exports = { serve, allowedHost, privateHost };
+module.exports = { serve, allowedHost, privateHost, canonicalHost };
