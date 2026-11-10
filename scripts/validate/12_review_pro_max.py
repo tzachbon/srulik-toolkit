@@ -35,8 +35,10 @@ rpm_contracts = {
         "A requested quick review skips the UI pass and says so",
         "use existing screenshots, CI artifacts, and design images that show the changed states",
         "render from an isolated copy for any changed state they do not show",
-        "compared path by path with the prior round's pinned state",
+        "skip the pass only when the latest UI pass recorded `COMPLETE` coverage, or a coverage limit whose cause is unchanged",
+        "compared path by path with that pass's pinned state",
         "When that comparison is unavailable, rerun the pass",
+        "A skipped pass carries that verdict into this round's coverage",
         "each reviewer's model and score, the UI pass's coverage verdict or skip reason",
     ],
     "code-reviewer.md": [
