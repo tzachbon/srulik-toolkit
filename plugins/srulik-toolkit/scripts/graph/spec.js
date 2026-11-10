@@ -45,6 +45,8 @@ function check(raw) {
 
   for (const [name, node] of Object.entries(nodes)) {
     if (name === 'inputs') fail('inputs: the name "inputs" is reserved for the graph\'s inputs');
+    // A node's name becomes its output file name, so it is lowercase (no collisions on case-insensitive disks) and has no path characters.
+    if (!/^[a-z0-9_-]+$/.test(name)) fail(`${name}: node name must match [a-z0-9_-]+`);
     for (const key of Object.keys(node)) if (!NODE_KEYS.has(key)) fail(`${name}: unknown key "${key}"`);
     if (('run' in node) === ('agent' in node)) fail(`${name}: needs exactly one of run or agent`);
     if ('agent' in node && typeof node.agent !== 'string') fail(`${name}: agent must be a string`);

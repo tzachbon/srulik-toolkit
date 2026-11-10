@@ -57,7 +57,7 @@ module.exports = {
     assert.equal(done(spec, dir, { node: 'verify', index: 1, output: { confirmed: true }, model: 'vm' }).duplicate, true);
     const [rep] = next(spec, dir);
     assert.equal(rep.node, 'report'); assert.equal(rep.input.verify.length, 1);
-    assert.deepEqual(rep.input.verify[0].item, { id: 1 }); assert.equal(rep.input.verify[0].output.confirmed, true);
+    assert.deepEqual(rep.input.verify[0].item, { id: 1 }); assert.equal(rep.input.verify[0].summary, 'confirmed: true');
     const events = log(dir);
     assert.ok(events.some(e => e.type === 'gate-dropped' && e.node === 'verify' && e.index === 1));
     assert.deepEqual(events.filter(e => e.type === 'outcome').map(o => [o.model, o.kind, o.ok]),

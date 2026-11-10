@@ -25,7 +25,7 @@ The parent agent runs the graph; the scripts never call a model.
 | `gate` | node with `out` | `field == literal`, where the literal is `true`, `false`, a number or a `"string"`. A failing item is dropped. |
 | `write` | node | A `writes` entry. The node's `output.body` becomes the file; for a `run` node, its stdout (`text`) does. Only results that survive their gate reserve a write. |
 
-Any other key is an error.
+Any other key is an error. Node names match `[a-z0-9_-]+`, because each becomes a file name under `<run-dir>/nodes/`.
 
 ## YAML subset
 
@@ -51,7 +51,18 @@ Rejected with `line N: <reason>`:
 - `in: ${inputs.k}` gives `input.inputs = {k: value}`.
 - `in: ${p.f}` from a single-instance producer gives `input.p = {f: value}`.
 - From a fan-out producer, it gives `input.p = [{index, item, f: value}]` over the surviving instances, with one key per field the consumer references.
-- `needs: [p]` gives `input.p = [{index, item, output}]` over the surviving instances. The list may be empty; an empty review is still a result.
+- `needs: [p]` gives `input.p = [{index, item, file, summary}]` over the surviving instances: the absolute path of each output file and a one-line summary of its fields. The consumer reads a file when it needs the detail, so it must be able to read the run directory. The list may be empty; an empty review is still a result.
+- Every agent task carries `graph`, the absolute path of the run index `<run-dir>/nodes/index.md`, so a child can see what the other agents did and read their files.
+
+A child's JSON may add `attachments: [{name, text}]`: at most 10 text files, each name matching `[A-Za-z0-9][A-Za-z0-9._-]{0,79}` and each text at most 1 MB. `done` refuses anything else, and the instance stays retryable.
+
+`done` also refuses a result whose `index` is not an admitted instance of its node, because the index becomes part of a file path.
+
+## Node files and the run index
+
+Before recording a result, `done` writes the instance's output to `<run-dir>/nodes/<node>-<index>.md`: a `# <node>#<index>` line, the item and model, then `output.text` or `output.body` as-is, or the output as a JSON block. Attachments go to `<run-dir>/nodes/<node>-<index>/<name>`. The run log keeps the output, the file path, the summary and the attachment names, not the attachment text.
+
+`<run-dir>/nodes/index.md` is rewritten after every event, including `pick` and `end`. It is a table of every instance, with its item, status (`waiting`, `running`, `retrying (attempt n)`, `done`, `dropped`, `failed`), model, summary or failure reason, and files, plus one row for each node not yet started or blocked. The rewrite is best-effort: if it fails, the event is still recorded.
 
 ## Scheduling
 
@@ -126,7 +137,7 @@ The claim lock records the process that holds it. While that process is still ru
 | `admit` | node, count, items |
 | `dispatch` | node, index, attempt, taskType, item, src |
 | `pick` | node, index, provider, model, effort, creator, explored, reason |
-| `result` | node, index, output, model and provider (from `done`, else from this instance's latest `pick`), write (the reserved write, if any: id, name, file, argv), dropped (when the gate failed) |
+| `result` | node, index, output, file (absolute path of the output file), summary, attachments (names), model and provider (from `done`, else from this instance's latest `pick`), write (the reserved write, if any: id, name, file, argv), dropped (when the gate failed) |
 | `failed` | node, index, attempt, reason, final |
 | `gate-dropped` | node, index (for the live view; the result event's `dropped` is authoritative) |
 | `cap-skipped` | node, count |
@@ -141,6 +152,10 @@ The claim lock records the process that holds it. While that process is still ru
 
 `graph.js view <run-dir> [--port N] [--host <address>]` serves a page that replays `run.jsonl` and streams new events. It listens on `127.0.0.1` unless `--host` names one literal loopback or private address: `10/8`, `172.16/12`, `192.168/16`, Tailscale's `100.64/10`, or IPv6 `::1` or `fc00::/7`. Host names, public addresses and every spelling of `0.0.0.0` or `::` are refused, because the page has no login. It listens only on that address, not also on loopback. Requests whose `Host` header names any other address get 403, so a page on another site can't reach it through DNS rebinding.
 
+
+The page draws the run as a node graph: one card per instance, with its item, a status word, the model and effort, the duration, its summary or error, and its attachments. Edges run from each instance's source; an instance that didn't fan out from one source gets an edge from every instance of each node it depends on. The graph is top-down by default, with a left-to-right toggle. The theme follows the system until the owner picks one with the theme button; both choices are kept in the browser. A header shows the graph name, its inputs, progress counts and elapsed time.
+
+Clicking a card, or pressing Enter on it, opens a panel with the status, model, why it was picked, duration, inputs, error, output file path, attachments and output. Escape closes it. The Run index button shows `nodes/index.md`. The page reads those files from `/nodes/index.md`, `/nodes/<node>-<index>.md` and `/nodes/<node>-<index>/<name>`. These are served as plain text with `nosniff`, and only when the real path stays inside `<run-dir>/nodes`; any other path gets 404.
 ## Files
 
 State lives in `PLUGIN_DATA`. If that isn't set, it falls back to `CLAUDE_PLUGIN_DATA`, then to `~/.srulik-toolkit`.

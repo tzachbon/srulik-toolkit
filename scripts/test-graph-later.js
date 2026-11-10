@@ -84,16 +84,16 @@ module.exports = {
   },
 
   C33() {
-    // Codex bot: a node named after an Object property (constructor, toString) is scheduled like any other
+    // Codex bot: a node named after an Object property (constructor, __proto__) is scheduled like any other; names are lowercase, so toString is no longer valid
     const { check } = mod('spec.js'); const { next, done, status } = mod('run.js');
     const dir = temp('graph-');
     const spec = check({ name: 'p', limits: { max_agents: 2 }, nodes: { constructor: { agent: 'a', out: ['xs'] },
-      toString: { agent: 'b {item}', for_each: '${constructor.xs}' } } });
+      ['__proto__']: { agent: 'b {item}', for_each: '${constructor.xs}' } } });
     assert.deepEqual(next(spec, dir).map(t => t.node), ['constructor'], 'an inherited name is not already blocked');
     appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: 1, type: 'pick', node: 'constructor', index: 0, provider: 'p', model: 'm', effort: 'high', creator: 'X' }) + '\n');
     done(spec, dir, { node: 'constructor', output: { xs: [1] } });
-    assert.deepEqual(next(spec, dir).map(t => t.node), ['toString'], 'its consumer fans out');
-    done(spec, dir, { node: 'toString', output: {}, model: 'm' });
+    assert.deepEqual(next(spec, dir).map(t => t.node), ['__proto__'], 'its consumer fans out');
+    done(spec, dir, { node: '__proto__', output: {}, model: 'm' });
     assert.equal(status(spec, dir).state, 'done');
   },
 

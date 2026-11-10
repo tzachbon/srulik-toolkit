@@ -3,27 +3,28 @@
 'use strict';
 const { appendFileSync, readFileSync, existsSync, mkdirSync, writeFileSync, openSync, closeSync, rmSync, writeSync } = require('node:fs');
 const { hostname } = require('node:os');
-const { join } = require('node:path');
+const { join, resolve } = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { refs, GATE } = require('./spec.js');
 const { stateDir } = require('./data.js');
+const { key, show, instances, summarize, writeIndex, checkAttachments, writeNodeFiles } = require('./nodes.js');
 
-const key = (node, index = 0) => `${node}#${index}`;
 const isAgent = node => 'agent' in node;
 
 function reduce(s, e) {
   const inst = () => (s.inst[key(e.node, e.index)] ??= { failures: 0, attempts: [] });
   switch (e.type) {
-    case 'spec': s.started = true; s.inputs = e.inputs; s.cwd = e.cwd; break;
+    case 'spec': s.started = true; s.name = e.name; s.nodes = e.nodes; s.inputs = e.inputs; s.cwd = e.cwd; break;
     case 'admit': s.admitted[e.node] = e.items; break;
     case 'cap-skipped': s.capSkipped.push(`${e.node} (${e.count} skipped)`); break;
     case 'dispatch': inst().attempts.push(e.attempt); break;
-    case 'pick': (s.picks[e.node] ??= []).push(e); break;
-    case 'result': Object.assign(inst(), { result: e.output, model: e.model, settled: true, ...(e.dropped ? { dropped: true } : {}) });
+    case 'pick': (s.picks[e.node] ??= []).push(e); inst().model = e.model; break;
+    case 'result': Object.assign(inst(), { result: e.output, model: e.model, file: e.file, summary: e.summary, attachments: e.attachments, settled: true, ...(e.dropped ? { dropped: true } : {}) });
       if (e.write) s.writes[e.write.id] = { name: e.write.name, file: e.write.file, argv: e.write.argv, state: 'reserved' }; break;
     case 'gate-dropped': inst().dropped = true; break;
     case 'failed': { const i = inst(); i.failures++; i.reason = e.reason; if (e.final) { i.final = true; i.settled = true; s.finalFailures.push(key(e.node, e.index)); } break; }
     case 'blocked': s.blocked[e.node] = e.cause; break;
+    case 'end': s.state = e.state; break;
     case 'write-claimed': s.writes[e.id].state = 'applying'; break;
     case 'write-applied': s.writes[e.id].state = 'applied'; break;
     case 'write-failed': s.writes[e.id].state = 'failed'; break;
@@ -41,15 +42,17 @@ function fold(dir) {
   return readFileSync(logPath(dir), 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l)).reduce(reduce, empty());
 }
 
-function emit(dir, s, event) {
+function emit(dir, s, event, index = true) {
   const e = { t: Date.now(), ...event };
   mkdirSync(dir, { recursive: true });
   appendFileSync(logPath(dir), JSON.stringify(e) + '\n');
   reduce(s, e);
+  if (index) writeIndex(dir, s);
   return e;
 }
 
-const instances = (s, node) => (s.admitted[node] ?? []).map((it, index) => ({ index, ...it, ...(s.inst[key(node, index)] ?? {}) }));
+const refreshIndex = dir => withRunLock(dir, () => writeIndex(dir, fold(dir)));
+
 const survivors = (s, node) => instances(s, node).filter(i => i.result !== undefined && !i.dropped);
 const settled = (s, node) => node in s.blocked || (node in s.admitted && instances(s, node).every(i => i.settled));
 const impossible = (s, node) => node in s.blocked
@@ -63,7 +66,6 @@ function propagate(spec, dir, s) {
   }
 }
 
-const show = v => typeof v === 'string' ? v : JSON.stringify(v);
 function substitute(text, s, item, spec) {
   // One pass over the template with callback replacements, so inserted values stay literal.
   return text.replace(/\$\{([a-z0-9_-]+)\.([A-Za-z_]\w*)\}|\{item\}/gi, (m, p, f) => {
@@ -84,7 +86,8 @@ function inputFor(spec, s, name) {
     if (fanOut) input[p] = survivors(s, p).map((i, n) => ({ ...(input[p]?.[n] ?? { index: i.index, item: i.item }), [field]: i.result[field] }));
     else input[p] = { ...input[p], [field]: survivors(s, p)[0]?.result[field] };
   }
-  for (const p of node.needs ?? []) input[p] = survivors(s, p).map(i => ({ index: i.index, item: i.item, output: i.result }));
+  // needs: gives each survivor's output file and a one-line summary; the consumer reads the file when it needs the detail.
+  for (const p of node.needs ?? []) input[p] = survivors(s, p).map(i => ({ index: i.index, item: i.item, file: i.file, summary: i.summary }));
   return input;
 }
 
@@ -123,7 +126,8 @@ function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
       tasks.push(taskType === 'run'
         ? { node: name, index: i.index, attempt, taskType, argv: argvFor(node.run, s) }
         : { node: name, index: i.index, attempt, taskType, kind: node.kind ?? 'agentic', item: i.item,
-            prompt: substitute(node.agent, s, i.item, spec), input: inputFor(spec, s, name), pick: node.pick ?? null, model: node.model ?? null });
+            prompt: substitute(node.agent, s, i.item, spec), input: inputFor(spec, s, name), pick: node.pick ?? null, model: node.model ?? null,
+            graph: join(resolve(dir), 'nodes', 'index.md') });
     }
   }
   return tasks;
@@ -159,6 +163,8 @@ function doneUnlocked(spec, dir, result) {
   const s = fold(dir);
   const { node: name, index = 0 } = result;
   const node = spec.nodes[name];
+  // index becomes part of a file path, so only an admitted instance may report
+  if (!Number.isInteger(index) || index < 0 || index >= (s.admitted[name]?.length ?? 0)) throw new Error(`${name}#${index}: no such instance`);
   const current = s.inst[key(name, index)] ?? {};
   if (current.settled) return { writes: [], duplicate: true };
   // A child's report need not repeat its model: the latest pick for this instance supplies it.
@@ -174,6 +180,7 @@ function doneUnlocked(spec, dir, result) {
     return { writes: [] };
   }
   for (const f of node.out ?? []) if (!(f in (result.output ?? {}))) throw new Error(`${key(name, index)}: output missing "${f}"`);
+  const attachments = checkAttachments(key(name, index), result.attachments);
   let passed = true;
   if (node.gate) { const [, field, literal] = GATE.exec(node.gate); passed = result.output[field] === JSON.parse(literal); }
   // Prepare the write artifact before recording the result, so a failure leaves the instance retryable.
@@ -188,9 +195,13 @@ function doneUnlocked(spec, dir, result) {
     writeFileSync(file, header + show(result.output.body ?? result.output.text ?? result.output));
     write = { id, name: node.write, file, argv: argvFor(spec.writes[node.write].run, s, file) };
   }
+  // The output file is written before the result event, like the write artifact, so a crash leaves the instance retryable.
+  const item = instances(s, name)[index]?.item;
+  const file = writeNodeFiles(dir, name, index, item, model, result.output, attachments);
   // The result and its write reservation are one event, so no crash can record one without the other.
   // The gate verdict and any write reservation travel in the result event, so a crash can't split them.
-  emit(dir, s, { type: 'result', node: name, index, output: result.output, model, provider, ...(write ? { write } : {}), ...(passed ? {} : { dropped: true }) });
+  emit(dir, s, { type: 'result', node: name, index, output: result.output, model, provider, file, summary: summarize(result.output),
+    attachments: attachments.map(a => a.name), ...(write ? { write } : {}), ...(passed ? {} : { dropped: true }) });
   if (node.gate) {
     if (!passed) emit(dir, s, { type: 'gate-dropped', node: name, index }); // for the live view
     const inst = instances(s, name)[index];
@@ -270,22 +281,24 @@ function apply(spec, dir, id, runner, { mark, onClaimed } = {}) {
   if (mark && !['applied', 'failed'].includes(mark)) throw new Error(`${id}: mark must be applied or failed`);
   // Both paths hold the claim across the state check, the update and cleanup, so they never interleave.
   const release = claim(dir, id, `${w.file}.lock`, !!mark);
+  // apply runs outside run.lock, so its s can be older than the index: rebuild the index from the log under the lock
+  const record = event => { emit(dir, s, event, false); refreshIndex(dir); };
   try {
     onClaimed?.();
     const now = fold(dir).writes[id].state;
     if (now === 'applied') throw new Error(`${id}: already applied`);
     if (mark) { // the owner checked an unknown outcome by hand and records it
-      emit(dir, s, mark === 'applied' ? { type: 'write-applied', id, marked: true } : { type: 'write-failed', id, reason: 'marked failed by owner' });
+      record(mark === 'applied' ? { type: 'write-applied', id, marked: true } : { type: 'write-failed', id, reason: 'marked failed by owner' });
       return { ok: mark === 'applied', id };
     }
     if (now === 'applying') throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
-    emit(dir, s, { type: 'write-claimed', id });
+    record({ type: 'write-claimed', id });
     const r = runner(w.argv);
     const ok = r.status === 0;
     // Killed by timeout or a signal after it started: the effect may have happened, so the claim stays unresolved.
     // A command that never started (such as ENOENT) is an ordinary failure.
     if (!ok && (r.signal || r.error?.code === 'ETIMEDOUT')) return { ok: false, id, unknown: true };
-    emit(dir, s, ok ? { type: 'write-applied', id } : { type: 'write-failed', id, reason: String(r.error?.message || r.stderr || `exit ${r.status}`).trim().slice(-500) });
+    record(ok ? { type: 'write-applied', id } : { type: 'write-failed', id, reason: String(r.error?.message || r.stderr || `exit ${r.status}`).trim().slice(-500) });
     return { ok, id };
   } finally { release(); }
 }
@@ -305,4 +318,4 @@ function status(spec, dir) {
 const next = (spec, dir, ...rest) => withRunLock(dir, () => nextUnlocked(spec, dir, ...rest));
 const done = (spec, dir, result) => withRunLock(dir, () => doneUnlocked(spec, dir, result));
 
-module.exports = { fold, next, exec, done, apply, status, withRunLock };
+module.exports = { fold, next, exec, done, apply, status, withRunLock, refreshIndex };
