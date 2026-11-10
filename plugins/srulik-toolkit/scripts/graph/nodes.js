@@ -61,7 +61,9 @@ function checkAttachments(k, list = []) {
 
 function writeNodeFiles(dir, node, index, item, model, output, attachments) {
   const base = nodeBase(dir, node, index);
-  const text = typeof (output.text ?? output.body) === 'string' ? (output.text ?? output.body) : '```json\n' + JSON.stringify(output, null, 2) + '\n```\n';
+  const field = output.text != null ? 'text' : 'body', prose = output[field], json = o => '```json\n' + JSON.stringify(o, null, 2) + '\n```\n';
+  const { [field]: _, ...rest } = output;
+  const text = typeof prose !== 'string' ? json(output) : Object.keys(rest).length ? prose + '\n\n' + json(rest) : prose;
   mkdirSync(join(dir, 'nodes'), { recursive: true });
   writeFileSync(base + '.md', [`# ${key(node, index)}`, ...(item == null ? [] : [`item: ${show(item)}`]), ...(model ? [`model: ${model}`] : []), '', text].join('\n'));
   rmSync(base, { recursive: true, force: true });

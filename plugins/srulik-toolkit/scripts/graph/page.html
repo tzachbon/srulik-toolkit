@@ -70,7 +70,7 @@ const instancesOf = node => Object.values(run.inst).filter(i => i.node === node)
 function cards(node) {
   if (node in run.blocked) return [{ node, index: 0, id: node + '#-', state: 'blocked', error: 'blocked by ' + run.blocked[node], ghost: true }];
   const list = instancesOf(node);
-  if (!list.length) return [{ node, index: 0, id: node + '#-', state: node in run.admitted ? 'done' : 'waiting', ghost: true,
+  if (!list.length && !run.capSkipped[node]) return [{ node, index: 0, id: node + '#-', state: node in run.admitted ? 'done' : 'waiting', ghost: true,
     summary: node in run.admitted ? 'no items' : 'waits for ' + (run.spec.edges[node] || []).join(', ') }];
   if (run.capSkipped[node]) list.push({ node, index: 'cap', id: node + '#cap', state: 'skipped', ghost: true, summary: run.capSkipped[node] + ' skipped by max_agents' });
   return list;

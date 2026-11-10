@@ -42,6 +42,8 @@ module.exports = {
     next(cmd, d2); exec(cmd, d2, 'f');
     assert.equal(readFileSync(join(d2, 'nodes', 'f-0.md'), 'utf8'), '# f#0\n\ndiff --git a b\nline 2', 'a text output is written verbatim, with no item line for a single instance');
     assert.equal(log(d2).find(e => e.type === 'result').summary, 'text: diff --git a b');
+    const mixed = require('../plugins/srulik-toolkit/scripts/graph/nodes.js').writeNodeFiles(d2, 'm', 0, null, null, { text: 'short', findings: [{ id: 7 }] }, []);
+    assert.match(readFileSync(mixed, 'utf8'), /short\n\n```json\n[\s\S]*"findings"[\s\S]*"id": 7/, 'text plus other fields keeps the other fields in the file');
   },
 
   // needs: gives paths and summaries, agent tasks get the run index, and the index tracks every state
@@ -147,6 +149,7 @@ module.exports = {
     assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(PAGE), 'the page writes values with textContent only');
     assert.match(PAGE, /get\('graph-theme'\)/, 'the theme choice is remembered');
     assert.match(PAGE, /try \{ return localStorage\.getItem\(k\); \} catch/, 'blocked storage falls back to the defaults instead of stopping the page');
+    assert.match(PAGE, /if \(!list\.length && !run\.capSkipped\[node\]\) return/, 'a fan-out skipped by max_agents shows its skipped card, not "no items"');
     assert.match(PAGE, /const run = \{ spec: null, admitted: map\(\), inst: map\(\), blocked: map\(\), capSkipped: map\(\)/, 'node-keyed page state has no prototype');
     assert.match(PAGE, /const map = \(\) => Object\.create\(null\)/);
     assert.match(PAGE, /matchMedia\('\(prefers-color-scheme: dark\)'\)/, 'without a choice, the theme follows the system');
