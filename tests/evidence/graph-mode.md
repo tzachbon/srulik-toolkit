@@ -6,7 +6,7 @@ Plugin version: 1.18.0. Base: 3cb1a721416173aef06833265987f68d3aa59078. Issue: #
 
 `scripts/test-graph.js` loads `test-graph-run.js`, `test-graph-models.js`,
 `test-graph-review.js` and `test-graph-e2e.js`. Shared setup is in
-`graph-fixtures.js`. There are 23 groups, all using local fakes: no network, no real model calls. The tests set a
+`graph-fixtures.js`. There are 25 groups, all using local fakes: no network, no real model calls. The tests set a
 temporary `PLUGIN_DATA` before any graph module loads, so they never touch real
 notes or stats. `scripts/validate/18_graph.py` checks the skill and reference
 text, the NOTICE attribution, the standards paragraph, that there are no
@@ -21,7 +21,7 @@ C13 failed on its first CLI exit-status assertion.
 Each behavior assertion has a mutation in the implementation that makes it the
 first failure. The test is never changed. Each mutation ran in a pristine copy,
 then the code was restored and the group passed again. Final run at the head
-of this PR: 175 mutations, 175 failed as targeted, and 175 passed again when
+of this PR: 178 mutations, 178 failed as targeted, and 178 passed again when
 restored. The only assertion without a mutation is `length <= 100` inside the
 fake leaderboard server, which is test setup, not behavior.
 
@@ -36,6 +36,8 @@ Real processes, through the CLI:
   was refused, so the command ran once.
 - Two concurrent `done` calls sharing a write reserved `note#1` and `note#2`.
   Without the run lock, both reserved `note#1`.
+- Two `next` calls that both found the same dead `run.lock` dispatched once.
+  Without the reclaim guard, both dispatched under `max_agents: 1`.
 
 ## Review
 
@@ -59,7 +61,7 @@ the same way:
 
 | Source | Findings |
 | --- | --- |
-| Codex bot | 5: timed-out writes, stale successes, fan-out fields, outcomes rescored past a stalled watermark, fan-out values in prompts |
+| Codex bot | 7: timed-out writes, stale successes, fan-out fields, outcomes rescored past a stalled watermark, fan-out values in prompts, two processes reclaiming one dead run lock, `in: ${inputs.k}` dropped |
 | CodeRabbit | 7 minor: gate drop in the result event, run-node fields, view errors, docs, a test that couldn't fail |
 | This graph's own run on the PR (Opus, Kimi ×2) | 5 new (one overlapped Codex): `differ_from` scope, scoring watermark, a run-directory lock, same-indent YAML lists, a `--mark` race |
 

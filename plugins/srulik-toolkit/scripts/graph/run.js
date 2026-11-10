@@ -76,7 +76,7 @@ function substitute(text, s, item, spec) {
 function inputFor(spec, s, name) {
   const node = spec.nodes[name]; const input = {};
   for (const { node: p, field } of [].concat(node.in ?? []).flatMap(refs)) {
-    if (p === 'inputs') continue;
+    if (p === 'inputs') { input.inputs = { ...input.inputs, [field]: s.inputs[field] }; continue; }
     const fanOut = 'for_each' in spec.nodes[p];
     // Each fan-out instance keeps every field the consumer asked for.
     if (fanOut) input[p] = survivors(s, p).map((i, n) => ({ ...(input[p]?.[n] ?? { index: i.index, item: i.item }), [field]: i.result[field] }));
@@ -211,15 +211,37 @@ function withRunLock(dir, fn) {
   const lock = join(dir, 'run.lock');
   const until = Date.now() + 30000;
   for (;;) {
-    try { const fd = openSync(lock, 'wx'); try { writeSync(fd, JSON.stringify({ pid: process.pid, host: hostname() })); } finally { closeSync(fd); } break; }
-    catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-      if (!lockOwnerAlive(lock)) { rmSync(lock, { force: true }); continue; }
-      if (Date.now() > until) throw new Error(`run directory is busy: ${lock}`);
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
-    }
+    if (tryLock(lock)) break;
+    if (!lockOwnerAlive(lock) && reclaimStale(lock)) continue;
+    if (Date.now() > until) throw new Error(`run directory is busy: ${lock}`);
+    pause();
   }
   try { return fn(); } finally { rmSync(lock, { force: true }); }
+}
+
+const pause = () => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+
+// Create a lock file exclusively, recording its owner. False when it already exists.
+function tryLock(lock) {
+  let fd;
+  try { fd = openSync(lock, 'wx'); } catch (error) { if (error.code === 'EEXIST') return false; throw error; }
+  try { writeSync(fd, JSON.stringify({ pid: process.pid, host: hostname() })); } finally { closeSync(fd); }
+  return true;
+}
+
+// Remove a lock whose owner is gone. Only the holder of <lock>.reclaim removes it, after reading it again,
+// so a reclaimer that saw the old lock can never delete a replacement another process just took.
+// Returns false when another reclaimer holds the guard.
+function reclaimStale(lock) {
+  const guard = `${lock}.reclaim`;
+  if (!tryLock(guard)) {
+    // ponytail: a reclaimer that died inside the three lines below leaves a dead guard, removed here.
+    // Two processes racing on such a dead guard could still collide; add a lease if that ever shows up.
+    if (!lockOwnerAlive(guard)) rmSync(guard, { force: true });
+    return false;
+  }
+  try { if (!lockOwnerAlive(lock)) rmSync(lock, { force: true }); } finally { rmSync(guard, { force: true }); }
+  return true;
 }
 
 const runnerIn = cwd => argv => spawnSync(argv[0], argv.slice(1), { shell: false, cwd: cwd ?? undefined, encoding: 'utf8', timeout: 120000 });
@@ -228,16 +250,10 @@ const runnerIn = cwd => argv => spawnSync(argv[0], argv.slice(1), { shell: false
 // always refuses; one whose owner is gone refuses as an unknown outcome unless `takeStale` (only --mark).
 function claim(dir, id, lock, takeStale) {
   for (;;) {
-    try {
-      const fd = openSync(lock, 'wx');
-      try { writeSync(fd, JSON.stringify({ pid: process.pid, host: hostname() })); } finally { closeSync(fd); }
-      return () => rmSync(lock, { force: true });
-    } catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-      if (lockOwnerAlive(lock)) throw new Error(`${id}: still being applied by process ${readFileSync(lock, 'utf8').trim() || 'unknown'}; wait for it to finish`);
-      if (!takeStale) throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
-      rmSync(lock, { force: true }); // the owner is gone; retry the exclusive create, which a live apply could still win
-    }
+    if (tryLock(lock)) return () => rmSync(lock, { force: true });
+    if (lockOwnerAlive(lock)) throw new Error(`${id}: still being applied by process ${readFileSync(lock, 'utf8').trim() || 'unknown'}; wait for it to finish`);
+    if (!takeStale) throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
+    if (!reclaimStale(lock)) pause(); // the owner is gone; retry the exclusive create, which a live apply could still win
   }
 }
 

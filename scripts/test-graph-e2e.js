@@ -1,5 +1,5 @@
 // Graph contract: fixes found by the graph's own review of PR #67 (differ_from scope, scoring watermark,
-// concurrent log writers, same-indent block lists).
+// concurrent log writers, same-indent block lists), and later Codex bot findings.
 'use strict';
 const { assert, writeFileSync, readFileSync, join, spawnSync, temp, mod, CLI, cands } = require('./graph-fixtures.js');
 
@@ -129,5 +129,33 @@ module.exports = {
     done(spec, dir, { node: 'p', index: 0, output: { text: 'one' }, model: 'm' });
     done(spec, dir, { node: 'p', index: 1, output: { text: 'two' }, model: 'm' });
     assert.equal(next(spec, dir)[0].prompt, 'Summarize ["one","two"]', 'fan-out values are listed in the prompt');
+  },
+
+  async C25() {
+    // Codex bot: an `in: ${inputs.k}` reference reaches the child's structured input
+    const { check } = mod('spec.js'); const { next } = mod('run.js');
+    const qd = temp('graph-');
+    const qs = check({ name: 'q', inputs: { question: 'why?' }, limits: { max_agents: 1 }, nodes: { a: { agent: 'answer', in: '${inputs.question}' } } });
+    assert.deepEqual(next(qs, qd)[0].input, { inputs: { question: 'why?' } }, 'declared inputs are delivered');
+
+    // Codex bot: two processes reclaiming the same dead run lock never both enter
+    const dir = temp('graph-'); const os = require('node:os');
+    const dead = spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))'], { encoding: 'utf8' }).stdout;
+    writeFileSync(join(dir, 'run.lock'), JSON.stringify({ pid: Number(dead), host: os.hostname() }));
+    const raw = { name: 'l', limits: { max_agents: 1 }, nodes: { a: { agent: 'a' } } };
+    const G = join(__dirname, '..', 'plugins', 'srulik-toolkit', 'scripts', 'graph');
+    const script = `
+      // widen the windows after reading the lock and before appending, as a slow disk would (patched before run.js loads);
+      // process 1 is slower, so it acts on the dead lock after process 0 has cleared it and taken a new one
+      const fs=require('node:fs'); const wait=ms=>{const u=Date.now()+ms;while(Date.now()<u){}};
+      const rf=fs.readFileSync; fs.readFileSync=(...a)=>{ const r=rf(...a); if (String(a[0]).endsWith('run.lock')) wait(300 * (1 + Number(process.argv[1]))); return r; };
+      const ap=fs.appendFileSync; fs.appendFileSync=(...a)=>{ wait(300); return ap(...a); };
+      const {check}=require(${JSON.stringify(join(G, 'spec.js'))}); const run=require(${JSON.stringify(join(G, 'run.js'))});
+      process.stdout.write(JSON.stringify(run.next(check(${JSON.stringify(raw)}), ${JSON.stringify(dir)})));`;
+    const { spawn } = require('node:child_process');
+    await Promise.all([0, 1].map(i => new Promise(ok => { const c = spawn(process.execPath, ['-e', script, String(i)]);
+      c.on('close', ok); })));
+    const dispatched = readFileSync(join(dir, 'run.jsonl'), 'utf8').split('\n').filter(Boolean).map(JSON.parse).filter(e => e.type === 'dispatch');
+    assert.equal(dispatched.length, 1, 'one dispatch across both reclaimers');
   },
 };

@@ -48,6 +48,7 @@ Rejected with `line N: <reason>`:
 
 ## What a task receives
 
+- `in: ${inputs.k}` gives `input.inputs = {k: value}`.
 - `in: ${p.f}` from a single-instance producer gives `input.p = {f: value}`.
 - From a fan-out producer, it gives `input.p = [{index, item, f: value}]` over the surviving instances, with one key per field the consumer references.
 - `needs: [p]` gives `input.p = [{index, item, output}]` over the surviving instances. The list may be empty; an empty review is still a result.
@@ -56,7 +57,7 @@ Rejected with `line N: <reason>`:
 
 - A node is ready when every node it depends on has settled. A node is settled when it has a result, a final failure, a gate drop, or a block.
 - The first `next` records the working directory (`--cwd`, default the caller's). Every `run` node and every write executes there.
-- `next` and `done` hold `<run-dir>/run.lock` while they read and append, so parallel calls never act on the same stale state. A lock whose recorded process is gone is cleared.
+- `next` and `done` hold `<run-dir>/run.lock` while they read and append, so parallel calls never act on the same stale state. A lock whose recorded process is gone is cleared under a short `run.lock.reclaim` guard, so two processes clearing the same dead lock never remove a lock one of them just took.
 - Each attempt is offered once. A failure report for an attempt already reported is ignored. Pass the task's `attempt` in every result, success or failure, so a late report for an older attempt is ignored.
 - Runtime fan-out is admitted once. Admission reserves the static instance count of every other agent node not yet admitted, so the total never passes `max_agents`. The overflow is logged as `cap-skipped`.
 - A final failure blocks a consumer only when the producer was a single instance, or when every one of its instances failed.
