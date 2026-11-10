@@ -115,7 +115,9 @@ module.exports = {
     assert.match(wild, /must be a loopback or private address/, 'serve refuses a wildcard address');
     const v6 = await serve(temp('view-'), 0, '0:0:0:0:0:0:0:1');
     try {
-      const status = await new Promise(ok => require('node:http').get({ host: '::1', port: v6.address().port, path: '/' }, res => { res.resume(); ok(res.statusCode); }));
+      // pr-review graph round 5: a stuck response fails the group in 2 s instead of hanging the suite
+      const status = await new Promise((ok, bad) => require('node:http').get({ host: '::1', port: v6.address().port, path: '/', timeout: 2000 },
+        res => { res.resume(); ok(res.statusCode); }).on('timeout', function () { this.destroy(new Error('no response within 2 s')); }).on('error', bad));
       assert.equal(status, 200, 'serve canonicalizes its host, so the browser-style Host [::1] passes');
     } finally { v6.close(); }
     // pr-review graph: only a literal loopback or private address may be bound, however it is spelled
