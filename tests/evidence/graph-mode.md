@@ -21,7 +21,7 @@ C13 failed on its first CLI exit-status assertion.
 Each behavior assertion has a mutation in the implementation that makes it the
 first failure. The test is never changed. Each mutation ran in a pristine copy,
 then the code was restored and the group passed again. Final run at the head
-of this PR: 178 mutations, 178 failed as targeted, and 178 passed again when
+of this PR: 179 mutations, 179 failed as targeted, and 179 passed again when
 restored. The only assertion without a mutation is `length <= 100` inside the
 fake leaderboard server, which is test setup, not behavior.
 
@@ -61,7 +61,7 @@ the same way:
 
 | Source | Findings |
 | --- | --- |
-| Codex bot | 7: timed-out writes, stale successes, fan-out fields, outcomes rescored past a stalled watermark, fan-out values in prompts, two processes reclaiming one dead run lock, `in: ${inputs.k}` dropped |
+| Codex bot | 8: timed-out writes, stale successes, fan-out fields, outcomes rescored past a stalled watermark, fan-out values in prompts, two processes reclaiming one dead run lock, `in: ${inputs.k}` dropped, `exec` not returning a run node's write |
 | CodeRabbit | 7 minor: gate drop in the result event, run-node fields, view errors, docs, a test that couldn't fail |
 | This graph's own run on the PR (Opus, Kimi ×2) | 5 new (one overlapped Codex): `differ_from` scope, scoring watermark, a run-directory lock, same-indent YAML lists, a `--mark` race |
 

@@ -157,5 +157,12 @@ module.exports = {
       c.on('close', ok); })));
     const dispatched = readFileSync(join(dir, 'run.jsonl'), 'utf8').split('\n').filter(Boolean).map(JSON.parse).filter(e => e.type === 'dispatch');
     assert.equal(dispatched.length, 1, 'one dispatch across both reclaimers');
+
+    // Codex bot: a run node's write reservation comes back from exec, so the loop can apply it
+    const wd = temp('graph-');
+    const ws = check({ name: 'w', limits: { max_agents: 1 }, writes: { note: { max: 1, run: ['node', '-e', '0', '${file}'] } }, nodes: {
+      f: { run: ['node', '-e', 'process.stdout.write("hi")'], write: 'note' } } });
+    next(ws, wd);
+    assert.deepEqual(mod('run.js').exec(ws, wd, 'f').writes.map(w => w.id), ['note#1'], 'exec returns the write it reserved');
   },
 };
