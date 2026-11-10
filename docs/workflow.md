@@ -27,7 +27,9 @@ with current-head evidence and monitoring stopped. Explicit merge authority
 requires verified `MERGED` and linked issue closure. Pending checks, missing
 approvals and inaccessible evidence remain incomplete. This workflow uses
 `pr-babysit`'s parent/subagent ownership and overrides its standalone stop
-conditions; it creates no separate top-level babysitter. Full end-to-end runtime behavior remains unverified.
+conditions; it creates no separate top-level babysitter. When no hosted Git repository tracks the change, such as a fix to a server's live
+configuration, the workflow skips the issue and PR and ends at `DONE`: the change
+proven on its target, with a rollback path. Full end-to-end runtime behavior remains unverified.
 
 Ask `create-plan` or `execute-task-end-to-end` to be autonomous and the grill
 still runs in full, but a fresh stand-in subagent on the strongest available

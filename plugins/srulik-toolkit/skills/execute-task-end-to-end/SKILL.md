@@ -5,7 +5,7 @@ description: Create a task's issue and PR, then drive the PR to MERGE READY or, 
 
 # Execute task end to end
 
-Use only when the user asks for this full workflow, by name or in plain language, such as "take this task end to end through a ready PR". Creating a PR and driving it to the terminal Definition of Done below is the primary obligation. Carry the workflow through to that terminal state; a plan, local changes, PR creation, an open PR, or green CI is intermediate progress.
+Use only when the user asks for this full workflow, by name or in plain language, such as "take this task end to end through a ready PR". Creating a PR and driving it to the terminal Definition of Done below is the primary obligation; a task with no hosted Git repository follows [No Git hosting](#no-git-hosting) instead. Carry the workflow through to that terminal state; a plan, local changes, PR creation, an open PR, or green CI is intermediate progress.
 
 ## Authority
 
@@ -42,9 +42,16 @@ This invocation authorizes the test methods that proof needs, including running 
 
 - **`MERGE READY` without merge authority:** the task has a provider-verified PR linked to its issue; acceptance criteria pass at the current head; a fresh provider read confirms an open, non-draft, mergeable PR, successful required checks, satisfied review requirements, zero unresolved review conversations, and no unaddressed actionable human or bot findings. The handoff carries the PR URL, head SHA, and validation and readiness evidence.
 - **`MERGED` with explicit merge authority:** reach `MERGE READY`, perform the merge, and verify the provider reports the PR merged. The handoff carries the PR URL, merged head SHA, merge commit, and linked issue closure evidence. `MERGE READY` is intermediate progress when merging is authorized.
+- **`DONE` without Git hosting:** see [No Git hosting](#no-git-hosting).
 - **Incomplete:** pending or failed checks, missing approvals, unknown mergeability, inaccessible evidence, unresolved findings, or missing capabilities mean `WAITING` or `BLOCKED`, reported with the exact blocker and the last verified state. User STOP means `STOPPED`. These states do not satisfy the Definition of Done; continue recoverable work and resume when the blocker clears.
 
 Before a completion handoff, remove the watch and cancel any active triage task; verify both. Readiness holds only for the verified head and base; a later push, base change, or new review finding needs a fresh readiness check.
+
+## No Git hosting
+
+Some tasks change something no Git repository with a hosting provider tracks, such as a running service's live configuration on a server. Before skipping anything, check where the change belongs: if its source or deployment lives in a hosted repository, change it there and run the full workflow. Never create a repository, remote, or fork only to satisfy this workflow.
+
+When no hosted repository applies, skip the issue, PR, ownership handoff, watch, and merge steps (2, 4, 5, and 6). Plan, implement, and prove the change as usual, then close with the recap. Before editing, record the original state, such as a backup copy of each changed file, so the change can be rolled back. If the target is a local Git repository without a hosting remote, commit the change there. The terminal state is **`DONE`**: the acceptance criteria pass on the target itself, observed in this session, through the user's workflow. The handoff carries what changed, where, the proof, and how to roll back.
 
 ## Ownership handoff
 
