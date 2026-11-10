@@ -39,9 +39,10 @@ new EventSource('events').onmessage = m => { const e = JSON.parse(m.data);
   else if (e.type==='end') stateEl.textContent = e.state; };
 </script></body></html>`;
 
-// A request's Host must name loopback or the one address the server is bound to, so DNS rebinding can't reach it.
+// A request's Host must name the one address the server listens on (plus `localhost` for a loopback server),
+// so DNS rebinding can't reach it.
 const allowedHost = (header, host, port) =>
-  [`127.0.0.1:${port}`, `localhost:${port}`, `${host.includes(':') ? `[${host}]` : host}:${port}`].includes(header);
+  [`${host.includes(':') ? `[${host}]` : host}:${port}`, ...(host === '127.0.0.1' ? [`localhost:${port}`] : [])].includes(header);
 
 // The address as a browser writes it in Host: IPv6 lowercased and compressed. Anything that isn't an IP becomes ''.
 function canonicalHost(host) {
@@ -56,11 +57,13 @@ function privateHost(host) {
     const [a, b] = host.split('.').map(Number);
     return a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
   }
-  if (isIP(host) === 6) return host === '::1' || /^f[cd][0-9a-f]{0,2}:/i.test(host);
+  // fc00::/7 is the first 16-bit group 0xfc00-0xfdff; a short group like `fc` is 0x00fc, so compare the number.
+  if (isIP(host) === 6) return host === '::1' || (parseInt(host, 16) & 0xfe00) === 0xfc00;
   return false;
 }
 
-function serve(dir, port = 0, host = '127.0.0.1') {
+function serve(dir, port = 0, address = '127.0.0.1') {
+  const host = canonicalHost(address);
   const file = join(dir, 'run.jsonl');
   const server = http.createServer((req, res) => {
     const { port: actual } = server.address();
