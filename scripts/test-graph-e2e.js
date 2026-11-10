@@ -213,4 +213,20 @@ module.exports = {
     assert.throws(() => check({ name: 'o', limits: { max_agents: 1 }, nodes: { f: { run: ['echo'], out: ['body'] } } }), /f: a run node's out may list only "text"/);
     check({ name: 'o', limits: { max_agents: 1 }, nodes: { f: { run: ['echo'], out: ['text'] } } });
   },
+
+  async C28() {
+    // Codex bot: two overlapping score runs count each thread once
+    const state = temp('graph-score-race-'); const work = temp('graph-');
+    const tf = join(work, 't.json'); writeFileSync(tf, JSON.stringify([{ updated: Date.now() - 1000, model: 'm', kind: 'code', signals: ['pr-merged'] }]));
+    const script = `
+      // widen the window between reading the watermark and appending, as a slow disk would
+      const fs=require('node:fs'); const rf=fs.readFileSync;
+      fs.readFileSync=(...a)=>{ const r=rf(...a); if (String(a[0]).endsWith('t.json')) { const u=Date.now()+400; while(Date.now()<u){} } return r; };
+      process.argv=[process.argv[0], ${JSON.stringify(CLI)}, 'score', ${JSON.stringify(tf)}];
+      require(${JSON.stringify(CLI)});`;
+    const { spawn } = require('node:child_process');
+    await Promise.all([0, 1].map(() => new Promise(ok => spawn(process.execPath, ['-e', script], { env: { ...process.env, PLUGIN_DATA: state } }).on('close', ok))));
+    const stats = readFileSync(join(state, 'model-stats.jsonl'), 'utf8').split('\n').filter(Boolean);
+    assert.equal(stats.length, 1, 'one outcome across two overlapping scorers');
+  },
 };

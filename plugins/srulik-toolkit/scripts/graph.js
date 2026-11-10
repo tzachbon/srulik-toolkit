@@ -95,16 +95,20 @@ async function main([command, ...args]) {
   if (command === 'score') {
     const { found, rest } = flags(args, ['since']); if (rest.length !== 1) usage();
     const state = stateDir(process.env); const mark = join(state, 'score-watermark.json');
-    let since = Number(found.since[0] ?? NaN);
-    if (!Number.isFinite(since)) { try { since = JSON.parse(readFileSync(mark, 'utf8')).since; } catch { since = 0; } }
-    const now = Date.now(); const threads = JSON.parse(readFileSync(rest[0], 'utf8'));
-    // Score only up to the safe watermark: a decided thread newer than an undecided one waits, so nothing is counted twice.
-    const until = nextWatermark(threads, since, now);
-    const outcomes = scoreThreads(threads.filter(t => t.updated <= until), { now, since });
+    // One scorer at a time: reading the watermark, appending outcomes and moving it are one step.
     mkdirSync(state, { recursive: true, mode: 0o700 });
-    if (outcomes.length) appendFileSync(join(state, 'model-stats.jsonl'), outcomes.map(o => JSON.stringify(o)).join('\n') + '\n');
-    writeFileSync(mark, JSON.stringify({ since: until }));
-    out({ scored: outcomes.length, skipped: threads.length - outcomes.length }); return;
+    const { outcomes, total } = run.withRunLock(state, () => {
+      let since = Number(found.since[0] ?? NaN);
+      if (!Number.isFinite(since)) { try { since = JSON.parse(readFileSync(mark, 'utf8')).since; } catch { since = 0; } }
+      const now = Date.now(); const threads = JSON.parse(readFileSync(rest[0], 'utf8'));
+      // Score only up to the safe watermark: a decided thread newer than an undecided one waits, so nothing is counted twice.
+      const until = nextWatermark(threads, since, now);
+      const outcomes = scoreThreads(threads.filter(t => t.updated <= until), { now, since });
+      if (outcomes.length) appendFileSync(join(state, 'model-stats.jsonl'), outcomes.map(o => JSON.stringify(o)).join('\n') + '\n');
+      writeFileSync(mark, JSON.stringify({ since: until }));
+      return { outcomes, total: threads.length };
+    }, 'score.lock');
+    out({ scored: outcomes.length, skipped: total - outcomes.length }); return;
   }
   if (command === 'refresh') {
     const aa = spawnSync(process.execPath, [join(__dirname, 'models.js'), '--update'], { encoding: 'utf8', timeout: 120000 });

@@ -6,7 +6,7 @@ Plugin version: 1.18.0. Base: 3cb1a721416173aef06833265987f68d3aa59078. Issue: #
 
 `scripts/test-graph.js` loads `test-graph-run.js`, `test-graph-models.js`,
 `test-graph-review.js` and `test-graph-e2e.js`. Shared setup is in
-`graph-fixtures.js`. There are 27 groups, all using local fakes: no network, no real model calls. The tests set a
+`graph-fixtures.js`. There are 28 groups, all using local fakes: no network, no real model calls. The tests set a
 temporary `PLUGIN_DATA` before any graph module loads, so they never touch real
 notes or stats. `scripts/validate/18_graph.py` checks the skill and reference
 text, the NOTICE attribution, the standards paragraph, that there are no
@@ -21,7 +21,7 @@ C13 failed on its first CLI exit-status assertion.
 Each behavior assertion has a mutation in the implementation that makes it the
 first failure. The test is never changed. Each mutation ran in a pristine copy,
 then the code was restored and the group passed again. Final run at the head
-of this PR: 189 mutations, 189 failed as targeted, and 189 passed again when
+of this PR: 190 mutations, 190 failed as targeted, and 190 passed again when
 restored. The only assertion without a mutation is `length <= 100` inside the
 fake leaderboard server, which is test setup, not behavior.
 
@@ -61,7 +61,7 @@ the same way:
 
 | Source | Findings |
 | --- | --- |
-| Codex bot | 10: timed-out writes, stale successes, fan-out fields, outcomes rescored past a stalled watermark, fan-out values in prompts, two processes reclaiming one dead run lock, `in: ${inputs.k}` dropped, `exec` not returning a run node's write, benchmark scores borrowed across efforts, gate outcomes lost when the report omits its model |
+| Codex bot | 11: timed-out writes, stale successes, fan-out fields, outcomes rescored past a stalled watermark, fan-out values in prompts, two processes reclaiming one dead run lock, `in: ${inputs.k}` dropped, `exec` not returning a run node's write, benchmark scores borrowed across efforts, gate outcomes lost when the report omits its model, overlapping `score` runs counting a thread twice |
 | CodeRabbit | 10 (one major): gate drop in the result event, run-node fields, view errors, docs, a test that couldn't fail, a missing write command treated as an unknown outcome, an unscorable thread stalling the scoring watermark, `out` fields a run node can't produce |
 | This graph's own run on the PR (Opus, Kimi ×2) | 5 new (one overlapped Codex): `differ_from` scope, scoring watermark, a run-directory lock, same-indent YAML lists, a `--mark` race |
 

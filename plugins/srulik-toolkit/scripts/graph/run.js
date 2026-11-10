@@ -209,14 +209,14 @@ function lockOwnerAlive(lock) {
 
 // One writer at a time: each state-changing call holds <run-dir>/run.lock while it folds and appends,
 // so parallel next/done calls never decide from the same stale state. The lock records its owner.
-function withRunLock(dir, fn) {
+function withRunLock(dir, fn, name = 'run.lock') {
   mkdirSync(dir, { recursive: true });
-  const lock = join(dir, 'run.lock');
+  const lock = join(dir, name);
   const until = Date.now() + 30000;
   for (;;) {
     if (tryLock(lock)) break;
     if (!lockOwnerAlive(lock) && reclaimStale(lock)) continue;
-    if (Date.now() > until) throw new Error(`run directory is busy: ${lock}`);
+    if (Date.now() > until) throw new Error(`busy: ${lock} is held by another process`);
     pause();
   }
   try { return fn(); } finally { rmSync(lock, { force: true }); }
@@ -303,4 +303,4 @@ function status(spec, dir) {
 const next = (spec, dir, ...rest) => withRunLock(dir, () => nextUnlocked(spec, dir, ...rest));
 const done = (spec, dir, result) => withRunLock(dir, () => doneUnlocked(spec, dir, result));
 
-module.exports = { fold, next, exec, done, apply, status };
+module.exports = { fold, next, exec, done, apply, status, withRunLock };
