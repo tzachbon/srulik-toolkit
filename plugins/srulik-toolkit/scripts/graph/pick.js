@@ -43,7 +43,7 @@ function noteFor(notes, model) {
 }
 
 const { providerKey } = require('../models.js');
-const PROVIDER_CREATORS = { claudeagent: 'Anthropic', codex: 'OpenAI', antigravity: 'Google' };
+const PROVIDER_CREATORS = { anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google' }; // keyed by providerKey (claudeAgent, codex, antigravity)
 const creatorKey = v => providerKey(String(v ?? ''));
 const blendedPrice = m => [m?.input_usd_per_million_tokens, m?.output_usd_per_million_tokens].every(Number.isFinite)
   ? (3 * m.input_usd_per_million_tokens + m.output_usd_per_million_tokens) / 4 : Infinity;
@@ -80,7 +80,10 @@ function pick(node, candidates, data, ctx = {}) {
   const signals = signalFor(kind, data);
   let pool = candidates.map(c => {
     const aa = data.aa.find(m => m.slug === matchName(c.model, data.aa.map(x => x.slug), c.effort));
-    const creator = aa?.creator ?? PROVIDER_CREATORS[creatorKey(c.provider)] ?? c.provider;
+    // the creator is a fact about the model, not its effort or route: any AA row for it, else a first-party
+    // provider; a proxy route alone leaves it unknown (null)
+    const creator = (aa ?? data.aa.find(m => m.slug === matchName(c.model, data.aa.map(x => x.slug))))?.creator
+      ?? PROVIDER_CREATORS[creatorKey(c.provider)] ?? null;
     const own = signals.map(s => { const name = matchName(c.model, s.values.map(([n]) => n), c.effort); return name === null ? null : s.values.find(([n]) => n === name)[1]; });
     const at = own.findIndex(v => v !== null);
     const sig = at === -1 ? null : signals[at];
@@ -95,7 +98,8 @@ function pick(node, candidates, data, ctx = {}) {
   });
   const drop = (label, keep) => { const out = pool.filter(c => !keep(c)); if (out.length) filtered.push(`${label}: ${out.map(c => c.model).join(', ')}`); pool = pool.filter(keep); };
   drop('avoid', c => !(c.note.avoid ?? []).includes(kind));
-  drop('creator', c => !(ctx.exclude_creators ?? []).map(creatorKey).includes(creatorKey(c.creator)));
+  const excluded = (ctx.exclude_creators ?? []).map(creatorKey);
+  drop('creator', c => !excluded.length || (c.creator !== null && !excluded.includes(creatorKey(c.creator))));
   drop('excluded', c => !(ctx.exclude_models ?? []).includes(c.model));
   // An account at the limit filters every candidate whose creator or provider instance it names.
   const hot = new Set((data.usage?.accounts ?? []).filter(a => (a.windows ?? []).some(w => w.used_percent >= QUOTA_LIMIT)).map(a => creatorKey(a.provider)));

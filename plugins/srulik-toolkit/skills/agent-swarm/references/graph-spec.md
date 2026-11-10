@@ -9,7 +9,7 @@ The parent agent runs the graph; the scripts never call a model.
 | Key | Allowed on | Meaning |
 | --- | --- | --- |
 | `name` | spec | `[a-z0-9-]+`, required. |
-| `inputs` | spec | Default input values. Override with `next --input k=v`. Values starting with `-` are refused. |
+| `inputs` | spec | Default input values. `inputs` is reserved, so no node may use that name. Override with `next --input k=v`. Values starting with `-` are refused. |
 | `limits.max_agents` | spec | Required. The most agent instances the run may start. Retries and `run` nodes don't count. |
 | `limits.explore` | spec | `true` or `false`, default `true`. Allows sampling on gated nodes that aren't verifiers. |
 | `writes.<name>` | spec | Name matches `[a-z0-9-]+`. `{max, run}`. `run` is an argument list that may contain `"${inputs.<k>}"` and `"${file}"` as whole elements. |
@@ -82,7 +82,7 @@ The claim lock records the process that holds it. While that process is still ru
 
 1. **Hard filters.** These remove candidates and apply to pinned models too:
    - the owner's `avoid` list for this kind;
-   - creators excluded by `differ_from`;
+   - creators excluded by `differ_from`. A model's creator comes from any AA row for that model, whatever its effort, or else from a first-party provider (`claudeAgent`, `codex`, `antigravity`). A model reached only through a proxy route, such as `oh-my-pi`, has an unknown creator: it is filtered whenever `differ_from` excludes any creator, and if a producer's own creator was unknown, its model is excluded instead;
    - models excluded by `--exclude`;
    - any usage account at or above 80% in some window: it filters candidates whose creator (matched through the provider aliases in `models.js`) or provider instance it names.
 

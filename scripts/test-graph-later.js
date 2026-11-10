@@ -1,6 +1,6 @@
 // Graph contract: later PR #67 bot findings.
 'use strict';
-const { assert, writeFileSync, join, spawnSync, temp, mod, CLI, cands, data } = require('./graph-fixtures.js');
+const { assert, writeFileSync, appendFileSync, join, spawnSync, temp, mod, CLI, cands, data, aaModel } = require('./graph-fixtures.js');
 
 module.exports = {
   C29() {
@@ -42,5 +42,44 @@ module.exports = {
       { model_name: 'GPT-6.1 Sol (Max)', rating: 1500 }] } };
     assert.throws(() => pick({ kind: 'ui-ux', pick: { tier: 'strongest' } }, [{ provider: 'claudeAgent', model: 'claude-opus-5-5', effort: 'low' }], d),
       /no candidate meets tier strongest/, 'a low-effort run is scored by its own rating');
+  },
+
+  C31() {
+    // Codex bot: a model's creator comes from the model, not its route, so differ_from can't be bypassed by a proxy
+    const { pick } = mod('pick.js');
+    const sol = (provider, effort = 'high') => [{ provider, model: 'gpt-6.1-sol', effort }];
+    const arenaOnly = { ...data(), aa: [], notes: {} };
+    assert.throws(() => pick({ kind: 'writing', pick: { tier: 'cheap' } }, sol('oh-my-pi'), arenaOnly, { exclude_creators: ['OpenAI'] }),
+      /no candidate left after filters \(creator: gpt-6.1-sol\)/, 'an unknown creator is not independent');
+    assert.equal(pick({ kind: 'writing', pick: { tier: 'cheap' } }, sol('oh-my-pi'), arenaOnly).model, 'gpt-6.1-sol', 'an unknown creator still runs when no creator is excluded');
+    assert.equal(pick({ kind: 'writing', pick: { tier: 'cheap' } }, sol('codex'), arenaOnly, { exclude_creators: ['Anthropic'] }).creator, 'OpenAI', 'a first-party route names its creator');
+    const maxOnly = { ...data(), notes: {}, aa: [aaModel('gpt-6-1-sol-max', 'OpenAI', 57, 0.58, 0.5, 2, 10)] };
+    assert.equal(pick({ kind: 'writing', pick: { tier: 'cheap' } }, sol('oh-my-pi', 'low'), maxOnly).creator, 'OpenAI', 'a benchmark row at another effort still names the creator');
+
+    // Codex bot: `inputs` is reserved for the graph's inputs, so no node may take that name
+    const { check } = mod('spec.js');
+    assert.throws(() => check({ name: 'r', limits: { max_agents: 1 }, nodes: { inputs: { agent: 'p', out: ['text'] }, c: { agent: 'c', in: '${inputs.text}' } } }),
+      /inputs: the name "inputs" is reserved for the graph's inputs/);
+  },
+
+  C32() {
+    // Codex bot: a producer whose creator is unknown has its model excluded from the verifier instead
+    const { SOURCE } = require('../plugins/srulik-toolkit/scripts/models.js');
+    const { aa } = require('./graph-fixtures.js');
+    const work = temp('graph-df3-'); const dir = join(work, 'run');
+    writeFileSync(join(process.env.PLUGIN_DATA, 'models.json'), JSON.stringify({ source: SOURCE, fetched_at: new Date().toISOString(), models: aa }));
+    writeFileSync(join(process.env.PLUGIN_DATA, 'arena.json'), JSON.stringify({ fetched_at: new Date().toISOString(), data: {} }));
+    const spec = join(work, 'p.yaml');
+    writeFileSync(spec, ['name: p', 'limits: { max_agents: 2, explore: false }', 'nodes:', '  review:', '    agent: r', '    out: [findings]',
+      '  verify:', '    agent: v {item}', '    kind: code', '    for_each: ${review.findings}', '    pick: { differ_from: review }', ''].join('\n'));
+    const cli = (...a) => spawnSync(process.execPath, [CLI, ...a], { encoding: 'utf8', env: process.env });
+    cli('next', spec, dir);
+    appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: 1, type: 'pick', node: 'review', index: 0, provider: 'oh-my-pi', model: 'gpt-6.1-sol', effort: 'high', creator: null }) + '\n');
+    const f = join(work, 'f.json'); writeFileSync(f, JSON.stringify({ node: 'review', output: { findings: [1] } })); cli('done', spec, dir, f);
+    cli('next', spec, dir);
+    const c = join(work, 'c.json'); writeFileSync(c, JSON.stringify([cands[1]]));
+    const u = join(work, 'u.json'); writeFileSync(u, JSON.stringify({ accounts: [], notes: [] }));
+    const v = cli('pick', spec, dir, 'verify', '0', '--candidates', c, '--usage', u);
+    assert.match(v.stderr, /BLOCKED: no candidate left after filters \(excluded: gpt-6.1-sol\)/, 'the same model on another route is not independent');
   },
 };

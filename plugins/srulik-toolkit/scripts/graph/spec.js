@@ -44,6 +44,7 @@ function check(raw) {
   let agents = 0;
 
   for (const [name, node] of Object.entries(nodes)) {
+    if (name === 'inputs') fail('inputs: the name "inputs" is reserved for the graph\'s inputs');
     for (const key of Object.keys(node)) if (!NODE_KEYS.has(key)) fail(`${name}: unknown key "${key}"`);
     if (('run' in node) === ('agent' in node)) fail(`${name}: needs exactly one of run or agent`);
     if ('agent' in node && typeof node.agent !== 'string') fail(`${name}: agent must be a string`);

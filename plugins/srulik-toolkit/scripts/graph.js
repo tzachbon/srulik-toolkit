@@ -26,12 +26,13 @@ const USAGE = `Usage: node graph.js <command> ...
 
 // Creators to avoid for one instance: the producer of this item when it came from the differ_from node,
 // otherwise every creator that node used. Each producer instance counts only its latest pick, the attempt
-// that produced its result; a creator that failed and was retried elsewhere is not excluded.
-function differCreators(s, differ, name, index) {
+// that produced its result; a creator that failed and was retried elsewhere is not excluded. A producer whose
+// creator is unknown excludes its model instead.
+function differPicks(s, differ, name, index) {
   const src = (s.admitted[name] ?? [])[index]?.src;
   const latest = new Map((s.picks[differ] ?? []).map(p => [p.index, p]));
   const picks = [...latest.values()].filter(p => !src || src.node !== differ || p.index === src.index);
-  return [...new Set(picks.map(p => p.creator))];
+  return picks;
 }
 
 const usage = () => { throw Object.assign(new Error(USAGE), { code: 1 }); };
@@ -53,11 +54,12 @@ function pickContext(spec, dir, name, index, excludes) {
   const node = spec.nodes[name];
   const consumers = spec.order.filter(n => (spec.nodes[n].for_each ?? '').toString().includes(`\${${name}.`));
   const differ = node.pick?.differ_from;
+  const producers = differ ? differPicks(s, differ, name, index) : [];
   return {
     gated: !!node.gate || consumers.some(n => spec.nodes[n].gate),
     verifier: !!differ,
-    exclude_creators: differ ? differCreators(s, differ, name, index) : [],
-    exclude_models: excludes,
+    exclude_creators: [...new Set(producers.map(p => p.creator).filter(Boolean))],
+    exclude_models: [...excludes, ...producers.filter(p => !p.creator).map(p => p.model)],
   };
 }
 
