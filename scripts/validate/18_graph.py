@@ -25,7 +25,7 @@ for graph_phrase in ["outlives the turn", "at most one view server", "--port 478
         raise SystemExit(f"agent-swarm T3 reference must keep the live page open: {graph_phrase}")
 e2e_skill = (skill_root / "execute-task-end-to-end" / "SKILL.md").read_text(encoding="utf-8")
 e2e_t3_ref = (skill_root / "execute-task-end-to-end" / "references" / "t3-code.md").read_text(encoding="utf-8")
-for graph_phrase in ["graphs/pr-review.yaml", "after each push that fixes review findings", "confirms nothing new",
+for graph_phrase in ["graphs/pr-review.yaml", "after each push that fixes review findings", "confirms nothing new", "no finding was `cap-skipped`",
                      "like a bot finding"]:
     if graph_phrase not in e2e_skill:
         raise SystemExit(f"execute-task-end-to-end must run the pr-review graph: {graph_phrase}")
