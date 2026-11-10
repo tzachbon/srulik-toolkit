@@ -62,13 +62,14 @@ function propagate(spec, dir, s) {
 }
 
 const show = v => typeof v === 'string' ? v : JSON.stringify(v);
-function substitute(text, s, item) {
+function substitute(text, s, item, spec) {
   // One pass over the template with callback replacements, so inserted values stay literal.
   return text.replace(/\$\{([a-z0-9_-]+)\.([A-Za-z_]\w*)\}|\{item\}/gi, (m, p, f) => {
     if (!p) return show(item);
     if (p === 'inputs') return show(s.inputs[f]);
     const list = survivors(s, p);
-    return list.length === 1 && s.admitted[p].length === 1 ? show(list[0].result[f]) : m; // fan-out values arrive via input
+    // A single instance gives its value; a fan-out gives the JSON list of its surviving values.
+    return s.admitted[p].length === 1 && !('for_each' in spec.nodes[p]) ? show(list[0]?.result[f]) : JSON.stringify(list.map(i => i.result[f]));
   });
 }
 
@@ -120,7 +121,7 @@ function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
       tasks.push(taskType === 'run'
         ? { node: name, index: i.index, attempt, taskType, argv: argvFor(node.run, s) }
         : { node: name, index: i.index, attempt, taskType, kind: node.kind ?? 'agentic', item: i.item,
-            prompt: substitute(node.agent, s, i.item), input: inputFor(spec, s, name), pick: node.pick ?? null, model: node.model ?? null });
+            prompt: substitute(node.agent, s, i.item, spec), input: inputFor(spec, s, name), pick: node.pick ?? null, model: node.model ?? null });
     }
   }
   return tasks;

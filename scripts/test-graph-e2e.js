@@ -118,4 +118,16 @@ module.exports = {
     // CodeRabbit: a reference to a run node's output must name `text`
     assert.throws(() => check({ name: 'r', limits: { max_agents: 1 }, nodes: { f: { run: ['echo'] }, a: { agent: 'a', in: '${f.txt}' } } }), /a: run node "f" outputs only "text"/);
   },
+
+  C24() {
+    // Codex bot: a prompt reference to a fan-out producer receives its values, not a bare placeholder
+    const { check } = mod('spec.js'); const { next, done } = mod('run.js');
+    const dir = temp('graph-');
+    const spec = check({ name: 'f', limits: { max_agents: 3 }, nodes: {
+      p: { agent: 'p {item}', for_each: ['x', 'y'], out: ['text'] }, c: { agent: 'Summarize ${p.text}' } } });
+    next(spec, dir);
+    done(spec, dir, { node: 'p', index: 0, output: { text: 'one' }, model: 'm' });
+    done(spec, dir, { node: 'p', index: 1, output: { text: 'two' }, model: 'm' });
+    assert.equal(next(spec, dir)[0].prompt, 'Summarize ["one","two"]', 'fan-out values are listed in the prompt');
+  },
 };

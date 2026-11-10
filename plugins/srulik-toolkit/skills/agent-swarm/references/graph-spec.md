@@ -14,7 +14,7 @@ The parent agent runs the graph; the scripts never call a model.
 | `limits.explore` | spec | `true` or `false`, default `true`. Allows sampling on gated nodes that aren't verifiers. |
 | `writes.<name>` | spec | Name matches `[a-z0-9-]+`. `{max, run}`. `run` is an argument list that may contain `"${inputs.<k>}"` and `"${file}"` as whole elements. |
 | `run` | node | An argument list run without a shell. Elements may be `"${inputs.<k>}"` as whole elements. Output: `{text: stdout}`. |
-| `agent` | node | The child's prompt. `{item}` becomes the current item: a string as-is, anything else as JSON. |
+| `agent` | node | The child's prompt. `{item}` becomes the current item: a string as-is, anything else as JSON. `${p.f}` becomes the value from a single-instance producer, or the JSON list of surviving values from a fan-out producer. |
 | `kind` | agent node | `code`, `code-review`, `debugging` (debugging, reverse-engineering, configuring apps, working around restrictions), `architecture`, `ui-ux`, `agentic` (default), `reasoning`, `long-context` or `writing`. |
 | `in` | node | `${node.field}` reference, or a list of them. Adds an edge. A `run` node's only field is `text`. |
 | `needs` | node | Node names to wait for. Adds edges. |
