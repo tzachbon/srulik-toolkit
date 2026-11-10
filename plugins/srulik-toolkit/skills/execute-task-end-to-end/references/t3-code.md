@@ -84,6 +84,10 @@ uses the documented parent watch and asynchronous child-result delivery. The
 complete issue-to-merge workflow has not been exercised in a fresh session;
 file checks and contract tests do not establish runtime verification.
 
+## Graph review
+
+Run the `pr-review` graph and its live page as [agent-swarm's T3 graph mapping](../../agent-swarm/references/t3-code.md) describes. The graph's children are graph work, not the triage child, so the one-active-child rule above does not apply to them.
+
 ## Waiting and questions
 
 - A watched thread stays in Working and out of the user's inbox. Before asking the user anything or handing off, call `unwatch_pull_request`, then ask with the harness's question tool (`AskUserQuestion` in Claude Code, `request_user_input` in Codex).
