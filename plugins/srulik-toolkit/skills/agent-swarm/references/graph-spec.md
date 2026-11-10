@@ -152,7 +152,7 @@ State lives in `PLUGIN_DATA`. If that isn't set, it falls back to `CLAUDE_PLUGIN
 
 - `model-stats.jsonl` holds one `{t, model, kind, ok, src}` per line, with `src` set to `graph` or `thread`. It stores no text and no thread IDs.
 - `arena.json` holds the LMArena cache, refreshed at most daily or when `refresh` runs.
-- `score-watermark.json` records how far scoring has read: up to just before the oldest thread still undecided, so that thread is read again next time. Threads after the watermark wait too, so no outcome is counted twice. A thread waits only if it has a `model` and `kind` and was updated in the last 30 days, so one that never gets a signal can't stall scoring. `score` holds `score.lock` in the state directory while it reads the watermark, appends outcomes and moves it, so overlapping runs count each thread once.
+- `score-watermark.json` records how far scoring has read: up to just before the oldest thread still undecided, so that thread is read again next time. Threads after the watermark wait too, so no outcome is counted twice. A thread waits only if it has a `model` and `kind` and was updated in the last 30 days, so one that never gets a signal can't stall scoring. `score` holds `score.lock` in the state directory while it reads the watermark, appends outcomes and moves it, so overlapping runs count each thread once. `graph.js watermark` prints it; the weekly job lists threads updated after that time, not after its own last run, so held-back threads are listed again.
 - The usage file passed with `--usage` has the same shape as `aa-models usage` output: `{accounts: [{provider, windows: [{used_percent}]}], notes: []}`.
 
 ## Thread scoring

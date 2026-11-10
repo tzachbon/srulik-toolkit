@@ -29,6 +29,9 @@ module.exports = {
     // Codex bot: a decided thread after an undecided one is not counted again on every run
     const again = spawnSync(process.execPath, [CLI, 'score', tf], { encoding: 'utf8', env: process.env });
     assert.match(again.stdout, /"scored": 0/, 'nothing is scored twice while the watermark waits');
+    // Codex bot: the weekly job lists threads from the persisted watermark, so held-back threads come back
+    const wm = JSON.parse(spawnSync(process.execPath, [CLI, 'watermark'], { encoding: 'utf8', env: process.env }).stdout);
+    assert.equal(wm.since, T + 199, 'watermark reports where the next listing starts');
     const stats = readFileSync(join(process.env.PLUGIN_DATA, 'model-stats.jsonl'), 'utf8').split('\n').filter(Boolean).map(JSON.parse).filter(o => o.src === 'thread');
     assert.equal(stats.length, 1, 'one outcome recorded across both runs');
     void scoreThreads;

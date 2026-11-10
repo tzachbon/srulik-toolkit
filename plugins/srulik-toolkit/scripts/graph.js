@@ -20,6 +20,7 @@ const USAGE = `Usage: node graph.js <command> ...
   apply   <spec.yaml> <run-dir> <write-id> [--mark applied|failed]
   status  <spec.yaml> <run-dir>
   score   <threads.json> [--since <ms>]
+  watermark
   refresh
   view    <run-dir> [--port N]`;
 
@@ -91,6 +92,11 @@ async function main([command, ...args]) {
     mkdirSync(dir, { recursive: true });
     appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: Date.now(), type: 'pick', node: name, index: Number(indexArg), ...choice }) + '\n');
     out(choice); return;
+  }
+  if (command === 'watermark') { // where the next weekly scoring must start listing threads
+    if (args.length) usage();
+    let since = 0; try { since = JSON.parse(readFileSync(join(stateDir(process.env), 'score-watermark.json'), 'utf8')).since; } catch { /* never scored */ }
+    out({ since, iso: new Date(since).toISOString() }); return;
   }
   if (command === 'score') {
     const { found, rest } = flags(args, ['since']); if (rest.length !== 1) usage();
