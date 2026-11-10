@@ -23,7 +23,7 @@ The parent agent runs the graph; the scripts never call a model.
 | `model` | agent node | `"<model-id> @ <effort>"`. Pinned, but still subject to `avoid`, exclusions and quota. Can't be combined with `pick`. |
 | `out` | agent node | Fields the child's JSON must contain. |
 | `gate` | node with `out` | `field == literal`, where the literal is `true`, `false`, a number or a `"string"`. A failing item is dropped. |
-| `write` | node | A `writes` entry. The node's `output.body` becomes the file. Only results that survive their gate reserve a write. |
+| `write` | node | A `writes` entry. The node's `output.body` becomes the file; for a `run` node, its stdout (`text`) does. Only results that survive their gate reserve a write. |
 
 Any other key is an error.
 

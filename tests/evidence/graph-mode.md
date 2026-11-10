@@ -21,7 +21,7 @@ C13 failed on its first CLI exit-status assertion.
 Each behavior assertion has a mutation in the implementation that makes it the
 first failure. The test is never changed. Each mutation ran in a pristine copy,
 then the code was restored and the group passed again. Final run at the head
-of this PR: 206 mutations, 206 failed as targeted, and 206 passed again when
+of this PR: 207 mutations, 207 failed as targeted, and 207 passed again when
 restored. The only assertion without a mutation is `length <= 100` inside the
 fake leaderboard server, which is test setup, not behavior.
 
@@ -62,7 +62,7 @@ the same way:
 | Source | Findings |
 | --- | --- |
 | Codex bot | 17: timed-out writes, stale successes, fan-out fields, outcomes rescored past a stalled watermark, fan-out values in prompts, two processes reclaiming one dead run lock, `in: ${inputs.k}` dropped, `exec` not returning a run node's write, benchmark scores borrowed across efforts, gate outcomes lost when the report omits its model, overlapping `score` runs counting a thread twice, the weekly job listing threads from its last run instead of the watermark, `differ_from` excluding a creator whose attempt failed, LMArena effort labels such as `(Max)` dropped so another effort's rating was borrowed, a proxy route standing in for a model's creator so `differ_from` could be bypassed, a node named `inputs`, a node named `constructor` treated as already blocked |
-| CodeRabbit | 10 (one major): gate drop in the result event, run-node fields, view errors, docs, a test that couldn't fail, a missing write command treated as an unknown outcome, an unscorable thread stalling the scoring watermark, `out` fields a run node can't produce |
+| CodeRabbit | 11 (one major): gate drop in the result event, run-node fields, view errors, docs, a test that couldn't fail, a missing write command treated as an unknown outcome, an unscorable thread stalling the scoring watermark, `out` fields a run node can't produce, a run node's write body wrapped in JSON |
 | This graph's own run on the PR (Opus, Kimi ×2) | 5 new (one overlapped Codex): `differ_from` scope, scoring watermark, a run-directory lock, same-indent YAML lists, a `--mark` race |
 
 The perf reviewer's three suggestions (fold the log once per pick, index

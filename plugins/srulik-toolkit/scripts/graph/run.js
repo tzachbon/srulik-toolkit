@@ -185,7 +185,7 @@ function doneUnlocked(spec, dir, result) {
     const header = missing.length ? `Partial run: ${missing.join(', ')} did not complete\n\n` : '';
     const file = join(dir, 'writes', `${node.write}-${used + 1}.md`);
     mkdirSync(join(dir, 'writes'), { recursive: true });
-    writeFileSync(file, header + show(result.output.body ?? result.output));
+    writeFileSync(file, header + show(result.output.body ?? result.output.text ?? result.output));
     write = { id, name: node.write, file, argv: argvFor(spec.writes[node.write].run, s, file) };
   }
   // The result and its write reservation are one event, so no crash can record one without the other.

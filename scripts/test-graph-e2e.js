@@ -167,7 +167,10 @@ module.exports = {
     const ws = check({ name: 'w', limits: { max_agents: 1 }, writes: { note: { max: 1, run: ['node', '-e', '0', '${file}'] } }, nodes: {
       f: { run: ['node', '-e', 'process.stdout.write("hi")'], write: 'note' } } });
     next(ws, wd);
-    assert.deepEqual(mod('run.js').exec(ws, wd, 'f').writes.map(w => w.id), ['note#1'], 'exec returns the write it reserved');
+    const [w] = mod('run.js').exec(ws, wd, 'f').writes;
+    assert.equal(w.id, 'note#1', 'exec returns the write it reserved');
+    // CodeRabbit: a run node's stdout is the write body, not a JSON wrapper
+    assert.equal(readFileSync(w.file, 'utf8'), 'hi', "a run node's stdout becomes the write body");
   },
 
   C26() {
