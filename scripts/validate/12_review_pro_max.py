@@ -33,6 +33,7 @@ rpm_contracts = {
         "it is not a panel seat and gets no score row",
         "mark the affected criteria `UNVERIFIED` and report a coverage limit",
         "A requested quick review skips the UI pass and says so",
+        "or when no earlier round recorded `COMPLETE` UI coverage",
     ],
     "code-reviewer.md": [
         "round number, prior findings with their status",
