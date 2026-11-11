@@ -51,7 +51,7 @@ handoff_contracts = [
         "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
         "Copyright (c) 2026 Matt Pocock",
     ]),
-    (root / "README.md", [
+    (root / "docs" / "reference.md", [
         "$handoff Focus the next session",
         "`handoff`, which preserves upstream’s explicit invocation policy",
         "`handoff` writes outgoing notes; `takeover` verifies incoming work",
