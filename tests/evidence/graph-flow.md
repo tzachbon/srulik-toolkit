@@ -145,3 +145,24 @@ The evaluation ran 3 prompts. Each prompt ran once with this PR's skills (snapsh
 - agent-swarm tells the orchestrator to use the option, and never to record a model `pick` did not choose.
 
 The static review artifact was generated with `eval-viewer/generate_review.py`. Human review status is recorded in the PR.
+
+## Live T3 run (acceptance)
+
+A fresh T3 thread ran `execute-task-end-to-end` from this PR's code at `0eff204` on a real task: add a note on the graph contract tests to `CONTRIBUTING.md`. It ran `graphs/task.yaml` from `research` to `recap`, with merge authority withheld.
+
+- **Result:** PR [#78](https://github.com/tzachbon/srulik-toolkit/pull/78) for issue [#77](https://github.com/tzachbon/srulik-toolkit/issues/77) reached MERGE READY at `20080fd`. Its checks passed on all three OSes, it was mergeable, and it had no unresolved threads.
+- **`status`:** `done`. No failures, blocks or drops. `merge` was skipped by its `when`. Loops: grill-rounds took 1 round, plan-rounds took 3 (the reviewer found 3 issues, then 1, then 0), and review-rounds took 1. All three exited on `until`.
+- **Models:** Opus 5.5 drafted the plan. GPT-6.1 Sol reviewed the plan and ran the audit, a different creator from the drafter. The bugs, perf and security reviewers ran on Sonnet 5.5, GPT-6.1 Sol and Opus 5.5.
+- **Files:** [run.jsonl](graph-flow/live/run.jsonl) and [final-status.json](graph-flow/live/final-status.json), with local paths scrubbed.
+
+| Stage | Light | Dark |
+| --- | --- | --- |
+| research | ![](graph-flow/live/research-light.png) | ![](graph-flow/live/research-dark.png) |
+| implementation | ![](graph-flow/live/implement-light.png) | ![](graph-flow/live/implement-dark.png) |
+| review round 1 | ![](graph-flow/live/review-light.png) | ![](graph-flow/live/review-dark.png) |
+| MERGE READY | ![](graph-flow/live/merge-ready-light.png) | ![](graph-flow/live/merge-ready-dark.png) |
+
+The run reported six defects. The owner then asked that thread to open issues and fix them, so they are tracked outside this PR:
+- #79–#81 (a stale `aa-models` reference, no retry on a flaky Arena fetch, and `validate.sh` scanning ignored `__pycache__`) are fixed in #85 against `main`;
+- #82 (an agent task whose `next` output was lost is never offered again) and #83 (an implement child switched the shared checkout's branch) are in a follow-up PR stacked on this one;
+- #84 (the preview tab is lost between turns) is a T3 Code issue.
