@@ -65,12 +65,17 @@ const mcporterHomeConfig = () => {
 // Every editor kind mcporter imports from (mcporter 0.17 DEFAULT_IMPORTS).
 const IMPORT_KINDS = ["cursor", "claude-code", "claude-desktop", "codex", "windsurf", "opencode", "vscode"];
 
+// Import failures for a named existing file are recorded, so a broken config
+// is reported instead of its servers silently missing. Default-path imports
+// fail when an editor is not installed, which is not an error.
+const importErrors = [];
 const importFrom = (kind, file) => {
   try {
     const args = ["config", "import", kind, "--json", ...(file ? ["--path", file] : [])];
     // entry: mcporter's normalized definition, copied as-is by setup apply.
     return JSON.parse(mcporter(args)).entries.map((e) => ({ name: e.name, kind, path: e.source, entry: e.entry }));
-  } catch {
+  } catch (err) {
+    if (file) importErrors.push({ kind, path: file, error: String(err.stderr || err.message).split("\n")[0] });
     return [];
   }
 };
@@ -135,4 +140,4 @@ const conflicted = () => {
   }
 };
 
-module.exports = { launcher, which, claudeDir, claudeJson, conflictFile, conflicted, onPath, home, dataRoot, serverCache, mcporter, listServers, importedSources, mcporterHomeConfig, toolKey, writeJson, writeText };
+module.exports = { importErrors, launcher, which, claudeDir, claudeJson, conflictFile, conflicted, onPath, home, dataRoot, serverCache, mcporter, listServers, importedSources, mcporterHomeConfig, toolKey, writeJson, writeText };

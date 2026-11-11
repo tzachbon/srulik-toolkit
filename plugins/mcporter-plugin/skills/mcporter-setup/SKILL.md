@@ -15,9 +15,9 @@ user approves step 3 before anything is written.
 ## Steps
 
 1. **Inventory.** Run `node <plugin>/scripts/setup.js inventory`. It lists the
-   servers mcporter can import from every supported editor config (plus the
-   project `.mcp.json` and `$CODEX_HOME/config.toml`), and the servers already
-   in mcporter's config. It prints names and paths, never definitions.
+   servers mcporter can import from every supported editor config, and the
+   servers already in mcporter's config. It prints names and paths, never
+   definitions, and lists any config file it could not read under `unreadable`.
 2. **Classify** each server and show the table to the user:
    - *Move*: stdio or HTTP server with a static config.
    - *Move, then log in*: OAuth server. After moving, run `mcporter auth <name>` once.
@@ -37,29 +37,20 @@ user approves step 3 before anything is written.
      A project `config/mcporter.json` that defines the same name would win over
      the home config, so that server is listed under `failed` as shadowed; so is
      a server ordinary `mcporter` cannot find (for example with `MCPORTER_CONFIG`
-     set). A stdio server from a project file, or a Claude Code local-scope
-     server in `~/.claude.json`, gets that project as its `cwd`. A server that needs a login is kept in mcporter and listed under
+     set). A stdio server defined for one project gets that project as its
+     `cwd`. A server that needs a login is kept in mcporter and listed under
      `authRequired`: run `mcporter auth <name>`, then apply it again so its
      native copy is disabled;
    - disables every native copy of a migrated server that has the same
-     definition, without deleting it. A same-name server defined differently
-     elsewhere stays enabled and is listed under `conflicts`. So does a
-     user-level copy when the moved one came from a project file and is bound
-     to that project's folder: ask the user which
-     one to keep, or rename one. Two different Claude Code definitions of one
-     name, including the same name in more than one scope of `~/.claude.json`,
-     are not denied at all (the denylist is by name) and go to `manual`. A Codex
-     server with `cwd` is not migrated (mcporter's import drops `cwd`) and is listed
-     under `failed`
-     (Claude Code, by scope: a user-scope server goes on `deniedMcpServers` in
-     `~/.claude/settings.json`; a project `.mcp.json` server on
-     `disabledMcpjsonServers` in the project's `.claude/settings.local.json`; a
-     local-scope server on `disabledMcpServers` in this project's block of
-     `~/.claude.json`, all under `CLAUDE_CONFIG_DIR` when it is set. Copies in a
-     project's `.claude/*.json` go to `manual`. Codex:
-     `enabled = false` in every `config.toml` that defines it, home or project). Other editors, Claude
-     Desktop, Codex servers defined as inline tables, and every server in a Codex
-     file that holds multi-line strings are listed under `manual`;
+     definition, without deleting it, in the narrowest scope the harness
+     offers: a copy defined for one project is switched off for that project
+     only. A same-name server defined differently elsewhere, or bound to
+     another project's folder, stays enabled and is listed under `conflicts`:
+     ask the user which one to keep, or rename one. A copy the script cannot
+     switch off safely is listed under `manual` or `failed`. Each harness's
+     files, switches and limits are in its reference:
+     [Claude Code](references/claude-code.md), [Codex](references/codex.md).
+     Copies in any other editor go to `manual`;
    - checks every JSON file it edits parses before writing anything, backs up
      every file owner-only under the plugin data dir (never beside a project
      file) before writing, and saves the receipt with its `undo` command after

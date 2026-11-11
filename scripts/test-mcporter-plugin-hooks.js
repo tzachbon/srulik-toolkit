@@ -42,6 +42,8 @@ assert.equal(decide({ tool_name: "mcp__inv__x", tool_input: {} }, ["inv"], "bloc
 // A server name with "__" is matched whole, longest known prefix first.
 assert.match(decide({ tool_name: "mcp__my__server__get", tool_input: {} }, ["my", "my__server"]).hookSpecificOutput.additionalContext, /'my__server\.get'/);
 assert.equal(decide({ tool_name: "mcp__my__server__get", tool_input: {} }, ["my__server"], "block").hookSpecificOutput.permissionDecision, "deny");
+// Only "my" known: the call may belong to an unknown "my__server", so no redirect.
+assert.equal(decide({ tool_name: "mcp__my__server__get", tool_input: {} }, ["my"], "block"), null);
 assert.equal(decide({ tool_name: "mcp__inv__", tool_input: {} }, ["inv"]), null);
 // Two names with the same tool key ("my.srv", "my_srv"): no guess, in either mode.
 assert.equal(decide({ tool_name: "mcp__my_srv__x", tool_input: {} }, ["my.srv", "my_srv"]), null);

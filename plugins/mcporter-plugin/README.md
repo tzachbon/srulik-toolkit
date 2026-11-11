@@ -9,6 +9,7 @@ disable anything without it:
 
 ```bash
 npm install -g mcporter@0.17.0
+claude plugin marketplace add tzachbon/srulik-toolkit
 claude plugin install mcporter-plugin@srulik-toolkit
 ```
 

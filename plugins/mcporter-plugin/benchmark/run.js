@@ -19,8 +19,12 @@ const arg = (n, d) => {
 const runs = Number(arg("--runs", 3));
 const model = arg("--model", "sonnet");
 const pages = Number(arg("--pages", 4));
+for (const [k, v] of [["--runs", runs], ["--pages", pages]]) {
+  if (!Number.isInteger(v) || v < 1) throw new Error(`${k} must be a positive integer`);
+}
 process.env.INVENTORY_PAGES = String(pages);
 const { ITEMS } = require("./fake-inventory-server");
+const { followed } = require("./followed");
 const expected = ITEMS.filter((i) => i.tag === "gold").reduce((s, i) => s + i.stock, 0);
 const task =
   `The inventory MCP server lists items in pages (list_items, pages 1-${pages}). ` +
@@ -83,11 +87,7 @@ function once(name) {
     arm: name,
     correct: String(r.result).trim() === String(expected),
     // The arm's own path: native tools only; mcporter from Bash; the saved script.
-    followed: {
-      native: calls.length > 0 && calls.every((c) => c.startsWith("mcp__inventory__")),
-      mcporter: calls.some((c) => /\bmcporter\b/.test(c)) && !calls.some((c) => c.startsWith("mcp__")),
-      "saved-script": calls.some((c) => c.includes("inventory-gold-stock")),
-    }[name],
+    followed: followed(name, calls),
     calls,
     answer: String(r.result).slice(0, 200),
     turns: r.num_turns,
@@ -106,11 +106,16 @@ const median = (xs) => {
   return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
 };
 
+// Each finished run is appended to a partial file, so a later failure keeps
+// the paid runs; the results file is replaced only when every run finished.
+const partial = path.join(here, `results-${pages}-pages.partial.jsonl`);
+fs.rmSync(partial, { force: true });
 const results = [];
 for (let i = 0; i < runs; i++) {
   for (const name of Object.keys(arms)) {
     const r = once(name);
     results.push(r);
+    fs.appendFileSync(partial, `${JSON.stringify(r)}\n`);
     console.error(JSON.stringify(r));
   }
 }
@@ -126,4 +131,5 @@ for (const name of Object.keys(arms)) {
 }
 const out = { date: new Date().toISOString().slice(0, 10), model, pages, claudeVersion: execFileSync("claude", ["--version"], { encoding: "utf8" }).trim(), expected, summary, results };
 fs.writeFileSync(path.join(here, `results-${pages}-pages.json`), `${JSON.stringify(out, null, 2)}\n`);
+fs.rmSync(partial, { force: true });
 console.log(JSON.stringify(summary, null, 2));

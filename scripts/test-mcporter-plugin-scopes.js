@@ -54,3 +54,30 @@ assert.deepEqual(JSON.parse(fs.readFileSync(path.join(tmp, "data with 'space", "
 execFileSync("sh", ["-c", `${clash.undo} --force`], { env, cwd: proj });
 if (keepCfg) fs.writeFileSync(homeCfg, keepCfg);
 else fs.rmSync(homeCfg);
+
+// Unreadable config: inventory names the file instead of silently dropping it.
+fs.writeFileSync(path.join(home, ".claude", "mcp.json"), "broken-editor");
+const unreadable = JSON.parse(run("scripts/setup.js", ["inventory"])).unreadable;
+assert.deepEqual(unreadable.map((u) => u.path), [path.join(home, ".claude", "mcp.json")]);
+fs.rmSync(path.join(home, ".claude", "mcp.json"));
+
+// Run from $HOME, a ~/.claude/mcp.json server is user scope: no fixed cwd.
+const userMcp = path.join(home, ".claude", "mcp.json");
+fs.writeFileSync(userMcp, "{}");
+const userEnv = { ...env, IMPORTS: JSON.stringify([{ name: "usr", kind: "claude-code", path: userMcp }]) };
+const usr = JSON.parse(execFileSync(process.execPath, [path.join(plugin, "scripts/setup.js"), "apply", "--servers", "usr"], { env: userEnv, encoding: "utf8", cwd: home }));
+assert.equal(JSON.parse(fs.readFileSync(path.join(home, ".config", "mcporter", "mcporter.json"), "utf8")).mcpServers.usr.cwd, undefined);
+execFileSync("sh", ["-c", usr.undo], { env: userEnv, cwd: proj });
+fs.rmSync(userMcp);
+
+// Same definition in a different key order counts as the same, not a conflict.
+const cfgK = path.join(home, ".config", "mcporter", "mcporter.json");
+const keepK = fs.existsSync(cfgK) ? fs.readFileSync(cfgK) : null;
+fs.mkdirSync(path.dirname(cfgK), { recursive: true });
+fs.writeFileSync(cfgK, JSON.stringify({ mcpServers: { projmcp: { cwd: proj, command: "run-projmcp" } } }));
+const reordered = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "projmcp"]));
+assert.deepEqual(reordered.conflicts, []);
+assert.deepEqual(reordered.migrated.map((m) => m.name), ["projmcp"]);
+execFileSync("sh", ["-c", `${reordered.undo} --force`], { env, cwd: proj });
+if (keepK) fs.writeFileSync(cfgK, keepK);
+else fs.rmSync(cfgK);

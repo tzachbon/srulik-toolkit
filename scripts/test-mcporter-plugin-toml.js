@@ -35,3 +35,33 @@ assert.equal(claudeDir(), path.join(shim, "cc"));
 assert.equal(claudeJson(), path.join(shim, "cc", ".claude.json"));
 for (const [k, v] of Object.entries(saved)) v === undefined ? delete process.env[k] : (process.env[k] = v);
 fs.rmSync(shim, { recursive: true, force: true });
+
+// Two paths that flatten alike ("a_b/x" and "a/b/x") get different backups.
+{
+  const { execFileSync } = require("node:child_process");
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), "mcporter-bk-"));
+  const a = path.join(d, "a_b", "c.toml"), b = path.join(d, "a", "b", "c.toml");
+  for (const f of [a, b]) fs.mkdirSync(path.dirname(f), { recursive: true });
+  fs.writeFileSync(a, "A");
+  fs.writeFileSync(b, "B");
+  const out = execFileSync(process.execPath, ["-e", `
+    process.env.PLUGIN_DATA = ${JSON.stringify(path.join(d, "data"))};
+    const m = require(${JSON.stringify(path.join(plugin, "scripts", "setup.js"))});
+    const r = { backups: [] };
+    m.backup(${JSON.stringify(a)}, "s", r); m.backup(${JSON.stringify(b)}, "s", r);
+    console.log(JSON.stringify(r.backups.map((x) => require("fs").readFileSync(x.backup, "utf8"))));`], { encoding: "utf8" });
+  assert.deepEqual(JSON.parse(out), ["A", "B"]);
+  fs.rmSync(d, { recursive: true, force: true });
+}
+
+// Benchmark: a run counts as following its arm only when it ran the
+// arm's command; reading the script or config does not count.
+{
+  const { followed } = require(path.join(plugin, "benchmark", "followed.js"));
+  assert.equal(followed("mcporter", ["Bash: for p in 1 2; do mcporter call inventory.list_items page:$p; done"]), true);
+  assert.equal(followed("mcporter", ["Bash: cat config/mcporter.json"]), false);
+  assert.equal(followed("mcporter", ["Bash: echo mcporter call inventory.x"]), false);
+  assert.equal(followed("saved-script", ["Bash: cd .mcporter/scripts; node inventory-gold-stock.mjs gold"]), true);
+  assert.equal(followed("saved-script", ["Bash: cat .mcporter/scripts/inventory-gold-stock.mjs"]), false);
+  assert.equal(followed("native", ["mcp__inventory__list_items", "Bash: ls"]), false);
+}

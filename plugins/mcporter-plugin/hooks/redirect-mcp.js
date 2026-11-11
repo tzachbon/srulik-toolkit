@@ -13,6 +13,9 @@ function decide(input, names, mode = "warn") {
     .sort((a, b) => toolKey(b).length - toolKey(a).length);
   const server = hits[0];
   if (!server) return null;
+  // A tool part with "__" may mean an unknown server ("my__server") rather
+  // than server "my" plus tool "server__get": too ambiguous to redirect.
+  if (name.slice(`mcp__${toolKey(server)}__`.length).includes("__")) return null;
   // Names like "my.srv" and "my_srv" share one tool key, so the call could be
   // either backend: leave it alone rather than guess.
   if (hits.filter((n) => toolKey(n) === toolKey(server)).length > 1) return null;

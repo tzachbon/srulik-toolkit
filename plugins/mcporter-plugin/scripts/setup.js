@@ -8,7 +8,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { disableCodex, codexHasCwd } = require("./codex-toml");
-const { claudeDir, claudeJson, conflictFile, conflicted, onPath, home, dataRoot, mcporter, listServers, importedSources, mcporterHomeConfig, writeJson, writeText } = require("./mcporter-common");
+const { importErrors, claudeDir, claudeJson, conflictFile, conflicted, onPath, home, dataRoot, mcporter, listServers, importedSources, mcporterHomeConfig, writeJson, writeText } = require("./mcporter-common");
 
 const claudeSettings = () => path.join(claudeDir(), "settings.json");
 // Per-project switches Claude Code reads (as `/mcp disable` writes them).
@@ -28,6 +28,8 @@ function inventory() {
     // One row per source file: the same name in two editors appears twice.
     // The definition (entry) stays out of the output: it can hold secrets.
     importable: importedSources().map(({ entry, ...s }) => ({ ...s, inMcporter: localNames.has(s.name) })),
+    // Config files mcporter could not read: their servers are missing above.
+    unreadable: importErrors,
     alreadyInMcporter: local.map((s) => ({ name: s.name, path: s.source?.path })),
   };
 }
@@ -40,7 +42,9 @@ function inventory() {
 function backup(file, stamp, receipt) {
   if (receipt.backups.some((b) => b.file === file)) return;
   if (!fs.existsSync(file)) return receipt.backups.push({ file, backup: null });
-  const copy = path.join(dataRoot(), "backups", stamp, path.resolve(file).replace(/[:\\/]/g, "_"));
+  // The path hash keeps two files with similar paths from sharing a backup.
+  const id = crypto.createHash("sha256").update(path.resolve(file)).digest("hex").slice(0, 12);
+  const copy = path.join(dataRoot(), "backups", stamp, `${id}-${path.basename(file)}`);
   fs.mkdirSync(path.dirname(copy), { recursive: true, mode: 0o700 });
   fs.copyFileSync(file, copy);
   fs.chmodSync(copy, 0o600);
@@ -92,9 +96,12 @@ function projectBound(s) {
       return false;
     }
   }
-  return !user.includes(s.path) && !path.relative(process.cwd(), s.path).startsWith("..");
+  const under = (dir, f) => !path.relative(dir, f).startsWith("..");
+  return !user.includes(s.path) && !under(claudeDir(), s.path) && under(process.cwd(), s.path);
 }
 
+// JSON with sorted object keys, so key order never makes two definitions differ.
+const canon = (v) => JSON.stringify(v, (_, x) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x));
 const groupBy =(xs, key) => {
   const m = new Map();
   for (const x of xs) m.set(key(x), [...(m.get(key(x)) || []), x]);
@@ -105,7 +112,8 @@ function apply(names, dryRun) {
   // After setup the hint, hook and skill call a bare `mcporter`. The npx
   // fallback adds it to PATH only for its own process, so without an install
   // the native copies would be disabled with nothing left to call them.
-  if (!dryRun && !process.env.MCPORTER_BIN && !onPath("mcporter")) {
+  // MCPORTER_BIN does not count: daily calls use the bare command.
+  if (!dryRun && !onPath("mcporter")) {
     throw new Error("mcporter is not installed. Run `npm install -g mcporter@0.17.0`, then rerun. Nothing was changed.");
   }
   // Every source of each name; the first one is the definition that is copied.
@@ -139,7 +147,8 @@ function apply(names, dryRun) {
   for (const name of names) {
     const sources = found.get(name);
     if (!sources) {
-      receipt.failed.push({ name, reason: "not found in any harness config" });
+      const unread = importErrors.map((e) => `${e.kind}: ${e.path}`).join(", ");
+      receipt.failed.push({ name, reason: `not found in any harness config${unread ? ` (unreadable: ${unread})` : ""}` });
       continue;
     }
     const ref = `${sources[0].kind}:${sources[0].path}`;
@@ -156,7 +165,7 @@ function apply(names, dryRun) {
       if (def.command && !def.baseUrl && !def.cwd && projectBound(s)) def.cwd = process.cwd();
       return def;
     };
-    const same = (s) => JSON.stringify(resolved(s)) === JSON.stringify(resolved(sources[0]));
+    const same = (s) => canon(resolved(s)) === canon(resolved(sources[0]));
     const native = sources.filter(same).map((s) => ({ kind: s.kind, path: s.path }));
     const other = sources.filter((x) => !same(x));
     if (other.length) conflictNames.add(name);
@@ -196,7 +205,7 @@ function apply(names, dryRun) {
     // A different definition already in mcporter (for example another
     // project's same-name server, bound to its folder) is not replaced.
     const existing = config.mcpServers?.[name];
-    if (existing && JSON.stringify(existing) !== JSON.stringify(def)) {
+    if (existing && canon(existing) !== canon(def)) {
       conflictNames.add(name);
       receipt.conflicts.push(`${name} (mcporter: ${mcporterHome}): already defined differently there; not replaced, native copies left enabled`);
       continue;
@@ -347,3 +356,5 @@ if (require.main === module) {
   }
   console.log(JSON.stringify(out, null, 2));
 }
+
+module.exports = { backup };

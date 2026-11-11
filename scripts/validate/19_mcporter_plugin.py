@@ -21,12 +21,25 @@ if "config\", \"list\", \"--json\"" not in (mcp_plugin / "scripts" / "mcporter-c
     raise SystemExit("session hint must read `mcporter config list --json`")
 
 for name, tokens in {
-    "mcporter-setup": ["Never delete a harness MCP entry", "Disable only", "deniedMcpServers", "enabled = false", "receipt", "undo", "approves step 3", "mcporter auth", "only after mcporter reached the server", "Never print secret values", "disabledMcpjsonServers", "--force"],
+    "mcporter-setup": ["Never delete a harness MCP entry", "Disable only", "receipt", "undo", "approves step 3", "mcporter auth", "only after mcporter reached the server", "Never print secret values", "--force", "narrowest scope", "references/claude-code.md", "references/codex.md"],
     "mcporter": [".mcporter/scripts/", "README.md", "createRuntime()", "mcporter record", "mcporter replay", "Reuse or extend", "stderr"],
 }.items():
     text = (mcp_plugin / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
     if not text.startswith(f"---\nname: {name}\n") or not all(t in text for t in tokens):
         raise SystemExit(f"mcporter-plugin skill {name} is missing its contract")
+# Generic core, host-specific references (CODING_STANDARDS.md): the setup core
+# names no host switch; each reference carries its own contract.
+setup_refs = mcp_plugin / "skills" / "mcporter-setup" / "references"
+setup_core = (mcp_plugin / "skills" / "mcporter-setup" / "SKILL.md").read_text(encoding="utf-8")
+if any(t in setup_core for t in ["deniedMcpServers", "disabledMcpjsonServers", "disabledMcpServers", "enabled = false", "settings.local.json", ".claude.json"]):
+    raise SystemExit("mcporter-setup core must keep host switches in its references")
+for ref, tokens in {
+    "claude-code.md": ["deniedMcpServers", "disabledMcpjsonServers", "disabledMcpServers", "CLAUDE_CONFIG_DIR", ".mcp.json", "manual"],
+    "codex.md": ["enabled = false", "$CODEX_HOME", "inline table", "multi-line string", "cwd"],
+}.items():
+    text = (setup_refs / ref).read_text(encoding="utf-8")
+    if not all(t in text for t in tokens):
+        raise SystemExit(f"mcporter-setup reference {ref} is missing its contract")
 for example in ["README.md", "inventory-gold-stock.mjs", "inventory-item.sh"]:
     if not (mcp_plugin / "skills" / "mcporter" / "examples" / ".mcporter" / "scripts" / example).is_file():
         raise SystemExit(f"missing mcporter example script {example}")

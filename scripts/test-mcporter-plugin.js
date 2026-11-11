@@ -17,6 +17,11 @@ assert.throws(
   () => execFileSync(process.execPath, [path.join(plugin, "scripts", "setup.js"), "apply", "--servers", "inv"], { env: { ...noBin, PATH: path.dirname(process.execPath) }, stdio: "pipe", cwd: proj }),
   (err) => err.status === 1 && /mcporter is not installed/.test(err.stderr),
 );
+// MCPORTER_BIN alone is not enough: daily calls use the bare `mcporter`.
+assert.throws(
+  () => execFileSync(process.execPath, [path.join(plugin, "scripts", "setup.js"), "apply", "--servers", "inv"], { env: { ...env, PATH: path.dirname(process.execPath) }, stdio: "pipe", cwd: proj }),
+  (err) => err.status === 1 && /mcporter is not installed/.test(err.stderr),
+);
 assert.ok(!fs.existsSync(path.join(home, ".config", "mcporter", "mcporter.json")));
 // Malformed Claude settings: apply fails before writing anything.
 fs.writeFileSync(path.join(home, ".claude", "settings.json"), "{ not json");
