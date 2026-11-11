@@ -18,9 +18,12 @@
 </div>
 
 Each skill works on its own. Install the plugin, then name a skill or describe
-the task in plain language.
+the task in plain language. `handoff` runs only when named.
 
 ## Install
+
+Restart your agent after installing. Updates, uninstall, and hook details are in
+the [reference](docs/reference.md).
 
 ### Claude Code
 
@@ -53,10 +56,9 @@ startup hook runs from `hooks/hooks-cursor.json`.
 Add the installed plugin directory to a profile's `extensions` list. Skills load
 through `skill://<name>`; lifecycle hooks do not run.
 
-Restart your agent after installing. Updates, uninstall, and hook details are in
-the [reference](docs/reference.md).
-
 ## Skills
+
+Codex uses `$skill-name`; Claude Code also exposes skills as slash commands.
 
 ```text
 $create-plan Add offline support to this app
