@@ -373,6 +373,10 @@ module.exports = {
     assert.deepEqual([...sinkSpec.sinks], ['g']);
     const sd = temp('graph-'); drive(sinkSpec, sd, t => t.node === 'g' ? { stop: true } : {});
     assert.equal(status(sinkSpec, sd).state, 'done');
+    // two loops whose nodes wait on each other's exit can never run: check rejects them
+    assert.throws(() => check({ name: 'c', limits: { max_agents: 8 }, loops: { la: { nodes: ['a', 'atail'], until: 'a.stop == true', max_rounds: 1 },
+      lb: { nodes: ['b', 'btail'], until: 'b.stop == true', max_rounds: 1 } }, nodes: { a: { agent: 'a', out: ['stop'] }, b: { agent: 'b', out: ['stop'] },
+      atail: { agent: 't', needs: ['a', 'b'] }, btail: { agent: 't', needs: ['a', 'b'] } } }), /loops: (la -> lb -> la|lb -> la -> lb) wait on each other's exit/);
     // a fan-out whose after lists fail ordering blocks its consumer instead of dispatching it
     const ad = temp('graph-');
     const aspec = check({ name: 'a', limits: { max_agents: 6 }, nodes: { p: { agent: 'p', out: ['tasks'] },

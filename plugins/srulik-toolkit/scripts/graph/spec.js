@@ -168,6 +168,16 @@ function checkLoops(raw = {}, nodes, deps) {
     }
     loops[name] = { nodes: l.nodes, until, max_rounds: l.max_rounds };
   }
+  // a loop exits only once all its nodes settle, and a node in another loop waits for that exit; so loops that
+  // wait on each other deadlock even when the node graph is acyclic
+  const waits = L => new Set(loops[L].nodes.flatMap(n => [...deps[n]]).map(d => loopOf[d]).filter(M => M && M !== L));
+  const state = {};
+  const visit = (L, path) => {
+    if (state[L] === 'done') return;
+    if (state[L] === 'open') fail(`loops: ${[...path.slice(path.indexOf(L)), L].join(' -> ')} wait on each other's exit`);
+    state[L] = 'open'; for (const M of waits(L)) visit(M, [...path, L]); state[L] = 'done';
+  };
+  for (const L of Object.keys(loops)) visit(L, []);
   return { loops, loopOf };
 }
 
