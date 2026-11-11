@@ -15,7 +15,7 @@ const USAGE = `Usage: node graph.js <command> ...
   check   <spec.yaml>
   next    <spec.yaml> <run-dir> [--input k=v ...] [--cwd <dir>]
   exec    <spec.yaml> <run-dir> <node>
-  pick    <spec.yaml> <run-dir> <node> <index> --candidates <file> [--usage <file>] [--exclude <model> ...]
+  pick    <spec.yaml> <run-dir> <node> <index> --candidates <file> [--usage <file>] [--exclude <model> ...] [--fallback same-creator]
   done    <spec.yaml> <run-dir> <result.json>
   apply   <spec.yaml> <run-dir> <write-id> [--mark applied|failed]
   status  <spec.yaml> <run-dir>
@@ -85,13 +85,13 @@ async function main([command, ...args]) {
     out(st); return;
   }
   if (command === 'pick') {
-    const { found, rest } = flags(args, ['candidates', 'usage', 'exclude']);
-    if (rest.length !== 4 || found.candidates.length !== 1) usage();
+    const { found, rest } = flags(args, ['candidates', 'usage', 'exclude', 'fallback']);
+    if (rest.length !== 4 || found.candidates.length !== 1 || found.fallback.some(f => f !== 'same-creator')) usage();
     const [specFile, dirArg, name, indexArg] = rest; const spec = load(specFile); const dir = resolve(dirArg);
     const node = spec.nodes[name]; if (!node || !('agent' in node)) throw new Error(`${name}: not an agent node`);
     const data = await loadAll({ usageFile: found.usage[0], cwd: run.fold(dir).cwd ?? process.cwd() });
     Object.assign(data, { explore: spec.limits.explore, random: Math.random, now: Date.now() });
-    const choice = pick(node, JSON.parse(readFileSync(found.candidates[0], 'utf8')), data, pickContext(spec, dir, name, Number(indexArg), found.exclude));
+    const choice = pick(node, JSON.parse(readFileSync(found.candidates[0], 'utf8')), data, { ...pickContext(spec, dir, name, Number(indexArg), found.exclude), fallback: found.fallback[0] });
     if (Object.keys(data.errors).length) choice.reason.data_errors = data.errors;
     mkdirSync(dir, { recursive: true });
     const round = spec.loopOf[name] ? { round: run.roundOf(run.fold(dir), name) } : {}; // a later round's model lands on its own card

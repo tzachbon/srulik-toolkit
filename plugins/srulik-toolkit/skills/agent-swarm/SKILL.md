@@ -248,6 +248,12 @@ another.
 5. Finish with `status` and report what completed, what degraded, what gates
    dropped, which writes applied, and which branches were blocked.
 
+When `pick` reports `BLOCKED` only because `differ_from` excluded every runnable
+creator, as on a host with one provider, run `pick` again with `--fallback
+same-creator`. The run log then records `independence: same-creator`; say in the
+report that the review was not independent. Never record a model `pick` did not
+choose, and never use the fallback for any other block.
+
 When a child fails, retry once with the failure reason in its brief. If it
 fails again, `pick` again with that model excluded and retry once more. Then
 record the failure as final. A child that cannot start is a final failure. A

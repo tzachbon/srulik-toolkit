@@ -22,7 +22,7 @@ Before the engine existed, C40–C45 and C47 failed with `unknown key` errors, C
 
 ## Per-assertion red proof
 
-Each mutation ran in a pristine copy of the repository, then the copy was discarded. The original group passes. 43 mutations, 43 failed as targeted:
+Each mutation ran in a pristine copy of the repository, then the copy was discarded. The original group passes. 47 mutations, 47 failed as targeted:
 
 | Mutation | Group | Result |
 | --- | --- | --- |
@@ -65,6 +65,10 @@ Each mutation ran in a pristine copy of the repository, then the copy was discar
 | page-round-clears | C47 | red |
 | exec-round | C41 | red |
 | page-round-capskip | C47 | red |
+| pick-fallback | C13 | red |
+| pick-fallback-any | C31 | red |
+| pick-independence | C13 | red |
+| page-same-creator | C47 | red |
 | task-merge-gate | C48 | red |
 | task-post-hosted | C48 | red |
 | task-draft-prev | C48 | red |
@@ -114,3 +118,30 @@ A second review pass on `b5c0439` found two more defects. Both are fixed, and ea
 
 - `exec` recorded a `run` node inside a loop without its round, so from round 2 on the node was refused and stayed dispatched forever (`exec-round`).
 - In the view, a node's cap-skipped card from an earlier round stayed on screen in later rounds (`page-round-capskip`).
+
+## skill-creator evaluation
+
+The evaluation ran 3 prompts. Each prompt ran once with this PR's skills (snapshot at `0eff204`, `with_skill`) and once with v1.22.0 (`76a4ffe`, `old_skill`). All 6 runs were fresh child sessions on `claude-sonnet-5-5` at high effort, with the same inputs and permissions within each pair. Every output was graded against its listed expectations, with evidence taken from the files each run produced.
+
+| Eval | with_skill | old_skill |
+| --- | --- | --- |
+| 1. Fix a failing test end to end; no hosting remote | 5/5 | 3/5 |
+| 2. Swarm: fix one typo in each of three files, then verify | 3/4 | 2/4 |
+| 3. Change a config file outside Git, end to end | 4/4 | 3/4 |
+| Mean pass rate | 0.92 | 0.62 |
+
+- **Both configurations** made the correct change in every eval.
+- **v1.22.0** never ran a graph. It skipped the issue and PR steps by following its prose, and in eval 2 it chose not to use graph mode for single-stage work.
+- **This PR** ran `task.yaml` from `research` to `end: done` in evals 1 and 3. Both runs skipped the issue, PR, post, babysit and merge nodes because `hosted: false`. In eval 2 it ran a graph: `fix` fanned out over the three files.
+- **Eval 2 miss:** the run checked the result with a deterministic `run` node rather than a `differ_from` verifier agent.
+- **Cost:** for one-line changes, the full task graph costs many more agent calls than v1.22.0 did.
+- **Measurements:** timing and token counts were not available from the host, so the benchmark leaves them as unknown.
+
+**Defect found.** In evals 1 and 3, `pick` blocked `plan-review` and `audit`, because `differ_from` excluded the only creator the run could use. One run then wrote models into the run log that `pick` had never chosen.
+
+**Fix.** `pick --fallback same-creator` keeps `differ_from` strict by default, so C31 still holds. The option is for a host with one provider:
+- it drops only that one exclusion, and only when nothing else is left;
+- the pick reason logs `independence: same-creator`, and the view marks the card;
+- agent-swarm tells the orchestrator to use the option, and never to record a model `pick` did not choose.
+
+The static review artifact was generated with `eval-viewer/generate_review.py`. Human review status is recorded in the PR.

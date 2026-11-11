@@ -135,7 +135,7 @@ The claim lock records the process that holds it. While that process is still ru
    - models excluded by `--exclude`;
    - any usage account at or above 80% in some window: it filters candidates whose creator (matched through the provider aliases in `models.js`) or provider instance it names.
 
-   If nothing is left, the result is `BLOCKED`.
+   If nothing is left, the result is `BLOCKED`. With `--fallback same-creator`, a `differ_from` exclusion that would leave no candidate is dropped instead, and only that one; the other filters still apply. The pick reason then carries `independence: same-creator` (otherwise `different-creator` whenever `differ_from` excluded anyone).
 2. **Signal by kind.** The first source with a score for the model decides:
 
    | kind | signal |
@@ -177,7 +177,7 @@ The claim lock records the process that holds it. While that process is still ru
 | `loop-exit` | loop, round, reason (`until`, `failed`, `max_rounds`, `cap`) |
 | `admit` | node, count, items |
 | `dispatch` | node, index, attempt, taskType (`run`, `agent` or `parent`), item, src, round (loop nodes) |
-| `pick` | node, index, provider, model, effort, creator, explored, reason |
+| `pick` | node, index, round (loop nodes), provider, model, effort, creator, explored, reason (with `independence` when `differ_from` applied) |
 | `result` | node, index, output, file (absolute path of the output file), summary, attachments (names), model and provider (from `done`, else from this instance's latest `pick`), write (the reserved write, if any: id, name, file, argv), dropped (when the gate failed) |
 | `failed` | node, index, attempt, reason, final |
 | `gate-dropped` | node, index (for the live view; the result event's `dropped` is authoritative) |

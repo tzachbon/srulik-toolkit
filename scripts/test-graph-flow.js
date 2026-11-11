@@ -343,6 +343,15 @@ module.exports = {
     page2.apply({ type: 'round', loop: 'lp', round: 2 });
     assert.equal(page2.run.skipped.h, undefined, 'a new round clears the loop\'s skips');
     assert.equal(page2.run.capSkipped.g, undefined, 'and its cap skips');
+    // render one card with a stub DOM: a same-creator review is marked on the card itself
+    const cardSrc = PAGE.split('function card(i) {')[1].split('\nlet queued')[0];
+    const texts = [];
+    const fake = () => ({ className: '', dataset: {}, classList: { add() {} }, append(...xs) { xs.forEach(x => x && x.text !== undefined && texts.push(x.text)); }, setAttribute() {}, set title(v) {} });
+    const render = vm.runInNewContext(`const el = (t, c, x) => { const e = mk(); if (x != null) e.text = String(x); return e; };
+      const label = () => ''; const dur = () => ''; let open = null; const openPanel = () => {};
+      (function card(i) {${cardSrc})`, { mk: fake });
+    render({ node: 'verify', state: 'done', id: 'verify#0', reason: { independence: 'same-creator' } });
+    assert.ok(texts.includes('same-creator review'), 'a same-creator review is marked on its card');
     // pick events from the CLI carry the round, so a later round's model lands on its own card
     const d4 = temp('graph-'); const file = join(d4, 'g.yaml');
     writeFileSync(file, 'name: g\nlimits:\n  max_agents: 2\nloops:\n  lp:\n    nodes: [a]\n    until: a.stop == true\n    max_rounds: 2\nnodes:\n  a:\n    agent: a\n    pick: { tier: cheap }\n    out: [stop]\n');

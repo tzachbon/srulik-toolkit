@@ -99,7 +99,12 @@ function pick(node, candidates, data, ctx = {}) {
   const drop = (label, keep) => { const out = pool.filter(c => !keep(c)); if (out.length) filtered.push(`${label}: ${out.map(c => c.model).join(', ')}`); pool = pool.filter(keep); };
   drop('avoid', c => !(c.note.avoid ?? []).includes(kind));
   const excluded = (ctx.exclude_creators ?? []).map(creatorKey);
-  drop('creator', c => !excluded.length || (c.creator !== null && !excluded.includes(creatorKey(c.creator))));
+  const otherCreator = c => !excluded.length || (c.creator !== null && !excluded.includes(creatorKey(c.creator)));
+  // differ_from is strict. Only an explicit same-creator fallback, for a host with one provider, keeps the
+  // excluded creator when nothing else is left, and the reason says the review is not independent.
+  const relaxed = ctx.fallback === 'same-creator' && excluded.length > 0 && !pool.some(otherCreator);
+  const independence = !excluded.length ? null : relaxed ? 'same-creator' : 'different-creator';
+  if (!relaxed) drop('creator', otherCreator);
   drop('excluded', c => !(ctx.exclude_models ?? []).includes(c.model));
   // An account at the limit filters every candidate whose creator or provider instance it names.
   const hot = new Set((data.usage?.accounts ?? []).filter(a => (a.windows ?? []).some(w => w.used_percent >= QUOTA_LIMIT)).map(a => creatorKey(a.provider)));
@@ -113,7 +118,7 @@ function pick(node, candidates, data, ctx = {}) {
       const why = filtered.find(f => f.split(': ')[1].split(', ').includes(model));
       throw new Error(`BLOCKED: pinned model ${model} is ${why?.startsWith('avoid') ? `avoided for ${kind}` : `excluded by ${why?.split(':')[0]}`}`);
     }
-    return result(hit, { ...hit, effort }, false, kind, tier, filtered, data);
+    return result(hit, { ...hit, effort }, false, kind, tier, filtered, data, independence);
   }
   if (!pool.length) throw new Error(`BLOCKED: no candidate left after filters (${filtered.join('; ')})`);
   const floor = TIERS[tier];
@@ -138,14 +143,14 @@ function pick(node, candidates, data, ctx = {}) {
     const draws = new Map(eligible.map(c => [c, betaSample(c.alpha, c.beta, random)]));
     chosen = order(c => draws.get(c))[0];
   }
-  return result(chosen, chosen, chosen !== best, kind, tier, filtered, data);
+  return result(chosen, chosen, chosen !== best, kind, tier, filtered, data, independence);
 }
 
-function result(c, chosen, explored, kind, tier, filtered, data) {
+function result(c, chosen, explored, kind, tier, filtered, data, independence = null) {
   return { provider: chosen.provider, model: chosen.model, effort: chosen.effort, creator: c.creator, explored,
     reason: { kind, signal: c.signal ?? 'notes-or-evidence', score: c.score, percentile: c.percentile, tier,
       evidence: Number(c.evidence.w.toFixed(2)), posterior: c.mean === undefined ? null : Number(c.mean.toFixed(3)),
-      notes: c.note, filtered, quota: (data.usage?.accounts ?? []).length ? 'known' : 'unknown',
+      notes: c.note, filtered, ...(independence ? { independence } : {}), quota: (data.usage?.accounts ?? []).length ? 'known' : 'unknown',
       data_age: { aa: data.aa_fetched_at ?? null, arena: data.arena?.fetched_at ?? null, arena_stale: !!data.arena?.stale } } };
 }
 

@@ -10,7 +10,7 @@ for graph_phrase in ["## Graph mode", "retry once with the failure reason", "Sto
                      "applied automatically", "opinion about a model", "on one fixed port", "references/graph-spec.md",
                      "Give each child its task's `graph` path", "may return `attachments`",
                      "Every delegation runs as a graph", "inside a graph", "without starting a view", "continued, never restarted",
-                     "`final: true`", "graphs/task.yaml"]:
+                     "`final: true`", "graphs/task.yaml", "--fallback same-creator", "Never record a model `pick` did not\nchoose"]:
     if graph_phrase not in graph_skill:
         raise SystemExit(f"agent-swarm graph mode must say: {graph_phrase}")
 graph_core = graph_skill.split("## Graph mode", 1)[1].split("\n## ", 1)[0]

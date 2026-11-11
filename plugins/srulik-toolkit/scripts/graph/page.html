@@ -98,6 +98,7 @@ function card(i) {
     // a running card's duration is updated in place by tick(), so a re-render never swallows a click
     if (i.start) { const d = el('span', 'dur', dur((i.stop ?? Date.now()) - i.start)); if (!i.stop) d.dataset.start = i.start; m.append(model ? ' · ' : '', d); }
   }
+  if (i.reason?.independence === 'same-creator') b.append(el('div', 'a', 'same-creator review'));
   if (i.error || i.summary) b.append(el('div', 'd', i.error || i.summary));
   if (i.attachments?.length) b.append(el('div', 'a', '📎 ' + i.attachments.join(', ')));
   b.setAttribute('aria-label', `${i.node} ${l} ${i.state}`);
@@ -188,7 +189,8 @@ function fillPanel(id) {
   const l = label(i); $('ph').textContent = i.ghost ? i.node : `${i.id}${l ? ' · ' + l : ''}`;
   const pb = $('pb'); pb.replaceChildren();
   const dl = el('dl'); const row = (k, v) => { if (v) dl.append(el('dt', null, k), el('dd', null, v)); };
-  row('Status', i.state); row('Round', i.round > 1 && String(i.round)); row('Done by', i.parent && 'the orchestrator, not a child agent'); row('Model', i.model && `${i.model}${i.effort ? ' @ ' + i.effort : ''}${i.provider ? ' · ' + i.provider : ''}`);
+  row('Status', i.state); row('Round', i.round > 1 && String(i.round));
+  row('Independent review', i.reason?.independence === 'same-creator' && 'no: same creator as the work it checks (single-provider fallback)'); row('Done by', i.parent && 'the orchestrator, not a child agent'); row('Model', i.model && `${i.model}${i.effort ? ' @ ' + i.effort : ''}${i.provider ? ' · ' + i.provider : ''}`);
   row('Duration', i.start && dur((i.stop ?? Date.now()) - i.start)); row('Attempt', i.attempt > 1 && String(i.attempt));
   row('Why this model', i.reason && Object.entries(i.reason).filter(([, v]) => v != null && typeof v !== 'object').map(([k, v]) => `${k}: ${typeof v === 'number' ? +v.toFixed(2) : v}`).join(' · '));
   row('Inputs from', i.src ? key(i.src.node, i.src.index) : (run.spec.edges[i.node] || []).join(', '));
