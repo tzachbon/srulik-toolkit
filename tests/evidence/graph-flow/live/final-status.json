@@ -1,0 +1,45 @@
+{
+  "state": "done",
+  "completed": [
+    "research",
+    "grill",
+    "reresearch",
+    "draft",
+    "plan-review",
+    "approve",
+    "issue",
+    "implement",
+    "integrate",
+    "audit",
+    "pr",
+    "review",
+    "verify",
+    "post",
+    "fix",
+    "babysit",
+    "merge",
+    "recap"
+  ],
+  "failed": [],
+  "blocked": [],
+  "dropped": [],
+  "capSkipped": [],
+  "writes": {},
+  "skipped": [
+    "merge"
+  ],
+  "loops": {
+    "grill-rounds": {
+      "round": 1,
+      "exit": "until"
+    },
+    "plan-rounds": {
+      "round": 3,
+      "exit": "until"
+    },
+    "review-rounds": {
+      "round": 1,
+      "exit": "until"
+    }
+  }
+}

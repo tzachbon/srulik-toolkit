@@ -15,7 +15,7 @@ const USAGE = `Usage: node graph.js <command> ...
   check   <spec.yaml>
   next    <spec.yaml> <run-dir> [--input k=v ...] [--cwd <dir>]
   exec    <spec.yaml> <run-dir> <node>
-  pick    <spec.yaml> <run-dir> <node> <index> --candidates <file> [--usage <file>] [--exclude <model> ...]
+  pick    <spec.yaml> <run-dir> <node> <index> --candidates <file> [--usage <file>] [--exclude <model> ...] [--fallback same-creator]
   done    <spec.yaml> <run-dir> <result.json>
   apply   <spec.yaml> <run-dir> <write-id> [--mark applied|failed]
   status  <spec.yaml> <run-dir>
@@ -85,16 +85,20 @@ async function main([command, ...args]) {
     out(st); return;
   }
   if (command === 'pick') {
-    const { found, rest } = flags(args, ['candidates', 'usage', 'exclude']);
-    if (rest.length !== 4 || found.candidates.length !== 1) usage();
+    const { found, rest } = flags(args, ['candidates', 'usage', 'exclude', 'fallback']);
+    if (rest.length !== 4 || found.candidates.length !== 1 || found.fallback.some(f => f !== 'same-creator')) usage();
     const [specFile, dirArg, name, indexArg] = rest; const spec = load(specFile); const dir = resolve(dirArg);
     const node = spec.nodes[name]; if (!node || !('agent' in node)) throw new Error(`${name}: not an agent node`);
+    const roundAt = () => spec.loopOf[name] ? run.roundOf(run.fold(dir), name) : undefined;
+    const round0 = roundAt(); // the choice below is made for this round
     const data = await loadAll({ usageFile: found.usage[0], cwd: run.fold(dir).cwd ?? process.cwd() });
     Object.assign(data, { explore: spec.limits.explore, random: Math.random, now: Date.now() });
-    const choice = pick(node, JSON.parse(readFileSync(found.candidates[0], 'utf8')), data, pickContext(spec, dir, name, Number(indexArg), found.exclude));
+    const choice = pick(node, JSON.parse(readFileSync(found.candidates[0], 'utf8')), data, { ...pickContext(spec, dir, name, Number(indexArg), found.exclude), fallback: found.fallback[0] });
     if (Object.keys(data.errors).length) choice.reason.data_errors = data.errors;
     mkdirSync(dir, { recursive: true });
-    run.withRunLock(dir, () => appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: Date.now(), type: 'pick', node: name, index: Number(indexArg), ...choice }) + '\n'));
+    // a later round's model lands on its own card; a loop that moved on while this pick was made makes it stale
+    run.withRunLock(dir, () => { if (roundAt() !== round0) throw new Error(`${name}: round ${round0} ended while picking; pick again`);
+      appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: Date.now(), type: 'pick', node: name, index: Number(indexArg), ...(round0 ? { round: round0 } : {}), ...choice }) + '\n'); });
     run.refreshIndex(dir); // the run index shows the model while the child works
     out(choice); return;
   }

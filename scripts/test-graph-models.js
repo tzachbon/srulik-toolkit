@@ -81,6 +81,27 @@ module.exports = {
     const p2 = run('pick', specFile, dir, 'verify', '0', '--candidates', c, '--usage', u);
     assert.equal(p2.status, 0, p2.stderr); assert.equal(JSON.parse(p2.stdout).creator, 'OpenAI');
     assert.equal(log(dir).filter(e => e.type === 'pick').length, 2);
+    assert.equal(log(dir).at(-1).reason.independence, 'different-creator');
+    // a single-provider host: the strict pick blocks; --fallback same-creator runs it and logs the weaker review
+    const solo = join(work, 'solo.json'); writeFileSync(solo, JSON.stringify([cands[0]]));
+    const strict = run('pick', specFile, dir, 'verify', '0', '--candidates', solo, '--usage', u);
+    assert.equal(strict.status, 2); assert.match(strict.stderr, /BLOCKED: no candidate left after filters \(creator: claude-opus-5-5\)/);
+    const loose = run('pick', specFile, dir, 'verify', '0', '--candidates', solo, '--usage', u, '--fallback', 'same-creator');
+    assert.equal(loose.status, 0, loose.stderr); assert.equal(JSON.parse(loose.stdout).model, 'claude-opus-5-5');
+    assert.equal(log(dir).at(-1).reason.independence, 'same-creator', 'the run log records that the review is not independent');
+    assert.equal(run('pick', specFile, dir, 'verify', '0', '--candidates', solo, '--usage', u, '--fallback', 'anything').status, 1, 'only same-creator is a fallback');
+    // the fallback relaxes only differ_from: an avoid note still blocks
+    const { pick } = mod('pick.js');
+    assert.throws(() => pick({ kind: 'code' }, [cands[0]], { ...data(), notes: { 'claude-opus-5-5': { avoid: ['code'] } } }, { exclude_creators: ['Anthropic'], fallback: 'same-creator' }),
+      /BLOCKED: no candidate left after filters \(avoid: claude-opus-5-5\)/);
+    // an independent candidate that quota or exclusion rules out doesn't block the fallback; quota still applies to the rest
+    const hotOpenAI = { ...data(), usage: { accounts: [{ provider: 'OpenAI', windows: [{ used_percent: 99 }] }] } };
+    const two = cands.slice(0, 2); // Anthropic and OpenAI
+    const viaQuota = pick({ kind: 'code', pick: { tier: 'cheap' } }, two, hotOpenAI, { exclude_creators: ['Anthropic'], fallback: 'same-creator' });
+    assert.equal(viaQuota.model, 'claude-opus-5-5'); assert.equal(viaQuota.reason.independence, 'same-creator');
+    const viaExclude = pick({ kind: 'code', pick: { tier: 'cheap' } }, two, data(), { exclude_creators: ['Anthropic'], exclude_models: [cands[1].model], fallback: 'same-creator' });
+    assert.equal(viaExclude.model, 'claude-opus-5-5');
+    assert.throws(() => pick({ kind: 'code', pick: { tier: 'cheap' } }, two, hotOpenAI, { exclude_creators: ['Anthropic'] }), /BLOCKED/, 'without the fallback it still blocks');
   },
 
   // R12: live view replays and streams; refuses foreign Host headers

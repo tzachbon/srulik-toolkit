@@ -34,7 +34,7 @@ function privateHost(host) {
 
 // The run index, an output file, or one attachment. The pattern admits no '%', '..' or leading dot, and the real
 // path must stay inside <run-dir>/nodes, so a symlink can't lead out. Plain text with nosniff: markup never runs.
-const NODE_PATH = /^\/nodes\/(index\.md|[a-z0-9_-]+-\d+\.md|[a-z0-9_-]+-\d+\/[A-Za-z0-9][A-Za-z0-9._-]{0,79})$/;
+const NODE_PATH = /^\/nodes\/(index\.md|[a-z0-9_-]+-\d+(?:\.r\d+)?\.md|[a-z0-9_-]+-\d+(?:\.r\d+)?\/[A-Za-z0-9][A-Za-z0-9._-]{0,79})$/;
 function sendNodeFile(res, dir, rel) {
   let body;
   try {

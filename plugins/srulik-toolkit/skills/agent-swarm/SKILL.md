@@ -96,6 +96,20 @@ or acceptance.
 
 ## Phase 2: Fan out
 
+Every delegation runs as a graph, so the owner can watch it in the live view.
+Write a small spec for the chosen shape into the run directory and run it in
+[graph mode](#graph-mode):
+
+- slice: one agent node fanned out over the slices;
+- race: one agent node fanned out over the arms with the same brief, then a
+  `parent` node that applies the selection rule;
+- verifier: an agent node with `differ_from` naming the node it checks.
+
+A child whose brief carries a `graph` path is already inside a graph. It runs
+any swarm of its own as a graph too, without starting a view; only the
+top-level orchestrator serves the view, and the nested run shows there as the
+child's one card.
+
 1. Split work into independent, self-contained tasks.
 2. Classify each task by cost, complexity, risk, and tool needs.
 3. Follow [Model selection](#model-selection) for each executor and reviewer.
@@ -194,11 +208,12 @@ as a second opinion.
 
 ## Graph mode
 
-Use graph mode when the same multi-stage shape repeats and later stages check
-earlier ones: review, then verify, then report. Don't use it for open-ended
-exploration or for work one loop handles; a graph costs one child per node
-instance. A graph is a YAML file; read [graph spec](references/graph-spec.md)
-for its keys, the YAML subset, model resolution, and the run log.
+Every swarm runs here. A graph costs one child per agent node instance, so
+choose the `cheap` tier for bounded mechanical nodes. A graph is a YAML file;
+read [graph spec](references/graph-spec.md) for its keys, the YAML subset, loops,
+parent tasks, model resolution, and the run log. Two graphs are bundled:
+`graphs/task.yaml` runs one task from the request to its terminal state, and
+`graphs/pr-review.yaml` reviews one pull request.
 
 The parent is the orchestrator. Run the plugin's `scripts/graph.js` by its
 absolute path (the plugin root is two directories above this skill's directory, so `scripts/graph.js` is at `../../scripts/graph.js` from it) from
@@ -213,7 +228,17 @@ another.
 3. Loop: `next` returns ready tasks. Run each `run` task with `exec`. For each
    agent task, `pick` a model from the runnable models and current quota,
    delegate the task to a child with exactly that provider, model and effort,
-   then record the child's JSON with `done`, including the task's `attempt`.
+   then record the child's JSON with `done`, including the task's `attempt` and
+   `round`. Do each `parent` task yourself: ask the owner, wait on a watch, push,
+   post, or merge, as its prompt says, then record its JSON with `done`. To
+   reject, such as an owner who declines the plan, record it failed with
+   `final: true`, which stops everything after it. `next` returns an open parent
+   task again, marked `resumed`, until it is recorded. A `resumed` task is
+   continued, never restarted: check the target first, such as whether the
+   comment, issue, PR or merge already exists. When only parent tasks that wait
+   on a host event remain, end the turn with the watch active and call `next`
+   when it wakes you. Loops start the next round on their own; rounds and
+   `skipped` nodes need no action.
    Give each child its task's `graph` path, the run index of every node's status
    and output file, and tell it that it may return `attachments` beside its output.
 4. Apply each write that `done` or `exec` returns with `apply`. Writes declared by the
@@ -222,6 +247,12 @@ another.
    instead of running the write again.
 5. Finish with `status` and report what completed, what degraded, what gates
    dropped, which writes applied, and which branches were blocked.
+
+When `pick` reports `BLOCKED` only because `differ_from` excluded every runnable
+creator, as on a host with one provider, run `pick` again with
+`--fallback same-creator`. The run log then records `independence: same-creator`;
+say in the report that the review was not independent. Never record a model
+`pick` did not choose, and never use the fallback for any other block.
 
 When a child fails, retry once with the failure reason in its brief. If it
 fails again, `pick` again with that model excluded and retry once more. Then

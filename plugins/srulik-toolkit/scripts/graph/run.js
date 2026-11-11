@@ -1,12 +1,12 @@
 // Graph scheduler. All state lives in <run-dir>/run.jsonl; every function folds the log, decides, and appends.
 // One reducer (`reduce`) applies each event, so a new event updates in-memory state exactly as a reload would.
 'use strict';
-const { appendFileSync, readFileSync, existsSync, mkdirSync, writeFileSync, openSync, closeSync, rmSync, writeSync } = require('node:fs');
-const { hostname } = require('node:os');
+const { appendFileSync, readFileSync, existsSync, mkdirSync, writeFileSync } = require('node:fs');
 const { join, resolve } = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { refs, GATE } = require('./spec.js');
+const { refs, GATE, condition } = require('./spec.js');
 const { stateDir } = require('./data.js');
+const { withRunLock, claim } = require('./lock.js');
 const { key, show, instances, summarize, writeIndex, checkAttachments, writeNodeFiles } = require('./nodes.js');
 
 const isAgent = node => 'agent' in node;
@@ -14,10 +14,14 @@ const isAgent = node => 'agent' in node;
 function reduce(s, e) {
   const inst = () => (s.inst[key(e.node, e.index)] ??= { failures: 0, attempts: [] });
   switch (e.type) {
-    case 'spec': s.started = true; s.name = e.name; s.nodes = e.nodes; s.inputs = e.inputs; s.cwd = e.cwd; break;
+    case 'spec': s.started = true; s.name = e.name; s.nodes = e.nodes; s.inputs = e.inputs; s.cwd = e.cwd; s.loops = e.loops ?? {};
+      for (const [L, l] of Object.entries(s.loops)) for (const n of l.nodes) s.loopOf[n] = L; break;
+    case 'skipped': s.skipped[e.node] = e.reason; break;
+    case 'loop-exit': s.loopExit[e.loop] = e.reason; break;
+    case 'round': nextRound(s, e); break;
     case 'admit': s.admitted[e.node] = e.items; break;
     case 'cap-skipped': s.capSkipped.push(`${e.node} (${e.count} skipped)`); break;
-    case 'dispatch': inst().attempts.push(e.attempt); break;
+    case 'dispatch': inst().attempts.push(e.attempt); if (e.taskType === 'parent') inst().parent = true; break;
     case 'pick': (s.picks[e.node] ??= []).push(e); inst().model = e.model; break;
     case 'result': Object.assign(inst(), { result: e.output, model: e.model, file: e.file, summary: e.summary, attachments: e.attachments, settled: true, ...(e.dropped ? { dropped: true } : {}) });
       if (e.write) s.writes[e.write.id] = { name: e.write.name, file: e.write.file, argv: e.write.argv, state: 'reserved' }; break;
@@ -34,7 +38,21 @@ function reduce(s, e) {
 
 // maps keyed by node name have no prototype, so a node named `constructor` or `toString` is never already present
 const map = () => Object.create(null);
-const empty = () => ({ started: false, inputs: {}, cwd: null, admitted: map(), inst: map(), picks: map(), blocked: map(), writes: map(), capSkipped: [], finalFailures: [] });
+const empty = () => ({ started: false, inputs: {}, cwd: null, admitted: map(), inst: map(), picks: map(), blocked: map(), writes: map(), capSkipped: [], finalFailures: [],
+  loops: {}, loopOf: map(), round: map(), loopExit: map(), skipped: map(), history: map() });
+
+// A new round moves the loop's per-round state into history, so the round starts clean and earlier rounds stay readable.
+function nextRound(s, e) {
+  const nodes = s.loops[e.loop].nodes; const owns = k => nodes.includes(k.slice(0, k.lastIndexOf('#')));
+  const snap = { round: e.round - 1, admitted: map(), inst: map(), picks: map(), blocked: map(), skipped: map() };
+  for (const part of ['admitted', 'picks', 'blocked', 'skipped']) for (const n of nodes) if (n in s[part]) { snap[part][n] = s[part][n]; delete s[part][n]; }
+  for (const k of Object.keys(s.inst)) if (owns(k)) { snap.inst[k] = s.inst[k]; delete s.inst[k]; }
+  s.finalFailures = s.finalFailures.filter(k => !owns(k));
+  s.capSkipped = s.capSkipped.filter(c => !nodes.some(n => c.startsWith(n + ' (')));
+  (s.history[e.loop] ??= []).push(snap); s.round[e.loop] = e.round;
+}
+const roundOf = (s, node) => s.loopOf[node] ? s.round[s.loopOf[node]] ?? 1 : 1;
+const ROUND_EVENTS = new Set(['admit', 'dispatch', 'pick', 'result', 'failed', 'gate-dropped', 'outcome']);
 const logPath = dir => join(dir, 'run.jsonl');
 
 function fold(dir) {
@@ -44,6 +62,8 @@ function fold(dir) {
 
 function emit(dir, s, event, index = true) {
   const e = { t: Date.now(), ...event };
+  // events for a loop node carry its round, so the view and index can keep rounds apart
+  if (ROUND_EVENTS.has(e.type) && s.loopOf[e.node] && e.round === undefined) e.round = roundOf(s, e.node);
   mkdirSync(dir, { recursive: true });
   appendFileSync(logPath(dir), JSON.stringify(e) + '\n');
   reduce(s, e);
@@ -54,23 +74,95 @@ function emit(dir, s, event, index = true) {
 const refreshIndex = dir => withRunLock(dir, () => writeIndex(dir, fold(dir)));
 
 const survivors = (s, node) => instances(s, node).filter(i => i.result !== undefined && !i.dropped);
-const settled = (s, node) => node in s.blocked || (node in s.admitted && instances(s, node).every(i => i.settled));
+const settled = (s, node) => node in s.blocked || node in s.skipped || (node in s.admitted && instances(s, node).every(i => i.settled));
 const impossible = (s, node) => node in s.blocked
-  || (settled(s, node) && s.admitted[node].length > 0 && instances(s, node).every(i => i.final));
+  || (settled(s, node) && (s.admitted[node]?.length ?? 0) > 0 && instances(s, node).every(i => i.final));
+// A node outside a loop sees a loop node as settled only once the loop has exited.
+const settledFor = (s, consumer, dep) => !(s.loopOf[dep] && s.loopOf[dep] !== s.loopOf[consumer] && !(s.loopOf[dep] in s.loopExit)) && settled(s, dep);
 
 function propagate(spec, dir, s) {
+  while (blockAfter(spec, dir, s)) { /* an instance blocked by a sibling can block the next one */ }
   for (const node of spec.order) {
-    if (node in s.blocked || node in s.admitted) continue;
-    const cause = spec.edges[node].find(d => impossible(s, d));
-    if (cause) emit(dir, s, { type: 'blocked', node, cause });
+    if (node in s.blocked || node in s.admitted || node in s.skipped) continue;
+    // a loop that stopped short of its until condition never converged, so work outside it can't use it
+    const short = d => s.loopOf[d] && s.loopOf[d] !== s.loopOf[node] && s.loopExit[s.loopOf[d]] && s.loopExit[s.loopOf[d]] !== 'until';
+    const dep = spec.edges[node].find(d => impossible(s, d) || short(d));
+    if (dep) emit(dir, s, { type: 'blocked', node, cause: impossible(s, dep) ? dep : `${s.loopOf[dep]} (${s.loopExit[s.loopOf[dep]]})` });
   }
+}
+
+// after: an instance whose named item failed or was dropped fails too, with the reason naming that item.
+function blockAfter(spec, dir, s) {
+  let changed = false;
+  for (const name of spec.order) {
+    if (!spec.nodes[name].after || !(name in s.admitted)) continue;
+    const list = instances(s, name);
+    for (const i of list) {
+      if (i.settled || !i.deps) continue;
+      const bad = i.deps.find(d => list[d].final || list[d].dropped);
+      if (bad === undefined) continue;
+      emit(dir, s, { type: 'failed', node: name, index: i.index, attempt: 1, reason: `blocked by ${list[bad].item[spec.nodes[name].after]}`, final: true });
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+// Agents admitted so far, in every round.
+const usedAgents = (spec, s) => [s, ...Object.values(s.history).flat()].reduce((sum, part) =>
+  sum + Object.entries(part.admitted).filter(([n]) => isAgent(spec.nodes[n])).reduce((t, [, it]) => t + it.length, 0), 0);
+const staticCount = node => Array.isArray(node.for_each) ? node.for_each.length : 1;
+// Room still owed to agent nodes not yet admitted, counting every round a loop has left.
+function reserved(spec, s, skip) {
+  let sum = 0;
+  for (const n of spec.order) {
+    const node = spec.nodes[n];
+    if (!isAgent(node) || skip(n) || n in s.blocked) continue;
+    const L = spec.loopOf[n]; const pending = n in s.admitted || n in s.skipped ? 0 : 1;
+    if (!L) sum += staticCount(node) * pending;
+    else if (!(L in s.loopExit)) sum += staticCount(node) * (spec.loops[L].max_rounds - (s.round[L] ?? 1) + pending);
+  }
+  return sum;
+}
+
+// Once every node of a loop's round has settled: exit, or start the next round. Returns true when it logged anything.
+function decideLoops(spec, dir, s) {
+  let changed = false;
+  for (const [L, loop] of Object.entries(spec.loops)) {
+    if (L in s.loopExit || !loop.nodes.every(n => settled(s, n))) continue;
+    const round = s.round[L] ?? 1; const { node: u, field, literal } = loop.until;
+    const exit = survivors(s, u)[0];
+    const need = loop.nodes.filter(n => isAgent(spec.nodes[n])).reduce((t, n) => t + staticCount(spec.nodes[n]), 0);
+    const reason = impossible(s, u) ? 'failed' : exit && exit.result[field] === literal ? 'until' : round >= loop.max_rounds ? 'max_rounds'
+      : usedAgents(spec, s) + need + reserved(spec, s, n => spec.loopOf[n] === L) > spec.limits.max_agents ? 'cap' : null;
+    emit(dir, s, reason ? { type: 'loop-exit', loop: L, round, reason } : { type: 'round', loop: L, round: round + 1 });
+    changed = true;
+  }
+  return changed;
+}
+
+// Settle what can be settled: blocks, loop exits and new rounds, until nothing changes.
+function settle(spec, dir, s) {
+  let changed = false;
+  do { propagate(spec, dir, s); } while (decideLoops(spec, dir, s) && (changed = true));
+  return changed;
+}
+
+// ${prev.node.field}: that loop node's value in the previous round, null in round 1.
+function prevValue(spec, s, p, f) {
+  const snap = s.history[spec.loopOf[p]]?.at(-1);
+  if (!snap) return null;
+  const list = instances(snap, p).filter(i => i.result !== undefined && !i.dropped).map(i => i.result[f] ?? null);
+  return 'for_each' in spec.nodes[p] ? list : list[0] ?? null;
 }
 
 function substitute(text, s, item, spec) {
   // One pass over the template with callback replacements, so inserted values stay literal.
-  return text.replace(/\$\{([a-z0-9_-]+)\.([A-Za-z_]\w*)\}|\{item\}/gi, (m, p, f) => {
+  return text.replace(/\$\{prev\.([a-z0-9_-]+)\.([A-Za-z_]\w*)\}|\$\{([a-z0-9_-]+)\.([A-Za-z_]\w*)\}|\{item\}/gi, (m, pp, pf, p, f) => {
+    if (pp) return show(prevValue(spec, s, pp, pf));
     if (!p) return show(item);
     if (p === 'inputs') return show(s.inputs[f]);
+    if (p in s.skipped) return 'null';
     const list = survivors(s, p);
     // A single instance gives its value; a fan-out gives the JSON list of its surviving values.
     return s.admitted[p].length === 1 && !('for_each' in spec.nodes[p]) ? show(list[0]?.result[f]) : JSON.stringify(list.map(i => i.result[f]));
@@ -81,6 +173,7 @@ function inputFor(spec, s, name) {
   const node = spec.nodes[name]; const input = {};
   for (const { node: p, field } of [].concat(node.in ?? []).flatMap(refs)) {
     if (p === 'inputs') { input.inputs = { ...input.inputs, [field]: s.inputs[field] }; continue; }
+    if (p in s.skipped) { input[p] = { ...input[p], [field]: null }; continue; }
     const fanOut = 'for_each' in spec.nodes[p];
     // Each fan-out instance keeps every field the consumer asked for.
     if (fanOut) input[p] = survivors(s, p).map((i, n) => ({ ...(input[p]?.[n] ?? { index: i.index, item: i.item }), [field]: i.result[field] }));
@@ -97,13 +190,52 @@ function admit(spec, dir, s, name) {
   if (typeof node.for_each === 'string') {
     const [{ node: p, field }] = refs(node.for_each);
     items = survivors(s, p).flatMap(i => [].concat(i.result[field] ?? []).map(item => ({ item, src: { node: p, index: i.index } })));
-    const used = Object.entries(s.admitted).filter(([n]) => isAgent(spec.nodes[n])).reduce((sum, [, it]) => sum + it.length, 0);
-    const reserve = spec.order.filter(n => n !== name && isAgent(spec.nodes[n]) && !(n in s.admitted) && !(n in s.blocked))
-      .reduce((sum, n) => sum + (Array.isArray(spec.nodes[n].for_each) ? spec.nodes[n].for_each.length : 1), 0);
+    const used = usedAgents(spec, s);
+    const L = spec.loopOf[name];
+    // this node's own later rounds keep their static share too
+    const reserve = reserved(spec, s, n => n === name) + (L ? spec.loops[L].max_rounds - (s.round[L] ?? 1) : 0);
     const room = Math.max(0, spec.limits.max_agents - used - reserve);
-    if (items.length > room) { emit(dir, s, { type: 'cap-skipped', node: name, count: items.length - room }); items = items.slice(0, room); }
-  } else items = (Array.isArray(node.for_each) ? node.for_each : [null]).map(item => ({ item, src: null }));
+    // order the whole list first, so trimming never turns a real id into an unknown one
+    const problem = node.after ? orderItems(items, node.after) : null;
+    if (items.length > room) {
+      emit(dir, s, { type: 'cap-skipped', node: name, count: items.length - room });
+      const kept = items.slice(0, room); const cut = new Set(items.slice(room).map(it => it.item?.[node.after]));
+      const remap = new Map(kept.map((it, n) => [items.indexOf(it), n]));
+      emit(dir, s, { type: 'admit', node: name, count: kept.length, items: kept.map(it => ({ ...it, ...(it.deps ? { deps: it.deps.filter(d => remap.has(d)).map(d => remap.get(d)) } : {}) })) });
+      if (problem) { kept.forEach((_, index) => emit(dir, s, { type: 'failed', node: name, index, attempt: 1, reason: problem, final: true })); return; }
+      // an item that waits for a trimmed item can't run; everything else still can
+      kept.forEach((it, index) => { const missing = [].concat(it.item?.after ?? []).find(id => cut.has(id));
+        if (node.after && missing !== undefined) emit(dir, s, { type: 'failed', node: name, index, attempt: 1, reason: `blocked by ${missing} (cap-skipped)`, final: true }); });
+      return;
+    }
+    emit(dir, s, { type: 'admit', node: name, count: items.length, items });
+    if (problem) items.forEach((_, index) => emit(dir, s, { type: 'failed', node: name, index, attempt: 1, reason: problem, final: true }));
+    return;
+  }
+  items = (Array.isArray(node.for_each) ? node.for_each : [null]).map(item => ({ item, src: null }));
+  const problem = node.after ? orderItems(items, node.after) : null;
   emit(dir, s, { type: 'admit', node: name, count: items.length, items });
+  if (problem) items.forEach((_, index) => emit(dir, s, { type: 'failed', node: name, index, attempt: 1, reason: problem, final: true }));
+}
+
+// after: give each item the indices of the items it waits for. Returns a reason when the list can't be ordered.
+function orderItems(items, field) {
+  const at = new Map();
+  for (const [n, { item }] of items.entries()) {
+    if (!item || typeof item !== 'object' || typeof item[field] !== 'string') return `after: every item must be an object with "${field}"`;
+    if (at.has(item[field])) return `after: duplicate id "${item[field]}"`;
+    at.set(item[field], n);
+  }
+  for (const it of items) {
+    const names = [].concat(it.item.after ?? []);
+    const unknown = names.find(id => !at.has(id));
+    if (unknown !== undefined) return `after: unknown id "${unknown}"`;
+    it.deps = names.map(id => at.get(id));
+  }
+  const state = [];
+  const visit = n => { if (state[n] === 2) return false; if (state[n] === 1) return true; state[n] = 1;
+    const loop = items[n].deps.some(visit); state[n] = 2; return loop; };
+  return items.some((_, n) => visit(n)) ? 'after: the items\' after lists form a cycle' : null;
 }
 
 function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
@@ -111,26 +243,50 @@ function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
   if (!s.started) {
     const inputs = { ...spec.inputs, ...overrides };
     for (const [k, v] of Object.entries(inputs)) if (String(v).startsWith('-')) throw new Error(`input "${k}" must not start with "-"`);
-    emit(dir, s, { type: 'spec', name: spec.name, nodes: spec.order, edges: spec.edges, inputs, cwd });
+    emit(dir, s, { type: 'spec', name: spec.name, engine: 2, nodes: spec.order, edges: spec.edges, inputs, cwd, ...(Object.keys(spec.loops).length ? { loops: spec.loops } : {}),
+      after: Object.fromEntries(spec.order.filter(n => spec.nodes[n].after).map(n => [n, spec.nodes[n].after])) });
   }
-  const tasks = [];
-  for (const name of spec.order) {
-    if (name in s.blocked || !spec.edges[name].every(d => settled(s, d))) continue;
-    if (!(name in s.admitted)) admit(spec, dir, s, name);
-    const node = spec.nodes[name];
-    for (const i of instances(s, name)) {
-      const attempt = (i.failures ?? 0) + 1;
-      if (i.settled || (i.attempts ?? []).includes(attempt)) continue;
-      const taskType = isAgent(node) ? 'agent' : 'run';
-      emit(dir, s, { type: 'dispatch', node: name, index: i.index, attempt, taskType, item: i.item, src: i.src });
-      tasks.push(taskType === 'run'
-        ? { node: name, index: i.index, attempt, taskType, argv: argvFor(node.run, s) }
-        : { node: name, index: i.index, attempt, taskType, kind: node.kind ?? 'agentic', item: i.item,
-            prompt: substitute(node.agent, s, i.item, spec), input: inputFor(spec, s, name), pick: node.pick ?? null, model: node.model ?? null,
-            graph: join(resolve(dir), 'nodes', 'index.md') });
+  const tasks = []; const offered = new Set();
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const name of spec.order) {
+      if (name in s.blocked || name in s.skipped || !spec.edges[name].every(d => settledFor(s, name, d))) continue;
+      const node = spec.nodes[name];
+      if (!(name in s.admitted)) {
+        if (node.when && !holds(s, node.when)) { emit(dir, s, { type: 'skipped', node: name, reason: 'when false' }); changed = true; continue; }
+        admit(spec, dir, s, name);
+        propagate(spec, dir, s); // an admission that failed every item blocks its consumers before they are reached
+      }
+      const taskType = isAgent(node) ? 'agent' : 'run' in node ? 'run' : 'parent';
+      const list = instances(s, name);
+      for (const i of list) {
+        const attempt = (i.failures ?? 0) + 1; const id = key(name, i.index);
+        if (i.settled || offered.has(id)) continue;
+        const resumed = (i.attempts ?? []).includes(attempt);
+        // an open parent task comes back from every next, so the orchestrator can pick it up after a break
+        if (resumed && taskType !== 'parent') continue;
+        if (i.deps && !i.deps.every(d => list[d].result !== undefined && !list[d].dropped)) continue;
+        if (!resumed) emit(dir, s, { type: 'dispatch', node: name, index: i.index, attempt, taskType, item: i.item, src: i.src });
+        offered.add(id);
+        const round = roundOf(s, name);
+        if (taskType === 'run') { tasks.push({ node: name, index: i.index, attempt, round, taskType, argv: argvFor(node.run, s) }); continue; }
+        const input = inputFor(spec, s, name);
+        if (i.deps) input.after = i.deps.map(d => ({ id: list[d].item[node.after], file: list[d].file, summary: list[d].summary }));
+        const task = { node: name, index: i.index, attempt, round, taskType, item: i.item, prompt: substitute(node.agent ?? node.parent, s, i.item, spec), input,
+          graph: join(resolve(dir), 'nodes', 'index.md'), ...(resumed ? { resumed: true } : {}) };
+        tasks.push(taskType === 'agent' ? { ...task, kind: node.kind ?? 'agentic', pick: node.pick ?? null, model: node.model ?? null } : task);
+      }
     }
+    if (settle(spec, dir, s)) changed = true;
   }
   return tasks;
+}
+
+// when: true only when the referenced node has a survivor whose field equals the literal.
+function holds(s, text) {
+  const { node, field, literal } = condition(text);
+  const survivor = survivors(s, node)[0];
+  return !!survivor && survivor.result[field] === literal;
 }
 
 const argvFor = (argv, s, file) => argv.map(a => a === '${file}' ? file : String(a).replace(/^\$\{inputs\.(\w+)\}$/, (_, k) => String(s.inputs[k])));
@@ -141,9 +297,10 @@ function exec(spec, dir, name) {
   const attempt = i.failures + 1;
   const argv = argvFor(spec.nodes[name].run, s.started ? s : { inputs: spec.inputs });
   const r = spawnSync(argv[0], argv.slice(1), { shell: false, cwd: s.cwd ?? undefined, encoding: 'utf8', timeout: 120000, maxBuffer: 64 * 1024 * 1024 });
-  if (r.status === 0) return { output: { text: r.stdout }, writes: done(spec, dir, { node: name, output: { text: r.stdout } }).writes };
+  const round = roundOf(s, name); // a run node inside a loop reports its round like any other task
+  if (r.status === 0) return { output: { text: r.stdout }, writes: done(spec, dir, { node: name, round, output: { text: r.stdout } }).writes };
   const reason = (r.error?.message || r.stderr || `exit ${r.status}`).trim().slice(-500);
-  done(spec, dir, { node: name, failed: reason, final: attempt >= 2 });
+  done(spec, dir, { node: name, round, failed: reason, final: attempt >= 2 });
   return { failed: reason, final: attempt >= 2 };
 }
 
@@ -163,6 +320,11 @@ function doneUnlocked(spec, dir, result) {
   const s = fold(dir);
   const { node: name, index = 0 } = result;
   const node = spec.nodes[name];
+  if (!node) throw new Error(`${name}: unknown node`);
+  // a report from an earlier round is stale, whatever its index
+  if (result.round !== undefined && result.round !== roundOf(s, name)) return { writes: [], duplicate: true };
+  // attempt numbers restart each round, so after round 1 a report without its round can't be told from a late one
+  if (result.round === undefined && roundOf(s, name) > 1) throw new Error(`${key(name, index)}: a loop node's report must carry its round`);
   // index becomes part of a file path, so only an admitted instance may report
   if (!Number.isInteger(index) || index < 0 || index >= (s.admitted[name]?.length ?? 0)) throw new Error(`${name}#${index}: no such instance`);
   const current = s.inst[key(name, index)] ?? {};
@@ -176,7 +338,7 @@ function doneUnlocked(spec, dir, result) {
     const reported = (current.failures ?? 0) >= (current.attempts ?? []).length; // older attempts were rejected above
     if (reported) return { writes: [], duplicate: true }; // this attempt's failure was already recorded
     emit(dir, s, { type: 'failed', node: name, index, attempt: (current.failures ?? 0) + 1, reason: result.failed, final: !!result.final, model });
-    if (result.final) propagate(spec, dir, s);
+    if (result.final) settle(spec, dir, s);
     return { writes: [] };
   }
   for (const f of node.out ?? []) if (!(f in (result.output ?? {}))) throw new Error(`${key(name, index)}: output missing "${f}"`);
@@ -197,7 +359,7 @@ function doneUnlocked(spec, dir, result) {
   }
   // The output file is written before the result event, like the write artifact, so a crash leaves the instance retryable.
   const item = instances(s, name)[index]?.item;
-  const file = writeNodeFiles(dir, name, index, item, model, result.output, attachments);
+  const file = writeNodeFiles(dir, name, index, item, model, result.output, attachments, roundOf(s, name));
   // The result and its write reservation are one event, so no crash can record one without the other.
   // The gate verdict and any write reservation travel in the result event, so a crash can't split them.
   emit(dir, s, { type: 'result', node: name, index, output: result.output, model, provider, file, summary: summarize(result.output),
@@ -207,71 +369,11 @@ function doneUnlocked(spec, dir, result) {
     const inst = instances(s, name)[index];
     if (inst?.src) recordOutcome(spec, dir, s, { node: name, index, src: inst.src }, passed);
   }
+  settle(spec, dir, s);
   return { writes: write ? [write] : [] };
 }
 
-// A claim lock names its owner. It is live while that process runs on this host; a lock from another
-// host, or one that can't be read, is treated as live, so recovery never unlocks a write that may be running.
-function lockOwnerAlive(lock) {
-  let owner;
-  try { owner = JSON.parse(readFileSync(lock, 'utf8')); } catch { return true; }
-  if (owner?.host !== hostname() || !Number.isInteger(owner?.pid)) return true;
-  try { process.kill(owner.pid, 0); return true; } catch (error) { return error.code === 'EPERM'; }
-}
-
-
-// One writer at a time: each state-changing call holds <run-dir>/run.lock while it folds and appends,
-// so parallel next/done calls never decide from the same stale state. The lock records its owner.
-function withRunLock(dir, fn, name = 'run.lock') {
-  mkdirSync(dir, { recursive: true });
-  const lock = join(dir, name);
-  const until = Date.now() + 30000;
-  for (;;) {
-    if (tryLock(lock)) break;
-    if (!lockOwnerAlive(lock) && reclaimStale(lock)) continue;
-    if (Date.now() > until) throw new Error(`busy: ${lock} is held by another process`);
-    pause();
-  }
-  try { return fn(); } finally { rmSync(lock, { force: true }); }
-}
-
-const pause = () => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
-
-// Create a lock file exclusively, recording its owner. False when it already exists.
-function tryLock(lock) {
-  let fd;
-  try { fd = openSync(lock, 'wx'); } catch (error) { if (error.code === 'EEXIST') return false; throw error; }
-  try { writeSync(fd, JSON.stringify({ pid: process.pid, host: hostname() })); } finally { closeSync(fd); }
-  return true;
-}
-
-// Remove a lock whose owner is gone. Only the holder of <lock>.reclaim removes it, after reading it again,
-// so a reclaimer that saw the old lock can never delete a replacement another process just took.
-// Returns false when another reclaimer holds the guard.
-function reclaimStale(lock) {
-  const guard = `${lock}.reclaim`;
-  if (!tryLock(guard)) {
-    // ponytail: a reclaimer that died inside the three lines below leaves a dead guard, removed here.
-    // Two processes racing on such a dead guard could still collide; add a lease if that ever shows up.
-    if (!lockOwnerAlive(guard)) rmSync(guard, { force: true });
-    return false;
-  }
-  try { if (!lockOwnerAlive(lock)) rmSync(lock, { force: true }); } finally { rmSync(guard, { force: true }); }
-  return true;
-}
-
 const runnerIn = cwd => argv => spawnSync(argv[0], argv.slice(1), { shell: false, cwd: cwd ?? undefined, encoding: 'utf8', timeout: 120000 });
-
-// Take the claim lock for one write. Returns the release function. A lock whose owner is still running
-// always refuses; one whose owner is gone refuses as an unknown outcome unless `takeStale` (only --mark).
-function claim(dir, id, lock, takeStale) {
-  for (;;) {
-    if (tryLock(lock)) return () => rmSync(lock, { force: true });
-    if (lockOwnerAlive(lock)) throw new Error(`${id}: still being applied by process ${readFileSync(lock, 'utf8').trim() || 'unknown'}; wait for it to finish`);
-    if (!takeStale) throw new Error(`${id}: outcome unknown; check the target, then apply with --mark applied or --mark failed`);
-    if (!reclaimStale(lock)) pause(); // the owner is gone; retry the exclusive create, which a live apply could still win
-  }
-}
 
 function apply(spec, dir, id, runner, { mark, onClaimed } = {}) {
   const s = fold(dir);
@@ -308,14 +410,17 @@ function status(spec, dir) {
   const all = spec.order;
   const summary = { completed: all.filter(n => settled(s, n) && !impossible(s, n)), failed: s.finalFailures,
     blocked: Object.keys(s.blocked), dropped: Object.entries(s.inst).filter(([, i]) => i.dropped).map(([k]) => k),
-    capSkipped: s.capSkipped, writes: s.writes };
+    capSkipped: s.capSkipped, writes: s.writes, skipped: Object.keys(s.skipped),
+    loops: Object.fromEntries(Object.keys(spec.loops).map(L => [L, { round: s.round[L] ?? 1, exit: s.loopExit[L] ?? null }])) };
+  // the round decision is made in the same call that settles a round, so a loop node is never settled without its loop deciding
   if (!all.every(n => settled(s, n))) return { state: 'running', ...summary };
   if (spec.sinks.every(n => impossible(s, n))) return { state: 'blocked', ...summary };
   const unapplied = Object.values(s.writes).some(w => w.state !== 'applied');
-  return { state: s.finalFailures.length || s.capSkipped.length || unapplied ? 'partial' : 'done', ...summary };
+  const short = Object.values(s.loopExit).some(reason => reason !== 'until');
+  return { state: s.finalFailures.length || s.capSkipped.length || unapplied || short ? 'partial' : 'done', ...summary };
 }
 
 const next = (spec, dir, ...rest) => withRunLock(dir, () => nextUnlocked(spec, dir, ...rest));
 const done = (spec, dir, result) => withRunLock(dir, () => doneUnlocked(spec, dir, result));
 
-module.exports = { fold, next, exec, done, apply, status, withRunLock, refreshIndex };
+module.exports = { fold, next, exec, done, apply, status, withRunLock, refreshIndex, roundOf };

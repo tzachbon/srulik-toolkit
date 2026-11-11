@@ -8,7 +8,9 @@ const show = v => typeof v === 'string' ? v : JSON.stringify(v);
 const instances = (s, node) => (s.admitted[node] ?? []).map((it, index) => ({ index, ...it, ...(s.inst[key(node, index)] ?? {}) }));
 
 // <run-dir>/nodes/<node>-<index>.md holds an instance's output; <run-dir>/nodes/<node>-<index>/ its attachments.
-const nodeBase = (dir, node, index) => resolve(dir, 'nodes', `${node}-${index}`);
+// A loop's later rounds add .r<n>; node names have no dots, so these never collide.
+const suffix = round => round > 1 ? `.r${round}` : '';
+const nodeBase = (dir, node, index, round = 1) => resolve(dir, 'nodes', `${node}-${index}${suffix(round)}`);
 const cell = v => String(v ?? '').replace(/\s+/g, ' ').replace(/\|/g, '\\|');
 // A fanned-out item is often a finding object; its title or name reads better than its JSON.
 const itemLabel = v => v && typeof v === 'object' && typeof (v.title ?? v.name) === 'string' ? v.title ?? v.name : show(v);
@@ -22,6 +24,7 @@ function statusOf(i) {
   if (i.final) return 'failed';
   if (i.dropped) return 'dropped';
   if (i.settled) return 'done';
+  if (i.parent && (i.attempts ?? []).length) return 'waiting on orchestrator';
   if (i.failures && !(i.attempts ?? []).includes(i.failures + 1)) return `retrying (attempt ${i.failures + 1})`;
   return (i.attempts ?? []).length ? 'running' : 'waiting';
 }
@@ -32,12 +35,19 @@ function writeIndex(dir, s) {
   const tmp = join(dir, 'nodes', `index.md.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`);
   try {
     const rows = [];
-    for (const node of s.nodes ?? []) {
-      if (!(node in s.admitted)) { rows.push(row(node, '', node in s.blocked ? `blocked by ${s.blocked[node]}` : 'not started', '', '', '')); continue; }
-      for (const i of instances(s, node)) {
-        const file = i.file ? `nodes/${node}-${i.index}.md${i.attachments?.length ? ' + ' + i.attachments.join(', ') : ''}` : '';
-        rows.push(row(key(node, i.index), i.item == null ? '' : clip(itemLabel(i.item), 80), statusOf(i), i.model, i.summary ?? i.reason, file));
+    const add = (part, node, round) => {
+      for (const i of instances(part, node)) {
+        const name = `${node}-${i.index}${suffix(round)}`;
+        const file = i.file ? `nodes/${name}.md${i.attachments?.length ? ' + ' + i.attachments.join(', ') : ''}` : '';
+        rows.push(row(key(node, i.index) + suffix(round), i.item == null ? '' : clip(itemLabel(i.item), 80), statusOf(i), i.parent ? 'parent' : i.model, i.summary ?? i.reason, file));
       }
+    };
+    for (const node of s.nodes ?? []) {
+      const L = s.loopOf?.[node];
+      for (const snap of (L && s.history[L]) || []) add(snap, node, snap.round); // earlier rounds stay in the index
+      if (node in (s.skipped ?? {})) { rows.push(row(node, '', 'skipped', '', s.skipped[node], '')); continue; }
+      if (!(node in s.admitted)) { rows.push(row(node, '', node in s.blocked ? `blocked by ${s.blocked[node]}` : 'not started', '', '', '')); continue; }
+      add(s, node, L ? s.round[L] ?? 1 : 1);
     }
     const inputs = Object.entries(s.inputs ?? {}).map(([k, v]) => `${k}=${show(v)}`).join(', ');
     mkdirSync(join(dir, 'nodes'), { recursive: true });
@@ -59,13 +69,13 @@ function checkAttachments(k, list = []) {
   return list;
 }
 
-function writeNodeFiles(dir, node, index, item, model, output, attachments) {
-  const base = nodeBase(dir, node, index);
+function writeNodeFiles(dir, node, index, item, model, output, attachments, round = 1) {
+  const base = nodeBase(dir, node, index, round);
   const field = output.text != null ? 'text' : 'body', prose = output[field], json = o => '```json\n' + JSON.stringify(o, null, 2) + '\n```\n';
   const { [field]: _, ...rest } = output;
   const text = typeof prose !== 'string' ? json(output) : Object.keys(rest).length ? prose + '\n\n' + json(rest) : prose;
   mkdirSync(join(dir, 'nodes'), { recursive: true });
-  writeFileSync(base + '.md', [`# ${key(node, index)}`, ...(item == null ? [] : [`item: ${show(item)}`]), ...(model ? [`model: ${model}`] : []), '', text].join('\n'));
+  writeFileSync(base + '.md', [`# ${key(node, index)}${round > 1 ? ` (round ${round})` : ''}`, ...(item == null ? [] : [`item: ${show(item)}`]), ...(model ? [`model: ${model}`] : []), '', text].join('\n'));
   rmSync(base, { recursive: true, force: true });
   if (attachments.length) mkdirSync(base);
   for (const a of attachments) writeFileSync(join(base, a.name), a.text);
