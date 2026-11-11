@@ -77,10 +77,13 @@ fs.rmSync(path.join(tmp, "data with 'space", "conflicts.json"));
   const saved = fs.existsSync(homeCfg) ? fs.readFileSync(homeCfg) : null;
   fs.mkdirSync(path.dirname(homeCfg), { recursive: true });
   fs.writeFileSync(homeCfg, JSON.stringify({ mcpServers: { pbound: { command: "x", cwd: path.join(tmp, "proj-a") }, both: { command: "y" }, free: { command: "z" } } }));
-  fs.writeFileSync(path.join(b, ".mcp.json"), JSON.stringify({ mcpServers: { both: { command: "y" } } }));
+  fs.writeFileSync(homeCfg, JSON.stringify({ mcpServers: { ...JSON.parse(fs.readFileSync(homeCfg, "utf8")).mcpServers, "my.srv": { command: "m" } } }));
+  // B loads "both" and "my_srv" natively; "my.srv" has the same tool key.
+  fs.writeFileSync(path.join(b, ".mcp.json"), JSON.stringify({ mcpServers: { both: { command: "y" }, my_srv: { command: "n" } } }));
   const hintB = execFileSync(process.execPath, [path.join(plugin, "hooks", "session-hint.js")], { env, encoding: "utf8", cwd: b });
   assert.match(hintB, /\bfree\b/);
-  assert.doesNotMatch(hintB, /pbound|\bboth\b/);
+  assert.doesNotMatch(hintB, /pbound|\bboth\b|my\.srv/);
+  assert.equal(execFileSync(process.execPath, [path.join(plugin, "hooks", "redirect-mcp.js")], { env: { ...env, MCPORTER_HOOK_MODE: "block" }, encoding: "utf8", input: JSON.stringify({ tool_name: "mcp__my_srv__delete_item", tool_input: {}, cwd: b }) }), "");
   assert.equal(execFileSync(process.execPath, [path.join(plugin, "hooks", "redirect-mcp.js")], { env: { ...env, MCPORTER_HOOK_MODE: "block" }, encoding: "utf8", input: JSON.stringify({ tool_name: "mcp__pbound__delete_item", tool_input: {}, cwd: b }) }), "");
   // Once setup switched B's copy off, the name is a replacement again.
   fs.mkdirSync(path.join(b, ".claude"));

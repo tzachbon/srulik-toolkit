@@ -31,7 +31,9 @@ function servers() {
     // ponytail: other per-project sources (.claude.json local scope, .codex) are
     // not checked here. Upgrade: compare against setup's per-project import.
     const elsewhere = (s) => s.cwd && path.resolve(s.cwd) !== here && path.resolve(s.cwd) !== path.dirname(path.resolve(s.source?.path || ""));
-    const names = [...new Set(listServers([], { timeout: 5_000 }).filter((s) => !elsewhere(s) && !(s.name in native && !off.includes(s.name))).map((s) => s.name))].sort();
+    // By tool key: "my.srv" and "my_srv" both reach mcp__my_srv__ natively.
+    const loaded = new Set(Object.keys(native).filter((n) => !off.includes(n)).map(toolKey));
+    const names = [...new Set(listServers([], { timeout: 5_000 }).filter((s) => !elsewhere(s) && !loaded.has(toolKey(s.name))).map((s) => s.name))].sort();
     writeJson(serverCache(), names);
     return names;
   } catch (err) {
