@@ -22,7 +22,7 @@ Before the engine existed, C40–C45 and C47 failed with `unknown key` errors, C
 
 ## Per-assertion red proof
 
-Each mutation ran in a pristine copy of the repository, then the copy was discarded. The original group passes. 36 mutations, 36 failed as targeted:
+Each mutation ran in a pristine copy of the repository, then the copy was discarded. The original group passes. 41 mutations, 41 failed as targeted:
 
 | Mutation | Group | Result |
 | --- | --- | --- |
@@ -58,6 +58,11 @@ Each mutation ran in a pristine copy of the repository, then the copy was discar
 | view-r-path | C47 | red |
 | page-round-card | C47 | red |
 | page-skipped | C47 | red |
+| r1-missing-round | C41 | red |
+| cap-trim-after | C44 | red |
+| prev-two-part | C42 | red |
+| pick-round | C47 | red |
+| page-round-clears | C47 | red |
 | task-merge-gate | C48 | red |
 | task-post-hosted | C48 | red |
 | task-draft-prev | C48 | red |
@@ -90,3 +95,15 @@ The screenshots show:
 - the header line per loop, such as `plan-rounds: round 2/5 (until)`.
 
 These runs come from a fixture. The real-task run is recorded below.
+
+## Review fixes
+
+An independent `review-pro-max` pass on `641625c` reproduced five defects. Each was fixed test-first, and its mutation is in the table above.
+
+1. **Stale reports without `round`.** A loop node's report without `round` could be recorded as a later round's result, because attempt numbers restart each round. From round 2 on, `done` now refuses it (`r1-missing-round`).
+2. **Cap trims on `after` fan-outs.** A cap trim failed every instance as `unknown id`. The list is now ordered before trimming, and only items that wait for a trimmed one fail, as `blocked by <id> (cap-skipped)` (`cap-trim-after`).
+3. **Skips in later rounds.** In the view, a node skipped in one round stayed skipped in later rounds. A `round` event now clears the loop's skips and blocks (`page-round-clears`).
+4. **Model on the wrong card.** A round-2 model showed on the round-1 card, because `graph.js pick` wrote no round. It now does (`pick-round`).
+5. **Two-part `prev` refs.** `check` accepted `${prev.x}`, and `next` then crashed on it. `check` now rejects it (`prev-two-part`).
+
+The `when` row in `graph-spec.md` now says what the engine does: a reference that failed finally or was blocked blocks the node, rather than skipping it.

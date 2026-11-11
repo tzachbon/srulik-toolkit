@@ -193,8 +193,24 @@ function admit(spec, dir, s, name) {
     // this node's own later rounds keep their static share too
     const reserve = reserved(spec, s, n => n === name) + (L ? spec.loops[L].max_rounds - (s.round[L] ?? 1) : 0);
     const room = Math.max(0, spec.limits.max_agents - used - reserve);
-    if (items.length > room) { emit(dir, s, { type: 'cap-skipped', node: name, count: items.length - room }); items = items.slice(0, room); }
-  } else items = (Array.isArray(node.for_each) ? node.for_each : [null]).map(item => ({ item, src: null }));
+    // order the whole list first, so trimming never turns a real id into an unknown one
+    const problem = node.after ? orderItems(items, node.after) : null;
+    if (items.length > room) {
+      emit(dir, s, { type: 'cap-skipped', node: name, count: items.length - room });
+      const kept = items.slice(0, room); const cut = new Set(items.slice(room).map(it => it.item?.[node.after]));
+      const remap = new Map(kept.map((it, n) => [items.indexOf(it), n]));
+      emit(dir, s, { type: 'admit', node: name, count: kept.length, items: kept.map(it => ({ ...it, ...(it.deps ? { deps: it.deps.filter(d => remap.has(d)).map(d => remap.get(d)) } : {}) })) });
+      if (problem) { kept.forEach((_, index) => emit(dir, s, { type: 'failed', node: name, index, attempt: 1, reason: problem, final: true })); return; }
+      // an item that waits for a trimmed item can't run; everything else still can
+      kept.forEach((it, index) => { const missing = [].concat(it.item?.after ?? []).find(id => cut.has(id));
+        if (node.after && missing !== undefined) emit(dir, s, { type: 'failed', node: name, index, attempt: 1, reason: `blocked by ${missing} (cap-skipped)`, final: true }); });
+      return;
+    }
+    emit(dir, s, { type: 'admit', node: name, count: items.length, items });
+    if (problem) items.forEach((_, index) => emit(dir, s, { type: 'failed', node: name, index, attempt: 1, reason: problem, final: true }));
+    return;
+  }
+  items = (Array.isArray(node.for_each) ? node.for_each : [null]).map(item => ({ item, src: null }));
   const problem = node.after ? orderItems(items, node.after) : null;
   emit(dir, s, { type: 'admit', node: name, count: items.length, items });
   if (problem) items.forEach((_, index) => emit(dir, s, { type: 'failed', node: name, index, attempt: 1, reason: problem, final: true }));
@@ -302,6 +318,8 @@ function doneUnlocked(spec, dir, result) {
   if (!node) throw new Error(`${name}: unknown node`);
   // a report from an earlier round is stale, whatever its index
   if (result.round !== undefined && result.round !== roundOf(s, name)) return { writes: [], duplicate: true };
+  // attempt numbers restart each round, so after round 1 a report without its round can't be told from a late one
+  if (result.round === undefined && roundOf(s, name) > 1) throw new Error(`${key(name, index)}: a loop node's report must carry its round`);
   // index becomes part of a file path, so only an admitted instance may report
   if (!Number.isInteger(index) || index < 0 || index >= (s.admitted[name]?.length ?? 0)) throw new Error(`${name}#${index}: no such instance`);
   const current = s.inst[key(name, index)] ?? {};

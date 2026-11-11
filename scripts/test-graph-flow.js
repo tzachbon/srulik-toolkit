@@ -101,6 +101,8 @@ module.exports = {
     assert.equal(status(spec, dir).state, 'running', 'between rounds the run is still running');
     const r2 = next(spec, dir);
     assert.equal(done(spec, dir, { node: 'rev', index: 1, round: 1, output: { n: 9 }, model: 'late' }).duplicate, true, 'a late round-1 report is ignored');
+    assert.throws(() => done(spec, dir, { node: 'rev', index: 1, attempt: 1, output: { n: 9 }, model: 'late' }), /rev#1: a loop node's report must carry its round/,
+      'a report without round can\'t be told from a late one, so it is refused');
     assert.deepEqual(ids(r2), ['rev#0', 'rev#1']); assert.equal(r2[0].round, 2);
     done(spec, dir, { node: 'rev', index: 0, round: 2, output: { n: 2 }, model: 'm' });
     done(spec, dir, { node: 'rev', index: 1, round: 2, output: { n: 3 }, model: 'm' });
@@ -150,6 +152,10 @@ module.exports = {
       nodes: { a: { agent: 'a', out: ['x'] }, b: { agent: 'b', needs: ['a'], out: ['v', 'stop'] }, c: { agent: '${prev.b.v}', needs: ['b'], out: ['stop'] } } }),
       /c: \$\{prev\.b\.v\} is only allowed inside the same loop/);
     assert.throws(() => check({ ...base, nodes: { prev: { agent: 'x' } } }), /prev: the name "prev" is reserved/);
+    assert.throws(() => check({ ...base, loops, nodes: { a: { agent: 'a ${prev.foo}', out: ['x'] }, b: { agent: 'b', needs: ['a'], out: ['v', 'stop'] } } }),
+      /a: \$\{prev\.foo\} must be \$\{prev\.<node>\.<field>\}/);
+    assert.throws(() => check({ ...base, loops, nodes: { a: { agent: 'a', in: '${prev.foo}', out: ['x'] }, b: { agent: 'b', needs: ['a'], out: ['v', 'stop'] } } }),
+      /a: \$\{prev\.foo\} must be \$\{prev\.<node>\.<field>\}/);
   },
 
   // loop limits: max_rounds, the total cap across rounds, and contiguity
@@ -158,7 +164,7 @@ module.exports = {
     const dir = temp('graph-');
     const spec = check({ name: 'm', limits: { max_agents: 2 }, loops: { lp: { nodes: ['a'], until: 'a.stop == true', max_rounds: 2 } },
       nodes: { a: { agent: 'a', out: ['stop'] } } });
-    for (let i = 0; i < 2; i++) { next(spec, dir); done(spec, dir, { node: 'a', output: { stop: false }, model: 'm' }); }
+    for (let i = 0; i < 2; i++) { const [t] = next(spec, dir); done(spec, dir, { node: 'a', round: t.round, output: { stop: false }, model: 'm' }); }
     assert.deepEqual(events(dir, 'loop-exit').map(e => e.reason), ['max_rounds']);
     assert.equal(status(spec, dir).state, 'partial', 'running out of rounds is partial');
 
@@ -220,6 +226,13 @@ module.exports = {
       assert.equal(fails.length, tasks.length); assert.ok(fails.every(e => e.final && re.test(e.reason)), String(re));
     }
     assert.throws(() => check({ name: 'x', limits: { max_agents: 2 }, nodes: { a: { agent: 'a', after: 'id' } } }), /a: after is only allowed with for_each/);
+    // a cap trim fails only the items that wait for a trimmed one; independent items still run
+    const capped = check({ name: 'c', limits: { max_agents: 3 }, nodes: {
+      plan: { agent: 'p', out: ['tasks'] }, impl: { agent: 'do {item}', for_each: '${plan.tasks}', after: 'id' } } });
+    const d3 = temp('graph-'); next(capped, d3);
+    done(capped, d3, { node: 'plan', output: { tasks: [{ id: 'a', after: ['c'] }, { id: 'b' }, { id: 'c' }] }, model: 'm' });
+    assert.deepEqual(ids(next(capped, d3)), ['impl#1'], 'b runs although c was cap-skipped');
+    assert.equal(events(d3, 'failed').find(e => e.index === 0)?.reason, 'blocked by c (cap-skipped)');
   },
 
   // when: a false condition skips only its node; a missing survivor is false; re-checked each round
@@ -311,6 +324,22 @@ module.exports = {
     assert.equal(page.run.skipped.pub, 'when false');
     assert.deepEqual(JSON.parse(JSON.stringify(page.run.loops.lp)), { round: 2, max: 2, exit: 'until' });
     assert.match(PAGE, /waiting on orchestrator/);
+    // a node skipped in round 1 and run in round 2 shows its round-2 card
+    const page2 = vm.runInNewContext(section + '\n;({ run, apply })');
+    page2.apply({ type: 'spec', t: 1, name: 'x', nodes: ['g', 'h'], edges: {}, loops: { lp: { nodes: ['g', 'h'], max_rounds: 2 } } });
+    page2.apply({ type: 'skipped', node: 'h', reason: 'when false' });
+    page2.apply({ type: 'round', loop: 'lp', round: 2 });
+    assert.equal(page2.run.skipped.h, undefined, 'a new round clears the loop\'s skips');
+    // pick events from the CLI carry the round, so a later round's model lands on its own card
+    const d4 = temp('graph-'); const file = join(d4, 'g.yaml');
+    writeFileSync(file, 'name: g\nlimits:\n  max_agents: 2\nloops:\n  lp:\n    nodes: [a]\n    until: a.stop == true\n    max_rounds: 2\nnodes:\n  a:\n    agent: a\n    pick: { tier: cheap }\n    out: [stop]\n');
+    const g = check(mod('yaml.js').parse(readFileSync(file, 'utf8'))); const run = join(d4, 'run');
+    next(g, run); done(g, run, { node: 'a', round: 1, output: { stop: false }, model: 'm1' }); next(g, run);
+    const cf = join(d4, 'c.json'); writeFileSync(cf, JSON.stringify([{ provider: 'p', model: 'm2', effort: 'high' }]));
+    const uf = join(d4, 'u.json'); writeFileSync(uf, JSON.stringify({ accounts: [], notes: [] }));
+    const picked = spawnSync(process.execPath, [CLI, 'pick', file, run, 'a', '0', '--candidates', cf, '--usage', uf], { encoding: 'utf8', env: process.env });
+    assert.equal(picked.status, 0, picked.stderr);
+    assert.equal(events(run, 'pick').at(-1).round, 2, 'a pick in round 2 records round 2');
   },
 
   // the bundled task graph walks a task with and without Git hosting

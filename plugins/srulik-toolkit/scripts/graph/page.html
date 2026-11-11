@@ -43,7 +43,8 @@ function apply(e) {
     case 'gate-dropped': at(e).state = 'dropped'; break;
     case 'failed': Object.assign(at(e), { state: e.final ? 'failed' : 'retrying', error: e.reason, ...(e.final ? { stop: e.t } : {}) }); break;
     case 'skipped': run.skipped[e.node] = e.reason; break;
-    case 'round': run.loops[e.loop].round = e.round; break;
+    // a new round starts clean: a node skipped or blocked last round may run in this one
+    case 'round': run.loops[e.loop].round = e.round; for (const n of run.spec.loops[e.loop].nodes) { delete run.skipped[n]; delete run.blocked[n]; } break;
     case 'loop-exit': run.loops[e.loop].exit = e.reason; break;
     case 'blocked': run.blocked[e.node] = e.cause; break;
     case 'cap-skipped': run.capSkipped[e.node] = e.count; break;

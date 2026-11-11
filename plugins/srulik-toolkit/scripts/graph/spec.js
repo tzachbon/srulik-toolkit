@@ -95,6 +95,8 @@ function check(raw) {
       deps[name].add(c.node);
     }
     for (const { node: dep, field } of found) {
+      // ${prev.x} reads as node "prev"; only the three-part form, in agent or parent text, is valid
+      if (dep === 'prev') fail(`${name}: \${prev.${field}} must be \${prev.<node>.<field>} in agent or parent text`);
       if (RESERVED.has(dep)) continue;
       if (!Object.hasOwn(nodes, dep)) fail(`${name}: unknown node "${dep}"`);
       if ('run' in nodes[dep] && field !== 'text') fail(`${name}: run node "${dep}" outputs only "text"`);
