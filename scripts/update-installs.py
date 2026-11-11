@@ -5,7 +5,7 @@ Usage: update-installs.py [--check] [--via COMMAND ...]
 
 --check verifies without changing anything. --via runs this script through a command that
 starts Python elsewhere, e.g. "ssh my-pc python" or "sudo -n -u other-user -H python3".
-Exits 1 when any update or check fails. See README "Every installation at once".
+Exits 1 when any update or check fails. See docs/reference.md "Every installation at once".
 One file on purpose: --via sends it to the other Python on standard input.
 """
 import argparse

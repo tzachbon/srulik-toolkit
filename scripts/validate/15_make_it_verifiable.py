@@ -59,7 +59,7 @@ miv_contracts = [
         "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/diagnosing-bugs",
         "writing-for-agents",
     ]),
-    (root / "README.md", [
+    (root / "docs" / "reference.md", [
         "$make-it-verifiable Before I add the --json flag",
     ]),
     (skill_root / "execute-task-end-to-end" / "SKILL.md", [

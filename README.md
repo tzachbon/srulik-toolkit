@@ -9,33 +9,25 @@
 [![Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111)](https://github.com/openai/codex)
 [![Cursor](https://img.shields.io/badge/Cursor-supported-000000)](https://cursor.com)
 [![Validate](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml/badge.svg)](https://github.com/tzachbon/srulik-toolkit/actions/workflows/validate.yml)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 **Twenty-six focused skills for understanding, planning, and shipping software with Claude Code, Codex, and Cursor.**
 
-[Install](#install) · [Choose a skill](#choose-a-skill) · [Contribute](CONTRIBUTING.md)
+[Install](#install) · [Skills](#skills) · [Contributing](#contributing) · [Reference](docs/reference.md)
 
 </div>
 
-Srulik Toolkit packages the workflows I use to make sense of incoming requests, turn loose ideas into projects,
-investigate questions, explain topics visually, give guided tours, write and implement plans, make changes verifiable, review changes, keep work in scope, delegate
-suitable tasks, work test-first, and maintain pull requests. It also covers prose
-editing, product videos, merge conflicts, CI failures, session recaps, handoffs, agent takeovers, and session retrospectives.
-
-Each skill works on its own. Install one plugin, then invoke the skill you need
-by name or describe the task in plain language.
+Each skill works on its own. Install the plugin, then name a skill or describe
+the task in plain language.
 
 ## Install
 
 ### Claude Code
 
-Run these commands in Claude Code:
-
 ```text
 /plugin marketplace add tzachbon/srulik-toolkit
 /plugin install srulik-toolkit@srulik-toolkit
 ```
-
-Restart Claude Code after installation.
 
 ### Codex
 
@@ -44,293 +36,77 @@ codex plugin marketplace add tzachbon/srulik-toolkit --ref main
 codex plugin add srulik-toolkit@srulik-toolkit
 ```
 
-Start a new Codex task after installation. Open `/hooks` and trust the plugin
-hook to enable the startup hint. Codex requires separate hook trust after an
-installation or a hook change; installing the plugin alone does not grant it.
+Then open `/hooks` and trust the plugin hook.
 
 ### Cursor
-
-The plugin is not listed in the Cursor Marketplace. Install it as a local plugin:
 
 ```bash
 git clone https://github.com/tzachbon/srulik-toolkit.git
 cp -R srulik-toolkit/plugins/srulik-toolkit ~/.cursor/plugins/local/srulik-toolkit
 ```
 
-Copy the folder instead of symlinking it: Cursor skips a symlink in
-`~/.cursor/plugins/local` that points outside that folder. Restart Cursor or run
-**Developer: Reload Window**, then confirm the skills in Customize. Team
-marketplaces can import this repository through `.cursor-plugin/marketplace.json`.
+Copy the folder instead of symlinking it; Cursor skips outside symlinks. The
+startup hook runs from `hooks/hooks-cursor.json`.
 
 ### Oh My Pi
 
-Add the installed plugin directory to an Oh My Pi profile's `extensions` list.
-Skills load through `skill://<name>`. Skills with host mappings include an
-Oh My Pi reference, observed with Kimi K3.1 Pro. Claude lifecycle hooks, such
-as the startup hint, do not run under Oh My Pi.
+Add the installed plugin directory to a profile's `extensions` list. Skills load
+through `skill://<name>`; lifecycle hooks do not run.
 
-## Startup hint
+Restart your agent after installing. Updates, uninstall, and hook details are in
+the [reference](docs/reference.md).
 
-On a new session, the plugin writes the twenty-six skill names and a short routing
-instruction to model context. Claude Code and Codex use the default
-`hooks/hooks.json` location and run it only for `SessionStart` with the
-`startup` matcher. Cursor runs it from `hooks/hooks-cursor.json` on
-`sessionStart`. It does not run on each prompt or skill invocation.
-
-The same hook checks the installed version against this repository at most once
-every 24 hours and suggests an upgrade only when the versions differ. The
-request times out after two seconds; network and invalid-response failures are
-silent and are not cached. It never upgrades automatically. Skills remain
-available when the hook is disabled, untrusted, or offline.
-
-## Blocked task recovery
-
-When a main agent explicitly ends with a current blocked verdict, the `Stop`
-hook gives it one more turn to inspect the failure and try an authorized route.
-It stays silent for completed work, past blockers, subagents, and a second stop.
-The hook does not grant access, bypass approvals, or turn planning into execution.
-The agent may still report a real blocker after the recovery turn.
-
-Recovery is on by default. Set `SRULIK_TOOLKIT_BLOCKED_STOP=0` in the agent's
-environment before launch to disable only this hook. Codex users must review
-and trust the new `Stop` hook through `/hooks` after updating the plugin.
-Cursor does not run this hook yet.
-
-## Choose a skill
-
-| Skill | Use it when you want to |
-| --- | --- |
-| [`can-you-help`](plugins/srulik-toolkit/skills/can-you-help/SKILL.md) | Make sense of a supplied request, handle clear work, or decide together what help is needed. |
-| [`to-project`](plugins/srulik-toolkit/skills/to-project/SKILL.md) | Turn an idea or an existing folder into a project with durable context. |
-| [`create-plan`](plugins/srulik-toolkit/skills/create-plan/SKILL.md) | Research, draft, review, and revise an execution-ready plan until no actionable comments remain. |
-| [`implement-plan`](plugins/srulik-toolkit/skills/implement-plan/SKILL.md) | Execute an approved plan, integrate and verify tasks, then repeat review and fixes until no actionable comments remain. |
-| [`skill-creator`](plugins/srulik-toolkit/skills/skill-creator/SKILL.md) | Create or edit a skill through mandatory planning and implementation, compare real outputs, and improve it with human review. |
-| [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Create a pull request with review evidence, required UI proof in the description for UI changes, merge danger, and blast radius. |
-| [`execute-task-end-to-end`](plugins/srulik-toolkit/skills/execute-task-end-to-end/SKILL.md) | Explicitly request the full workflow: plan, issue, implementation, and a PR driven to `MERGE READY`, or verified `MERGED` when authorized, closing with a `recap`. The whole task runs as one live agent graph from the request onward. |
-| [`ui-ux-review`](plugins/srulik-toolkit/skills/ui-ux-review/SKILL.md) | Validate every in-scope user story against actual design images, rendered screens, and the project's design system without changing it. |
-| [`make-it-verifiable`](plugins/srulik-toolkit/skills/make-it-verifiable/SKILL.md) | Before a change, pair each claim with a check that must fail before it counts, and flag claims no check can prove yet; after it, find and prove what is still unverified. |
-| [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a local diff, branch, or pull request without changing it, using a three-vendor reviewer panel with scores and rounds that carry across reruns, plus a `ui-ux-review` pass when the change alters rendered UI. |
-| [`stay-in-scope`](plugins/srulik-toolkit/skills/stay-in-scope/SKILL.md) | Re-establish the requested boundary when work starts to drift. |
-| [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Split independent work across available child agents and verify the result. Every swarm runs as a YAML graph, picking each node's model from benchmarks, leaderboards, your notes, quota and past results, with a live local view. Graphs can loop, wait on you, order work by dependency and skip steps; [`graphs/task.yaml`](plugins/srulik-toolkit/skills/agent-swarm/graphs/task.yaml) runs a whole task end to end, and [`graphs/pr-review.yaml`](plugins/srulik-toolkit/skills/agent-swarm/graphs/pr-review.yaml) reviews a PR. |
-| [`tdd`](plugins/srulik-toolkit/skills/tdd/SKILL.md) | Build one behavior at a time through red, green, and refactor. |
-| [`keep-it-simple`](plugins/srulik-toolkit/skills/keep-it-simple/SKILL.md) | Find the smallest correct plan or implementation after understanding the affected flow. |
-| [`research`](plugins/srulik-toolkit/skills/research/SKILL.md) | Investigate a question and produce a cited report with evidence gaps. |
-| [`tour`](plugins/srulik-toolkit/skills/tour/SKILL.md) | Research a topic's history and current flow as a sourced visual narrative. |
-| [`show-me`](plugins/srulik-toolkit/skills/show-me/SKILL.md) | Explain the current topic with concise diagrams and focused visual artifacts. |
-| [`stop-slop`](plugins/srulik-toolkit/skills/stop-slop/SKILL.md) | Edit prose for direct language while preserving facts and uncertainty. |
-| [`video-creation`](plugins/srulik-toolkit/skills/video-creation/SKILL.md) | Build a product or demo video from code: safe real-app footage, frame-exact rendering, original music timed to the cuts, and a contact-sheet review. |
-| [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Keep PR monitoring in this conversation, with a low-cost child subagent for triage and the parent handling fixes and authorized merging until closure. |
-| [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts by preserving the intended behavior of both sides. |
-| [`fix-ci`](plugins/srulik-toolkit/skills/fix-ci/SKILL.md) | Diagnose failing checks, apply the smallest repair, and verify the result. |
-| [`recap`](plugins/srulik-toolkit/skills/recap/SKILL.md) | Get a short, plain-language catch-up on a session: the whole thread around its goal, or focused on a topic you add. |
-| [`handoff`](plugins/srulik-toolkit/skills/handoff/SKILL.md) | Explicitly write a compact, redacted continuation document in OS temporary storage for another agent; optionally focus the next session. |
-| [`takeover`](plugins/srulik-toolkit/skills/takeover/SKILL.md) | Take over another agent's work: check its claims, list scope creep, state why you switched, then continue or wait for your confirmation. |
-| [`retro`](plugins/srulik-toolkit/skills/retro/SKILL.md) | Learn from a coding session and propose evidence-backed improvements to the agent's environment. Adapted from Matt Pocock. |
-
-Example prompts:
+## Skills
 
 ```text
-$can-you-help Here is a Slack thread. Can you help?
 $create-plan Add offline support to this app
-$create-plan Add offline support to this app. Be autonomous and answer the grill for me.
-$implement-plan Execute the approved plan in docs/offline-plan.md
-$srulik-toolkit:skill-creator Create a skill for release notes and evaluate it on real examples
-$execute-task-end-to-end Add offline support and drive its PR to MERGE READY
-$create-pr Open a pull request for the current changes
-$make-it-verifiable Before I add the --json flag, how do we make this fully verifiable?
 $review-pro-max Review the changes on my current branch
-$ui-ux-review Review the checkout flow for usability and accessibility
-$tdd Implement expiration for cached sessions
-$research Trace how this repository handles retries
-$tour How did this repository's PR review workflow evolve?
-$show-me Explain the current request flow
-$video-creation Make a 90-second product video of the new import flow
-$fix-ci Diagnose and fix the failing checks on this pull request
-$recap Catch me up on this thread from the beginning
-$handoff Focus the next session on the failing CI job
-$takeover The other agent added things I didn't ask for; take over from here
-$retro Review this session and suggest environment improvements
+$execute-task-end-to-end Add offline support and drive its PR to MERGE READY
 ```
 
-Claude Code may expose skills as slash commands. Codex uses `$skill-name`.
-Plain-language requests can trigger a matching skill in either tool, except
-`handoff`, which preserves upstream’s explicit invocation policy. `handoff` writes
-outgoing notes; `takeover` verifies incoming work before continuing.
+| Skill | Use it to |
+| --- | --- |
+| [`can-you-help`](plugins/srulik-toolkit/skills/can-you-help/SKILL.md) | Figure out what a supplied request needs. |
+| [`to-project`](plugins/srulik-toolkit/skills/to-project/SKILL.md) | Turn an idea or folder into a project. |
+| [`create-plan`](plugins/srulik-toolkit/skills/create-plan/SKILL.md) | Research and write an execution-ready plan. |
+| [`implement-plan`](plugins/srulik-toolkit/skills/implement-plan/SKILL.md) | Execute an approved plan with review loops. |
+| [`skill-creator`](plugins/srulik-toolkit/skills/skill-creator/SKILL.md) | Create, edit, and evaluate a skill. |
+| [`create-pr`](plugins/srulik-toolkit/skills/create-pr/SKILL.md) | Open a PR with review evidence. |
+| [`execute-task-end-to-end`](plugins/srulik-toolkit/skills/execute-task-end-to-end/SKILL.md) | Go from request to a merge-ready PR. |
+| [`ui-ux-review`](plugins/srulik-toolkit/skills/ui-ux-review/SKILL.md) | Review UI against real renders and the design system. |
+| [`make-it-verifiable`](plugins/srulik-toolkit/skills/make-it-verifiable/SKILL.md) | Pair every claim with a check proven to fail first. |
+| [`review-pro-max`](plugins/srulik-toolkit/skills/review-pro-max/SKILL.md) | Review a diff, branch, or PR. |
+| [`stay-in-scope`](plugins/srulik-toolkit/skills/stay-in-scope/SKILL.md) | Pull drifting work back to the request. |
+| [`agent-swarm`](plugins/srulik-toolkit/skills/agent-swarm/SKILL.md) | Run work across child agents as a live graph. |
+| [`tdd`](plugins/srulik-toolkit/skills/tdd/SKILL.md) | Build test-first, red-green-refactor. |
+| [`keep-it-simple`](plugins/srulik-toolkit/skills/keep-it-simple/SKILL.md) | Find the smallest correct plan or change. |
+| [`research`](plugins/srulik-toolkit/skills/research/SKILL.md) | Produce a cited report on a question. |
+| [`tour`](plugins/srulik-toolkit/skills/tour/SKILL.md) | Explain how something evolved, with visuals. |
+| [`show-me`](plugins/srulik-toolkit/skills/show-me/SKILL.md) | Explain a topic with diagrams. |
+| [`stop-slop`](plugins/srulik-toolkit/skills/stop-slop/SKILL.md) | Tighten prose without losing facts. |
+| [`video-creation`](plugins/srulik-toolkit/skills/video-creation/SKILL.md) | Build a product video from code. |
+| [`pr-babysit`](plugins/srulik-toolkit/skills/pr-babysit/SKILL.md) | Watch a PR through CI and review. |
+| [`resolving-merge-conflicts`](plugins/srulik-toolkit/skills/resolving-merge-conflicts/SKILL.md) | Resolve conflicts keeping both sides' intent. |
+| [`fix-ci`](plugins/srulik-toolkit/skills/fix-ci/SKILL.md) | Diagnose and fix failing checks. |
+| [`recap`](plugins/srulik-toolkit/skills/recap/SKILL.md) | Catch up on a session. |
+| [`handoff`](plugins/srulik-toolkit/skills/handoff/SKILL.md) | Write notes for the next agent. |
+| [`takeover`](plugins/srulik-toolkit/skills/takeover/SKILL.md) | Verify and continue another agent's work. |
+| [`retro`](plugins/srulik-toolkit/skills/retro/SKILL.md) | Learn from a session. Adapted from Matt Pocock. |
 
-`skill-creator` uses `create-plan` and `implement-plan` for every skill creation
-or edit, including small changes, then reviews the authored change through
-`review-pro-max`. Executing a covered task reads its authoring references inside
-the approved plan; it does not recursively restart planning. Evaluation-only
-requests can compare outputs without editing a skill. Use the namespaced name
-to distinguish this adaptation from a host's built-in skill with the same name.
+More examples are in the [reference](docs/reference.md#example-prompts); how skills
+hand off to each other is in [docs/workflow.md](docs/workflow.md).
 
-The portable workflow runs actual target tasks and independent no-skill or
-old-skill baselines, preserves unknown telemetry, and uses equal fixture weights
-for benchmarks. Its offline static viewer exports completed feedback; synthetic
-feedback proves plumbing, while human acceptance is recorded separately.
-Automatic description optimization is optional, Claude-specific, and currently
-POSIX-only. It is not a prerequisite for portable authoring or evaluation.
-Runtime evidence identifies the exact isolated installation and platform tested;
-repository checks alone do not prove both native workflows or current-session
-activation. Installing a shared copy is a separate action.
+## Contributing
 
-## How the toolkit fits together
+Contributions of any size are welcome.
 
-See [docs/workflow.md](docs/workflow.md) for the common feature flow, review loops,
-planning research, and how the skills hand off to each other.
+- Bugs, questions, and skill ideas: [open an issue](https://github.com/tzachbon/srulik-toolkit/issues/new/choose).
+- Pull requests: read [CONTRIBUTING.md](CONTRIBUTING.md), then run `./scripts/validate.sh`.
+- Vulnerabilities: report privately via [SECURITY.md](SECURITY.md).
+- Maintainers: see [srulik-toolkit-release](.agents/skills/srulik-toolkit-release/SKILL.md).
 
-## Optional tools
+This project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-- `review-pro-max` can use GitHub CLI for pull requests. It can also run
-  CodeRabbit when you opt in and the command is installed and authenticated.
-  CodeRabbit may send source outside the local machine.
-- `review-pro-max` uses a three-vendor reviewer panel on a harness with a host
-  mapping (T3 Code); on other harnesses it asks before launching child agents, and keeps a round ledger in the OS temporary
-  directory so a rerun after fixes sees earlier findings.
-- `agent-swarm` and `research` use available child-agent controls when useful.
-  They can work inline when those controls are unavailable.
-- `create-pr`, `pr-babysit`, and `fix-ci` can use an authenticated GitHub CLI
-  or an equivalent connector for checks, logs, and pull requests. Local checks
-  use the project toolchain.
-- `pr-babysit` uses a subagent under the original conversation for bounded
-  read-only triage. The parent owns the native PR watch, receives completion
-  and PR events, applies fixes, and merges only with explicit authority. It
-  never creates a separate babysitter conversation. Listening continues after
-  green CI and quiet passes until closure or STOP; an explicit end-to-end
-  invocation uses its own terminal gate. Hosts missing child/result/watch
-  capabilities report the limitation. T3 Code's tool mapping is in
-  [`plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md`](plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md).
-- `agent-swarm` and `pr-babysit` use
-  `plugins/srulik-toolkit/scripts/models.js` for model facts from the public
-  [Artificial Analysis](https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index)
-  dataset without an API key. Like `aa-models`, it lists effort variants, prices
-  and benchmarks, filters by provider or model name, and caches for 24 hours
-  with background refresh. `list` includes usage from the host's `aa-models usage`
-  command when available; otherwise quota remains unknown. `--frontier` keeps
-  existing price/intelligence comparisons working. The host's runnable-model
-  catalog determines availability. If model data is unavailable, use a host
-  benchmark tool or disclose the gap and use judgment.
-- `to-project` can search public skill catalogs when you ask. It requires your
-  approval before installing another skill.
+## License
 
-## Optional companion plugin
-
-[Smart Ralph](https://github.com/tzachbon/smart-ralph#installation) provides an end-to-end,
-specification-driven workflow for persistent engineering work across multiple
-sessions. Srulik Toolkit keeps its skills focused and independently invokable;
-Smart Ralph remains a separately installed and versioned companion.
-
-When a `create-plan` request is a strong fit, the skill offers a handoff once.
-You choose whether to receive the official installation instructions or keep
-planning with Srulik Toolkit. It never installs Smart Ralph automatically.
-
-## Update or remove
-
-Maintainers releasing this repository and updating their machines can use the
-repository-only [srulik-toolkit-release](.agents/skills/srulik-toolkit-release/SKILL.md)
-skill. It lives in `.agents/skills/` and is not included in the plugin package.
-
-### Claude Code
-
-```text
-/plugin marketplace update srulik-toolkit
-/plugin update srulik-toolkit@srulik-toolkit
-
-/plugin uninstall srulik-toolkit@srulik-toolkit
-/plugin marketplace remove srulik-toolkit
-```
-
-### Codex
-
-```bash
-codex plugin marketplace upgrade srulik-toolkit
-
-codex plugin remove srulik-toolkit@srulik-toolkit
-codex plugin marketplace remove srulik-toolkit
-```
-
-In Cursor, pull the clone and replace `~/.cursor/plugins/local/srulik-toolkit`
-with a fresh copy. Delete that folder to remove the plugin.
-
-Restart Claude Code or Cursor, or start a new Codex task, after updating. In
-Codex, open `/hooks` again and review trust if the hook changed.
-
-### Every installation at once
-
-From a clone, `python3 scripts/update-installs.py` runs the commands above for
-every installation the current account has, each from its configured source:
-Claude Code for the user and each live project, Codex, and a Cursor local copy.
-The Cursor copy is replaced from the Codex source, or the Claude Code source when
-Codex has none, so a Cursor-only account reports it as unchecked. The script also
-moves skill symlinks that point at an older toolkit cache, and rewrites copied
-skills in the usual skill folders when they match an installed toolkit version,
-keeping each copy's `name:` line. Edited copies, including ones with added files,
-are left alone. Then it checks that the installed files match the
-source and that a fresh Claude Code and Codex process loads every skill. It exits
-non-zero on any failure.
-
-- `--check` verifies without changing anything.
-- `--via COMMAND` repeats the run through a command that starts Python on another
-  account or machine, such as `--via "ssh my-pc python"` or
-  `--via "sudo -n -u other-user -H python3"`. Repeat it for each target.
-
-## Windows
-
-Use the same plugin commands in the shell supported by your Claude Code or
-Codex installation. The startup checker and recovery hook use Node.js and have no other
-runtime dependency.
-
-Repository validation uses Bash and Python 3. On Windows, run it from Git Bash
-with Python 3 on `PATH`. The CI matrix checks Linux, macOS, and Windows, including
-the native Windows PowerShell and `cmd.exe` echo behavior. Project work may
-require the tools used by that project.
-
-## Local development
-
-Clone the repository and run its checks:
-
-```bash
-git clone https://github.com/tzachbon/srulik-toolkit.git
-cd srulik-toolkit
-./scripts/validate.sh
-```
-
-Load the local Claude Code plugin with:
-
-```bash
-claude --plugin-dir ./plugins/srulik-toolkit
-```
-
-For Codex, register the checkout as a local marketplace:
-
-```bash
-codex plugin marketplace add .
-codex plugin add srulik-toolkit@srulik-toolkit
-```
-
-For Cursor, see [CONTRIBUTING.md](CONTRIBUTING.md). The repository keeps the same skill payload for all three tools:
-
-```text
-srulik-toolkit/
-├── .agents/plugins/marketplace.json
-├── .claude-plugin/marketplace.json
-├── .cursor-plugin/marketplace.json
-├── plugins/srulik-toolkit/
-│   ├── .claude-plugin/plugin.json
-│   ├── .codex-plugin/plugin.json
-│   ├── .cursor-plugin/plugin.json
-│   ├── hooks/hooks.json
-│   ├── hooks/hooks-cursor.json
-│   └── skills/
-└── scripts/validate.sh
-```
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Use the
-[issue tracker](https://github.com/tzachbon/srulik-toolkit/issues) for bugs,
-skill ideas, and questions. Report security concerns through
-[SECURITY.md](SECURITY.md).
-
-## License and notices
-
-Srulik Toolkit is available under the [MIT License](LICENSE). [NOTICE.md](NOTICE.md)
-records source and optional-tool notices.
+[MIT](LICENSE). Source notices are in [NOTICE.md](NOTICE.md).
