@@ -39,7 +39,7 @@ const first=imports.filter((e,i)=>imports.findIndex(o=>o.name===e.name)===i).map
 const projCfg=path.resolve("config","mcporter.json");
 const layer=(f)=>{try{return Object.keys(JSON.parse(fs.readFileSync(f,"utf8")).mcpServers).map(name=>({name,source:{kind:"local",path:f}}))}catch{return[]}};
 const local=()=>{if(process.env.FAKE_LOCAL_THROW&&!raw.includes("--config"))process.exit(1);return lst();};
-const lst=()=>process.env.FAKE_LOCAL_EMPTY&&!raw.includes("--config")?[]:dedup([...(raw.includes("--config")?[]:layer(projCfg)),...Object.keys(read().mcpServers).map(name=>({name,source:{kind:"local",path:cfg}}))]);
+const lst=()=>process.env.FAKE_LOCAL_EMPTY&&!raw.includes("--config")?[]:dedup([...(raw.includes("--config")?[]:layer(projCfg)),...Object.entries(read().mcpServers).map(([name,d])=>({name,source:{kind:"local",path:cfg},...(d.cwd&&{cwd:d.cwd})}))]);
 // Like mcporter 0.17, the default claude-code paths skip a project .mcp.json.
 if(a[0]==="config"&&a[1]==="import"&&file&&/broken-editor/.test(fs.readFileSync(file,"utf8"))){console.error("bad config");process.exit(1);}
 if(a[0]==="config"&&a[1]==="import")console.log(JSON.stringify({entries:dedup(imports.filter(e=>e.kind===a[2]&&(file?e.path===file:!e.path.endsWith(".mcp.json")))).map(e=>({name:e.name,entry:{command:"run-"+e.name,...(e.differ&&{args:[e.path]})},source:e.path}))}));

@@ -18,7 +18,20 @@ function servers() {
     if (Date.now() - fs.statSync(serverCache()).mtimeMs < ttl) return stale;
   } catch {}
   try {
-    const names = [...new Set(listServers([], { timeout: 5_000 }).map((s) => s.name))].sort();
+    const here = path.resolve(process.cwd());
+    // Native copies this project still loads from its own .mcp.json.
+    let native = {};
+    let off = [];
+    try {
+      native = JSON.parse(fs.readFileSync(path.join(here, ".mcp.json"), "utf8")).mcpServers || {};
+      off = JSON.parse(fs.readFileSync(path.join(here, ".claude", "settings.local.json"), "utf8")).disabledMcpjsonServers || [];
+    } catch {}
+    // Not a replacement here: a server bound to another project's folder, or a
+    // name this project still defines and loads natively (setup never ran here).
+    // ponytail: other per-project sources (.claude.json local scope, .codex) are
+    // not checked here. Upgrade: compare against setup's per-project import.
+    const elsewhere = (s) => s.cwd && path.resolve(s.cwd) !== here && path.resolve(s.cwd) !== path.dirname(path.resolve(s.source?.path || ""));
+    const names = [...new Set(listServers([], { timeout: 5_000 }).filter((s) => !elsewhere(s) && !(s.name in native && !off.includes(s.name))).map((s) => s.name))].sort();
     writeJson(serverCache(), names);
     return names;
   } catch (err) {

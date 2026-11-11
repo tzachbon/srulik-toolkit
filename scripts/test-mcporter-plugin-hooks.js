@@ -68,6 +68,28 @@ fs.writeFileSync(path.join(tmp, "data with 'space", "conflicts.json"), JSON.stri
 assert.equal(execFileSync(process.execPath, [path.join(plugin, "hooks", "redirect-mcp.js")], { env: { ...env, MCPORTER_HOOK_MODE: "block" }, encoding: "utf8", input: JSON.stringify({ tool_name: "mcp__my_srv__delete_item", tool_input: {}, cwd: other }) }), "");
 fs.writeFileSync(cacheNow, savedCache);
 fs.rmSync(path.join(tmp, "data with 'space", "conflicts.json"));
+// Opening project B (no setup there): a server bound to project A's folder,
+// or a name B still loads from its own .mcp.json, is not offered as a redirect.
+{
+  const b = path.join(tmp, "proj-b");
+  fs.mkdirSync(b, { recursive: true });
+  const homeCfg = path.join(tmp, "home", ".config", "mcporter", "mcporter.json");
+  const saved = fs.existsSync(homeCfg) ? fs.readFileSync(homeCfg) : null;
+  fs.mkdirSync(path.dirname(homeCfg), { recursive: true });
+  fs.writeFileSync(homeCfg, JSON.stringify({ mcpServers: { pbound: { command: "x", cwd: path.join(tmp, "proj-a") }, both: { command: "y" }, free: { command: "z" } } }));
+  fs.writeFileSync(path.join(b, ".mcp.json"), JSON.stringify({ mcpServers: { both: { command: "y" } } }));
+  const hintB = execFileSync(process.execPath, [path.join(plugin, "hooks", "session-hint.js")], { env, encoding: "utf8", cwd: b });
+  assert.match(hintB, /\bfree\b/);
+  assert.doesNotMatch(hintB, /pbound|\bboth\b/);
+  assert.equal(execFileSync(process.execPath, [path.join(plugin, "hooks", "redirect-mcp.js")], { env: { ...env, MCPORTER_HOOK_MODE: "block" }, encoding: "utf8", input: JSON.stringify({ tool_name: "mcp__pbound__delete_item", tool_input: {}, cwd: b }) }), "");
+  // Once setup switched B's copy off, the name is a replacement again.
+  fs.mkdirSync(path.join(b, ".claude"));
+  fs.writeFileSync(path.join(b, ".claude", "settings.local.json"), JSON.stringify({ disabledMcpjsonServers: ["both"] }));
+  fs.rmSync(path.join(tmp, "data with 'space", path.basename(serverCache(b))));
+  assert.match(execFileSync(process.execPath, [path.join(plugin, "hooks", "session-hint.js")], { env, encoding: "utf8", cwd: b }), /\bboth\b/);
+  if (saved) fs.writeFileSync(homeCfg, saved);
+  else fs.rmSync(homeCfg);
+}
 const piped = run("hooks/redirect-mcp.js", [], JSON.stringify({ tool_name: "mcp__inv__get_item", tool_input: { id: "a" }, cwd: other }));
 assert.match(JSON.parse(piped).hookSpecificOutput.additionalContext, /'id:a'/);
 
