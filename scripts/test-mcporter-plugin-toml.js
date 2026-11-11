@@ -1,6 +1,6 @@
-// Codex TOML editing in setup.js (disableCodex), a pure function. Run through test-mcporter-plugin.js.
+// Codex TOML editing (codex-toml.js disableCodex), a pure function. Run through test-mcporter-plugin.js.
 const { assert, path, plugin } = require("./mcporter-plugin-test-fixture");
-const { disableCodex } = require(path.join(plugin, "scripts", "setup.js"));
+const { disableCodex } = require(path.join(plugin, "scripts", "codex-toml.js"));
 // A table with a multi-line string is left alone and reported.
 const ml = disableCodex('[mcp_servers.m]\nargs = ["-e", """\nenabled = true;\n"""]\nenabled = true\n', ["m"]);
 assert.deepEqual(ml.missed, ["m"]);

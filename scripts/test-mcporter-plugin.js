@@ -201,9 +201,12 @@ fs.writeFileSync(projectCodex, projectBefore);
 // not migrated, native copy left enabled.
 fs.mkdirSync(path.join(proj, "config"));
 fs.writeFileSync(path.join(proj, "config", "mcporter.json"), JSON.stringify({ mcpServers: { inv: { command: "other" } } }));
+fs.rmSync(path.join(tmp, "data with 'space", "conflicts.json"), { force: true });
 const shadow = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "inv"]));
 assert.match(shadow.failed[0]?.reason ?? "", /shadowed by .*config[\\/]mcporter\.json/);
 assert.deepEqual(shadow.disabled.claude, []);
+// The hooks then leave the native inv alone.
+assert.deepEqual(JSON.parse(fs.readFileSync(path.join(tmp, "data with 'space", "conflicts.json"), "utf8")), ["inv"]);
 execFileSync("sh", ["-c", shadow.undo], { env, cwd: proj });
 fs.rmSync(path.join(proj, "config"), { recursive: true });
 

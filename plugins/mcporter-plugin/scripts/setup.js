@@ -7,6 +7,7 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
+const { disableCodex, codexHasCwd } = require("./codex-toml");
 const { claudeDir, claudeJson, conflictFile, conflicted, onPath, home, dataRoot, mcporter, listServers, importedSources, mcporterHomeConfig, writeJson, writeText } = require("./mcporter-common");
 
 const claudeSettings = () => path.join(claudeDir(), "settings.json");
@@ -62,52 +63,6 @@ function addNames(file, at, names) {
   writeJson(file, value);
 }
 
-// Codex: set `enabled = false` inside each [mcp_servers.<name>] table.
-// Returns the new text and the names whose table was not found (for example an
-// inline-table definition); those are reported for manual action, never as disabled.
-function disableCodex(text, names) {
-  // ponytail: no TOML parser in the stdlib. A multi-line string anywhere could
-  // hide or fake a table header or an `enabled` line, so such a file is left
-  // for manual action. Upgrade: a real TOML parser.
-  if (text.includes('"""') || text.includes("'''")) return { text, missed: [...names] };
-  const missed = [];
-  for (const name of names) {
-    const table = codexTable(text, name);
-    if (!table) {
-      missed.push(name);
-      continue;
-    }
-    const { start, end, body } = table;
-    const key = /^([ \t]*)(?:enabled|"enabled"|'enabled')[ \t]*=.*$/m;
-    const newBody = key.test(body) ? body.replace(key, "$1enabled = false") : `\nenabled = false${body}`;
-    text = text.slice(0, start) + newBody + text.slice(end);
-  }
-  return { text, missed };
-}
-// The [mcp_servers.<name>] table body, or null.
-function codexTable(text, name) {
-  const n = escape(name);
-  const header = new RegExp(`^[ \\t]*\\[[ \\t]*mcp_servers[ \\t]*\\.[ \\t]*(?:"${n}"|'${n}'|${n})[ \\t]*\\][ \\t]*(?:#.*)?$`, "m");
-  const match = header.exec(text);
-  if (!match) return null;
-  const start = match.index + match[0].length;
-  const next = text.slice(start).search(/^[ \t]*\[/m);
-  const end = next === -1 ? text.length : start + next;
-  return { start, end, body: text.slice(start, end) };
-}
-
-// mcporter 0.17's Codex import drops `cwd`, so the copy would start elsewhere.
-// When the table cannot be located (an inline table), any `cwd` in the file counts.
-const codexHasCwd = (s) => {
-  try {
-    const text = fs.readFileSync(s.path, "utf8");
-    // A multi-line string can fake the table header, so then check the whole file.
-    const table = /"""|'''/.test(text) ? null : codexTable(text, s.name);
-    return table ? /^[ \t]*(?:cwd|"cwd"|'cwd')[ \t]*=/m.test(table.body) : /(?:^|[{,\s])["']?cwd["']?[ \t]*=/m.test(text);
-  } catch {
-    return true;
-  }
-};
 
 // ~/.claude.json holds user-scope servers and one block per project, but
 // mcporter returns only one definition per name. The denylist is name-wide,
@@ -145,7 +100,6 @@ const groupBy =(xs, key) => {
   for (const x of xs) m.set(key(x), [...(m.get(key(x)) || []), x]);
   return m;
 };
-const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function apply(names, dryRun) {
   // After setup the hint, hook and skill call a bare `mcporter`. The npx
@@ -265,7 +219,11 @@ function apply(names, dryRun) {
       // Only a positive match counts: no result means ordinary calls (for
       // example with MCPORTER_CONFIG set) would not find the server at all.
       if (!effective) status = "not found by ordinary mcporter discovery (is MCPORTER_CONFIG set?)";
-      else if (path.resolve(effective) !== path.resolve(mcporterHome)) status = `shadowed by ${effective}`;
+      else if (path.resolve(effective) !== path.resolve(mcporterHome)) {
+        status = `shadowed by ${effective}`;
+        // Ordinary calls reach that other definition, not this native server.
+        conflictNames.add(name);
+      }
     }
     const entry = { name, from: ref, native, status, ...(nameOnly && { claudeConflict: true }) };
     if (status === "ok") receipt.migrated.push(entry);
@@ -323,14 +281,13 @@ function apply(names, dryRun) {
   receipt.manual = manual.map((c) => `${c.name} (${c.kind}: ${c.path}): disable it in that editor`);
 
   if (!dryRun) {
-    // Names in mcporter whose native copy here is another backend (including
-    // one rejected because mcporter already holds a different definition): the
-    // hint and the redirect hook leave those to the native tools.
-    let inMcporter = new Set();
-    try {
-      inMcporter = new Set(Object.keys(JSON.parse(fs.readFileSync(mcporterHome, "utf8")).mcpServers || {}));
-    } catch {}
-    const next = new Set([...conflicted(), ...[...conflictNames].filter((n) => inMcporter.has(n))]);
+    // Names whose native copy here is another backend than the one mcporter
+    // reaches (defined differently, already held differently, or shadowed by a
+    // project config): the hint and the redirect hook leave those native.
+    // ponytail: the list is shared by all projects, so a name skipped for one
+    // project is skipped everywhere (safe: the native tool keeps working).
+    // Upgrade: a per-project list.
+    const next = new Set([...conflicted(), ...conflictNames]);
     if (next.size !== conflicted().size || [...next].some((n) => !conflicted().has(n))) {
       keep(conflictFile());
       writeJson(conflictFile(), [...next].sort());
@@ -390,5 +347,3 @@ if (require.main === module) {
   }
   console.log(JSON.stringify(out, null, 2));
 }
-
-module.exports = { disableCodex };
