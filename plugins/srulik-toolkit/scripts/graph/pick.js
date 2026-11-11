@@ -102,13 +102,14 @@ function pick(node, candidates, data, ctx = {}) {
   const otherCreator = c => !excluded.length || (c.creator !== null && !excluded.includes(creatorKey(c.creator)));
   // differ_from is strict. Only an explicit same-creator fallback, for a host with one provider, keeps the
   // excluded creator when nothing else is left, and the reason says the review is not independent.
-  const relaxed = ctx.fallback === 'same-creator' && excluded.length > 0 && !pool.some(otherCreator);
-  const independence = !excluded.length ? null : relaxed ? 'same-creator' : 'different-creator';
-  if (!relaxed) drop('creator', otherCreator);
   drop('excluded', c => !(ctx.exclude_models ?? []).includes(c.model));
   // An account at the limit filters every candidate whose creator or provider instance it names.
   const hot = new Set((data.usage?.accounts ?? []).filter(a => (a.windows ?? []).some(w => w.used_percent >= QUOTA_LIMIT)).map(a => creatorKey(a.provider)));
   drop('quota', c => !hot.has(creatorKey(c.creator)) && !hot.has(creatorKey(c.provider)));
+  // decided after the hard filters, so an independent candidate that can't run doesn't block the fallback
+  const relaxed = ctx.fallback === 'same-creator' && excluded.length > 0 && !pool.some(otherCreator);
+  const independence = !excluded.length ? null : relaxed ? 'same-creator' : 'different-creator';
+  if (!relaxed) drop('creator', otherCreator);
 
   if (node.model) {
     const [model, effort] = node.model.split(' @ ');

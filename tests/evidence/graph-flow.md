@@ -157,10 +157,10 @@ A fresh T3 thread ran `execute-task-end-to-end` from this PR's code at `0eff204`
 
 | Stage | Light | Dark |
 | --- | --- | --- |
-| research | ![](graph-flow/live/research-light.png) | ![](graph-flow/live/research-dark.png) |
-| implementation | ![](graph-flow/live/implement-light.png) | ![](graph-flow/live/implement-dark.png) |
-| review round 1 | ![](graph-flow/live/review-light.png) | ![](graph-flow/live/review-dark.png) |
-| MERGE READY | ![](graph-flow/live/merge-ready-light.png) | ![](graph-flow/live/merge-ready-dark.png) |
+| research | ![Live run, light theme: research node running, other nodes waiting](graph-flow/live/research-light.png) | ![Live run, dark theme: research node running, other nodes waiting](graph-flow/live/research-dark.png) |
+| implementation | ![Live run, light theme: implement fan-out running after the plan loop finished in round 3](graph-flow/live/implement-light.png) | ![Live run, dark theme: implement fan-out running after the plan loop finished in round 3](graph-flow/live/implement-dark.png) |
+| review round 1 | ![Live run, light theme: three review instances (bugs, perf, security) running after the PR was opened](graph-flow/live/review-light.png) | ![Live run, dark theme: three review instances (bugs, perf, security) running after the PR was opened](graph-flow/live/review-dark.png) |
+| MERGE READY | ![Live run, light theme: babysit done at MERGE READY, merge skipped, recap waiting on the orchestrator](graph-flow/live/merge-ready-light.png) | ![Live run, dark theme: babysit done at MERGE READY, merge skipped, recap waiting on the orchestrator](graph-flow/live/merge-ready-dark.png) |
 
 The run reported six defects. The owner then asked that thread to open issues and fix them, so they are tracked outside this PR:
 - #79–#81 (a stale `aa-models` reference, no retry on a flaky Arena fetch, and `validate.sh` scanning ignored `__pycache__`) are fixed in #85 against `main`;
