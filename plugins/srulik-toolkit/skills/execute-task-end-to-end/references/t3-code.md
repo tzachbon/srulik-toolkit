@@ -84,9 +84,9 @@ uses the documented parent watch and asynchronous child-result delivery. The
 complete issue-to-merge workflow has not been exercised in a fresh session;
 file checks and contract tests do not establish runtime verification.
 
-## Graph review
+## Task graph
 
-Run the `pr-review` graph and its live page as [agent-swarm's T3 graph mapping](../../agent-swarm/references/t3-code.md) describes. The graph's children are graph work, not the triage child, so the one-active-child rule above does not apply to them.
+Run `graphs/task.yaml` and its live page from the start of the task, as [agent-swarm's T3 graph mapping](../../agent-swarm/references/t3-code.md) describes. The graph's children are graph work, not the triage child, so the one-active-child rule above does not apply to them. The `babysit` parent task uses the main watch above: while it waits, end the turn with the watch active, and call `next` when an event wakes you; the open task comes back marked `resumed`.
 
 ## Waiting and questions
 

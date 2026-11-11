@@ -27,9 +27,11 @@ with current-head evidence and monitoring stopped. Explicit merge authority
 requires verified `MERGED` and linked issue closure. Pending checks, missing
 approvals and inaccessible evidence remain incomplete. This workflow uses
 `pr-babysit`'s parent/subagent ownership and overrides its standalone stop
-conditions; it creates no separate top-level babysitter. It also reviews the PR
-with `agent-swarm`'s `pr-review` graph after the PR opens and after each fix push,
-until a run confirms nothing new, and keeps the graph's live page open. When no hosted Git repository tracks the change, such as a fix to a server's live
+conditions; it creates no separate top-level babysitter. It runs the whole task
+as `agent-swarm`'s `task` graph, from the request onward, and keeps the graph's live
+page open: research, grill rounds, plan-review rounds, the issue, implementation in
+dependency order, the PR, review rounds until one confirms nothing new, babysitting,
+merge and recap. When no hosted Git repository tracks the change, such as a fix to a server's live
 configuration, the workflow skips the issue and PR and ends at `DONE`: the change
 proven on its target, with a rollback path. Full end-to-end runtime behavior remains unverified.
 

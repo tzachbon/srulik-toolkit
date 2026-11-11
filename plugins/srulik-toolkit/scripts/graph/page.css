@@ -34,11 +34,14 @@ padding:9px 12px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .node .d,.node .a,.node .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .node .d{color:var(--muted);font-size:13px;margin-top:3px}.node .a{margin-top:5px;font-size:13px;color:var(--run)}
 .chip{font-size:12px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap;background:var(--wait-bg);color:var(--wait)}
-.s-running,.s-retrying{border-color:var(--run)}.s-running .chip,.s-retrying .chip{background:var(--run-bg);color:var(--run)}
+.s-running,.s-retrying,.parent.s-waiting{border-color:var(--run)}.s-running .chip,.s-retrying .chip,.parent .chip{background:var(--run-bg);color:var(--run)}
 .s-done{border-color:var(--ok)}.s-done .chip{background:var(--ok-bg);color:var(--ok)}
 .s-failed,.s-blocked{border-color:var(--bad)}.s-failed .chip,.s-blocked .chip{background:var(--bad-bg);color:var(--bad)}
 .s-dropped,.s-skipped{border-color:var(--skip);border-style:dashed}.s-dropped .chip,.s-skipped .chip{background:var(--skip-bg);color:var(--skip)}
 .s-waiting{border-left-color:var(--wait)}
+.node.parent{border-style:double;border-left-style:solid}
+.node .t small{font-weight:600;font-size:11px;border-radius:5px;padding:0 5px;background:var(--soft);color:var(--muted)}
+.node .t small.who{background:var(--run-bg);color:var(--run)}
 .edge{fill:none;stroke-width:2}.edge.e-running{stroke-dasharray:6 5;animation:flow 1s linear infinite}
 @keyframes flow{to{stroke-dashoffset:-11}}
 @media (prefers-reduced-motion: reduce){.edge.e-running{animation:none}aside{transition:none!important}}

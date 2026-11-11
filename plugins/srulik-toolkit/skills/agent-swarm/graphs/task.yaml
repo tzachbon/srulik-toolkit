@@ -1,0 +1,189 @@
+# One task from request to terminal state, as execute-task-end-to-end runs it. Parent nodes are work the
+# orchestrator does itself (ask the owner, wait on a watch, push, post, merge); agent nodes go to picked children.
+# Each node names the skill and step whose rules apply; this file sets the order, not the rules.
+name: task
+inputs:
+  request: ""
+limits:
+  max_agents: 80
+loops:
+  grill-rounds:
+    nodes: [grill, reresearch]
+    until: reresearch.ready == true
+    max_rounds: 4
+  plan-rounds:
+    nodes: [draft, plan-review]
+    until: plan-review.clean == true
+    max_rounds: 5
+  review-rounds:
+    nodes: [review, verify, post, fix]
+    until: fix.clean == true
+    max_rounds: 5
+nodes:
+  research:
+    kind: reasoning
+    pick: { tier: strong }
+    agent: |
+      Request: ${inputs.request}
+      Follow $srulik-toolkit:create-plan steps 1-3: frame the target, discover skills and research first, and build
+      the planning brief and decision ledger. Do not ask the owner anything; list what only the owner can answer.
+      Return JSON {"notes":"<brief, ledger, evidence, and open questions>"}.
+    out: [notes]
+  grill:
+    needs: [research]
+    parent: |
+      Run one grill wave of $srulik-toolkit:create-plan step 5 with the owner (or the autonomous stand-in).
+      First round: ask from the research notes. Later rounds: ask these open questions: ${prev.reresearch.questions}
+      Return JSON {"answers":"<each question with the owner's answer>"}.
+    out: [answers]
+  reresearch:
+    kind: reasoning
+    pick: { tier: strong }
+    needs: [grill, research]
+    agent: |
+      Follow $srulik-toolkit:create-plan steps 6-7 on the research notes and the grill answers (read their files).
+      ready is true only when the readiness gate passes, including the Outcome and Definition of Done gate.
+      Return JSON {"ready":true|false,"questions":["<next wave, at most 4>"],"notes":"<updated brief and ledger>"}.
+    out: [ready, questions, notes]
+  draft:
+    kind: architecture
+    pick: { tier: strong }
+    in: ${reresearch.notes}
+    agent: |
+      Follow $srulik-toolkit:create-plan steps 8-9 and write the complete plan to a file under the run directory.
+      Previous draft, if any: ${prev.plan-review.plan_file}. Review findings to fix, if any: ${prev.plan-review.findings}
+      Split the work into tasks; a task that needs another's code names it in after.
+      Return JSON {"plan_file":"<absolute path>"}.
+    out: [plan_file]
+  plan-review:
+    kind: reasoning
+    pick: { tier: strong, differ_from: draft }
+    in: ${draft.plan_file}
+    agent: |
+      Review the plan file as $srulik-toolkit:create-plan step 10 and references/quality-gates.md describe.
+      clean is true only when the review finds zero actionable comments.
+      hosted is false only when no hosted Git repository applies, as execute-task-end-to-end's No Git hosting section says.
+      Return JSON {"clean":true|false,"findings":[],"plan_file":"<path of the plan as reviewed>","hosted":true|false,
+      "tasks":[{"id":"t1","after":[],"brief":"<self-contained task brief>","paths":["<owned paths>"]}]}.
+    out: [clean, findings, plan_file, hosted, tasks]
+  approve:
+    in:
+      - "${plan-review.plan_file}"
+      - "${plan-review.hosted}"
+    parent: |
+      Show the owner the plan at ${plan-review.plan_file} and confirm execution, unless the request already authorized it.
+      If the owner declines, report this task failed with final true, which stops the run.
+      merge is true only when the owner explicitly authorized merging this task's PR.
+      Return JSON {"merge":true|false}.
+    out: [merge]
+  issue:
+    needs: [approve]
+    when: plan-review.hosted == true
+    parent: |
+      Follow execute-task-end-to-end step 2: create or reuse the Git issue with the plan at ${plan-review.plan_file}.
+      Return JSON {"url":"<issue URL>"}.
+    out: [url]
+  implement:
+    kind: code
+    pick: { tier: strong }
+    for_each: ${plan-review.tasks}
+    after: id
+    needs: [approve, issue]
+    agent: |
+      Implement this task from the plan at ${plan-review.plan_file}: {item}
+      Follow $srulik-toolkit:implement-plan step 4 with $srulik-toolkit:tdd. Work on your own branch, based on the
+      branches in input.after (the tasks you wait for) or on the plan's base when there are none.
+      Return JSON {"branch":"<branch>","checks":"<commands and results>"}.
+    out: [branch, checks]
+  integrate:
+    needs: [implement]
+    parent: |
+      Follow $srulik-toolkit:implement-plan step 5: integrate the implement branches into one task branch in
+      dependency order, then run the plan's checks on the integrated state.
+      Return JSON {"base":"<base commit>","branch":"<task branch>","ok":true|false}.
+    out: [base, branch, ok]
+  audit:
+    kind: reasoning
+    pick: { tier: strong, differ_from: implement }
+    in:
+      - "${integrate.base}"
+      - "${integrate.branch}"
+    agent: |
+      Run $srulik-toolkit:make-it-verifiable audit mode on git diff ${integrate.base}...${integrate.branch}.
+      ok is true only when every claim is verified or accepted-unverified.
+      Return JSON {"ok":true|false,"gaps":[]}.
+    out: [ok, gaps]
+  pr:
+    needs: [audit]
+    when: plan-review.hosted == true
+    parent: |
+      Fix every audit gap first. Then follow execute-task-end-to-end step 4 with $srulik-toolkit:create-pr, and
+      run its ownership handoff and watch registration from step 5.
+      Return JSON {"number":0,"url":"<PR URL>"}.
+    out: [number, url]
+  review:
+    kind: code-review
+    pick: { tier: strong }
+    for_each: [bugs, perf, security]
+    needs: [pr, audit]
+    in:
+      - "${integrate.base}"
+      - "${integrate.branch}"
+    agent: |
+      Review git diff ${integrate.base}...<current head of ${integrate.branch}> for {item} defects only.
+      Findings already decided in earlier rounds; report only new ones: ${prev.fix.decided}
+      Return JSON {"findings":[{"title":"","file":"","line":0,"why":""}]}; use an empty list when there are none.
+    out: [findings]
+  verify:
+    kind: reasoning
+    pick: { tier: strong, differ_from: review }
+    for_each: ${review.findings}
+    in:
+      - "${integrate.base}"
+      - "${integrate.branch}"
+    agent: |
+      Try to refute this finding with evidence from the diff and the code: {item}
+      Return JSON {"confirmed":true|false,"evidence":""}.
+    out: [confirmed, evidence]
+    gate: confirmed == true
+  post:
+    needs: [verify]
+    when: plan-review.hosted == true
+    parent: |
+      Post one PR review comment that ranks the confirmed findings by severity. If a resumed task finds the
+      comment already posted, record it instead of posting again.
+      Return JSON {"posted":true}.
+    out: [posted]
+  fix:
+    needs: [verify, post]
+    parent: |
+      Fix each confirmed finding test-first, push, and reply on it, as execute-task-end-to-end step 5 says.
+      clean is true only when this round confirmed nothing new and no reviewer or verifier failed or was cap-skipped.
+      decided is every finding confirmed or refuted so far, this round and earlier: ${prev.fix.decided}
+      Return JSON {"clean":true|false,"decided":[]}.
+    out: [clean, decided]
+  babysit:
+    needs: [fix]
+    when: plan-review.hosted == true
+    parent: |
+      Drive the PR to MERGE READY as execute-task-end-to-end step 5 and $srulik-toolkit:pr-babysit describe. While
+      checks or reviews are pending, end the turn with the watch active; this task comes back from next as resumed.
+      merge is true only when the state is MERGE READY and approve.merge is ${approve.merge}.
+      Return JSON {"state":"MERGE READY|WAITING|BLOCKED","merge":true|false}.
+    in: ${approve.merge}
+    out: [state, merge]
+  merge:
+    needs: [babysit]
+    when: babysit.merge == true
+    parent: |
+      Follow execute-task-end-to-end step 6: recheck MERGE READY, rerun the audit on the final diff, merge, and verify
+      MERGED and the issue's closure.
+      Return JSON {"merged":true|false}.
+    out: [merged]
+  recap:
+    needs: [merge, babysit, fix]
+    parent: |
+      Follow execute-task-end-to-end step 7: remove the watch, then recap the whole task with $srulik-toolkit:recap
+      and put the handoff evidence under it.
+      Return JSON {"text":"<recap>"}.
+    out: [text]

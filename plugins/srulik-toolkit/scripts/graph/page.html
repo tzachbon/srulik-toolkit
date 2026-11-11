@@ -24,20 +24,27 @@ const dur = ms => { if (ms == null || ms < 0) return ''; const s = Math.round(ms
 // ---- state folded from run.jsonl
 // node-keyed maps have no prototype, so a node named `constructor` or `__proto__` is never already present
 const map = () => Object.create(null);
-const run = { spec: null, admitted: map(), inst: map(), blocked: map(), capSkipped: map(), writes: [], end: null, t0: null, last: 0 };
-const key = (node, index) => node + '#' + (index ?? 0);
-const inst = (node, index) => run.inst[key(node, index)] ??= { node, index: index ?? 0, id: key(node, index), state: 'waiting' };
+const run = { spec: null, admitted: map(), inst: map(), blocked: map(), capSkipped: map(), skipped: map(), loops: map(), writes: [], end: null, t0: null, last: 0 };
+// A loop's later rounds get their own cards: rev#0, then rev#0.r2, so earlier rounds stay visible.
+const key = (node, index, round) => node + '#' + (index ?? 0) + (round > 1 ? '.r' + round : '');
+const inst = (node, index, round) => run.inst[key(node, index, round)] ??= { node, index: index ?? 0, round: round || 1, id: key(node, index, round), state: 'waiting' };
+const at = e => inst(e.node, e.index, e.round);
 function apply(e) {
   run.last = Math.max(run.last, e.t || 0);
   switch (e.type) {
-    case 'spec': run.spec = { ...e, edges: Object.assign(map(), e.edges) }; run.t0 = e.t; break;
-    case 'admit': run.admitted[e.node] = e.count; (e.items || []).forEach((it, i) => Object.assign(inst(e.node, i), { item: it.item, src: it.src })); break;
-    case 'dispatch': { const i = inst(e.node, e.index); Object.assign(i, { state: 'running', attempt: e.attempt, item: e.item, src: e.src }); i.start ??= e.t; break; }
-    case 'pick': Object.assign(inst(e.node, e.index), { model: e.model, effort: e.effort, provider: e.provider, reason: e.reason }); break;
-    case 'result': Object.assign(inst(e.node, e.index), { state: e.dropped ? 'dropped' : 'done', stop: e.t, output: e.output, file: e.file, summary: e.summary, error: undefined,
-      attachments: e.attachments || [], model: e.model ?? inst(e.node, e.index).model }); break;
-    case 'gate-dropped': inst(e.node, e.index).state = 'dropped'; break;
-    case 'failed': Object.assign(inst(e.node, e.index), { state: e.final ? 'failed' : 'retrying', error: e.reason, ...(e.final ? { stop: e.t } : {}) }); break;
+    case 'spec': run.spec = { ...e, edges: Object.assign(map(), e.edges) }; run.t0 = e.t;
+      run.loopOf = map(); for (const [L, l] of Object.entries(e.loops || {})) { run.loops[L] = { round: 1, max: l.max_rounds, exit: null }; l.nodes.forEach(n => { run.loopOf[n] = L; }); } break;
+    case 'admit': run.admitted[e.node] = e.count; (e.items || []).forEach((it, i) => Object.assign(inst(e.node, i, e.round), { item: it.item, src: it.src })); break;
+    case 'dispatch': { const i = at(e); Object.assign(i, { state: e.taskType === 'parent' ? 'waiting on orchestrator' : 'running', parent: e.taskType === 'parent',
+      attempt: e.attempt, item: e.item, src: e.src }); i.start ??= e.t; break; }
+    case 'pick': Object.assign(at(e), { model: e.model, effort: e.effort, provider: e.provider, reason: e.reason }); break;
+    case 'result': Object.assign(at(e), { state: e.dropped ? 'dropped' : 'done', stop: e.t, output: e.output, file: e.file, summary: e.summary, error: undefined,
+      attachments: e.attachments || [], model: e.model ?? at(e).model }); break;
+    case 'gate-dropped': at(e).state = 'dropped'; break;
+    case 'failed': Object.assign(at(e), { state: e.final ? 'failed' : 'retrying', error: e.reason, ...(e.final ? { stop: e.t } : {}) }); break;
+    case 'skipped': run.skipped[e.node] = e.reason; break;
+    case 'round': run.loops[e.loop].round = e.round; break;
+    case 'loop-exit': run.loops[e.loop].exit = e.reason; break;
     case 'blocked': run.blocked[e.node] = e.cause; break;
     case 'cap-skipped': run.capSkipped[e.node] = e.count; break;
     case 'write-applied': case 'write-failed': run.writes.push(e); break;
@@ -66,8 +73,9 @@ sys.addEventListener('change', prefs);
 // A fanned-out item is often a finding object; its title or name reads better than its JSON.
 const itemLabel = v => v && typeof v === 'object' && typeof (v.title ?? v.name) === 'string' ? v.title ?? v.name : show(v);
 const label = i => i.item == null ? (run.admitted[i.node] > 1 ? '#' + i.index : '') : clip(itemLabel(i.item), 120);
-const instancesOf = node => Object.values(run.inst).filter(i => i.node === node).sort((a, b) => a.index - b.index);
+const instancesOf = node => Object.values(run.inst).filter(i => i.node === node).sort((a, b) => a.round - b.round || a.index - b.index);
 function cards(node) {
+  if (node in run.skipped) return [{ node, index: 0, id: node + '#-', state: 'skipped', ghost: true, summary: 'skipped: ' + run.skipped[node] }];
   if (node in run.blocked) return [{ node, index: 0, id: node + '#-', state: 'blocked', error: 'blocked by ' + run.blocked[node], ghost: true }];
   const list = instancesOf(node);
   if (!list.length && !run.capSkipped[node]) return [{ node, index: 0, id: node + '#-', state: node in run.admitted ? 'done' : 'waiting', ghost: true,
@@ -76,8 +84,12 @@ function cards(node) {
   return list;
 }
 function card(i) {
-  const b = el('button', 'node s-' + i.state); b.dataset.id = i.id; b.setAttribute('aria-pressed', String(open === i.id));
-  const t = el('div', 't'); t.append(el('span', null, i.node), el('span', 'chip', i.state === 'retrying' ? 'retrying' : i.state)); b.append(t);
+  const b = el('button', 'node s-' + i.state.replace(/ /g, '-')); b.dataset.id = i.id; b.setAttribute('aria-pressed', String(open === i.id));
+  const t = el('div', 't'); const name = el('span', null, i.node);
+  if (i.round > 1) name.append(' ', el('small', 'round', 'r' + i.round));
+  if (i.parent) name.append(' ', el('small', 'who', 'you'));
+  t.append(name, el('span', 'chip', i.state)); b.append(t);
+  if (i.parent) b.classList.add('parent');
   const l = label(i); if (l) { b.append(el('div', 'l', l)); b.title = l; }
   const model = i.model ? `${i.model}${i.effort ? ' @ ' + i.effort : ''}` : '';
   if (model || i.start) {
@@ -103,9 +115,11 @@ function render() {
   const all = Object.values(run.inst);
   const n = st => all.filter(i => i.state === st).length;
   const settled = n('done') + n('dropped') + n('failed');
+  const waiting = n('waiting on orchestrator');
   $('fill').style.width = (all.length ? settled / all.length * 100 : 0) + '%';
-  const parts = [`${settled}/${all.length} done`, n('running') + n('retrying') && `${n('running') + n('retrying')} running`, n('failed') && `${n('failed')} failed`,
+  const parts = [`${settled}/${all.length} done`, n('running') + n('retrying') && `${n('running') + n('retrying')} running`, waiting && `${waiting} waiting on orchestrator`, n('failed') && `${n('failed')} failed`,
     n('dropped') && `${n('dropped')} dropped`, Object.keys(run.blocked).length && `${Object.keys(run.blocked).length} blocked`,
+    ...Object.entries(run.loops).map(([L, l]) => `${L}: round ${l.round}/${l.max}${l.exit ? ' (' + l.exit + ')' : ''}`),
     run.end && `run ${run.end.state}`].filter(Boolean);
   $('counts').textContent = parts.join(' · ');
   tick();
@@ -124,14 +138,19 @@ function render() {
 // An instance fanned out from one source instance draws one edge from it; any other instance draws from every card of each parent.
 function edges(board, svg) {
   const s = run.spec, o = board.getBoundingClientRect(), down = layout() === 'down';
-  const color = st => getComputedStyle(document.documentElement).getPropertyValue({ done: '--ok', running: '--run', retrying: '--run', failed: '--bad',
+  const color = st => getComputedStyle(document.documentElement).getPropertyValue({ done: '--ok', running: '--run', retrying: '--run', 'waiting on orchestrator': '--run', failed: '--bad',
     blocked: '--bad', dropped: '--skip', skipped: '--skip' }[st] || '--line').trim();
   const defs = document.createElementNS(SVG, 'defs'); svg.append(defs); const marks = {};
   const mark = c => marks[c] ??= (() => { const id = 'm' + Object.keys(marks).length; const m = document.createElementNS(SVG, 'marker');
     for (const [k, v] of Object.entries({ id, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' })) m.setAttribute(k, v);
     const p = document.createElementNS(SVG, 'path'); p.setAttribute('d', 'M0,0 L10,5 L0,10 z'); p.setAttribute('fill', c); m.append(p); defs.append(m); return id; })();
   for (const node of s.nodes) for (const to of cards(node)) {
-    const from = to.src ? [key(to.src.node, to.src.index)] : (s.edges[node] || []).flatMap(p => cards(p).map(c => c.id));
+    // after: an ordered item also draws an edge from each item it waited for, in the same round
+    const after = (to.item && Array.isArray(to.item.after) ? to.item.after : []).map(id => instancesOf(node).find(c => c.round === to.round && c.item && c.item[run.spec.after?.[node] || 'id'] === id)?.id).filter(Boolean);
+    // a loop node draws from its own round of a sibling; a node outside a loop draws from the loop's last round only
+    const fromCards = p => { const cs = cards(p), L = run.loopOf?.[p]; if (!L) return cs;
+      const round = run.loopOf[node] === L ? to.round : Math.max(...cs.map(c => c.round || 1)); return cs.filter(c => (c.round || 1) === round); };
+    const from = [...(to.src ? [key(to.src.node, to.src.index, to.round)] : (s.edges[node] || []).flatMap(p => fromCards(p).map(c => c.id))), ...after];
     for (const f of from) {
       const a = board.querySelector(`[data-id="${CSS.escape(f)}"]`), b = board.querySelector(`[data-id="${CSS.escape(to.id)}"]`); if (!a || !b) continue;
       const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
@@ -163,12 +182,12 @@ let filled = null;
 function fillPanel(id) {
   if (id === 'index') return;
   const i = run.inst[id] || Object.values(run.spec ? run.spec.nodes : []).flatMap(cards).find(c => c.id === id); if (!i) return;
-  const sig = JSON.stringify([id, i.state, i.model, i.file, i.error, i.attachments, i.attempt]);
+  const sig = JSON.stringify([id, i.state, i.model, i.file, i.error, i.attachments, i.attempt, i.round]);
   if (filled === sig) return; filled = sig;
   const l = label(i); $('ph').textContent = i.ghost ? i.node : `${i.id}${l ? ' · ' + l : ''}`;
   const pb = $('pb'); pb.replaceChildren();
   const dl = el('dl'); const row = (k, v) => { if (v) dl.append(el('dt', null, k), el('dd', null, v)); };
-  row('Status', i.state); row('Model', i.model && `${i.model}${i.effort ? ' @ ' + i.effort : ''}${i.provider ? ' · ' + i.provider : ''}`);
+  row('Status', i.state); row('Round', i.round > 1 && String(i.round)); row('Done by', i.parent && 'the orchestrator, not a child agent'); row('Model', i.model && `${i.model}${i.effort ? ' @ ' + i.effort : ''}${i.provider ? ' · ' + i.provider : ''}`);
   row('Duration', i.start && dur((i.stop ?? Date.now()) - i.start)); row('Attempt', i.attempt > 1 && String(i.attempt));
   row('Why this model', i.reason && Object.entries(i.reason).filter(([, v]) => v != null && typeof v !== 'object').map(([k, v]) => `${k}: ${typeof v === 'number' ? +v.toFixed(2) : v}`).join(' · '));
   row('Inputs from', i.src ? key(i.src.node, i.src.index) : (run.spec.edges[i.node] || []).join(', '));
@@ -186,7 +205,7 @@ function fillPanel(id) {
     for (const name of i.attachments) {
       const d = el('details'); const body = el('pre', null, 'Loading…'); d.append(el('summary', null, '📎 ' + name), body);
       d.addEventListener('toggle', () => { if (d.open && !d.dataset.loaded) { d.dataset.loaded = '1';
-        getText(`nodes/${i.node}-${i.index}/${encodeURIComponent(name)}`).then(t => { body.textContent = t; }, e => { body.textContent = e.message; }); } });
+        getText(`nodes/${i.node}-${i.index}${i.round > 1 ? '.r' + i.round : ''}/${encodeURIComponent(name)}`).then(t => { body.textContent = t; }, e => { body.textContent = e.message; }); } });
       pb.append(d);
     }
   }
