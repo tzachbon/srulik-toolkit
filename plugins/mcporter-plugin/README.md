@@ -13,6 +13,10 @@ claude plugin marketplace add tzachbon/srulik-toolkit
 claude plugin install mcporter-plugin@srulik-toolkit
 ```
 
+## How it works
+
+![How it works](assets/how-it-works.svg)
+
 - `/mcporter-setup` moves the MCP servers configured in Claude Code, Codex,
   Cursor and other editors into the mcporter home config, checks each one
   answers, and disables (never deletes) the Claude Code and Codex copies, with
@@ -22,6 +26,10 @@ claude plugin install mcporter-plugin@srulik-toolkit
   the matching `mcporter call` command to any native MCP call for those servers.
 - The `mcporter` skill says when to write a script, where to save it
   (`.mcporter/scripts/`), and how to check it with recorded fixtures.
+
+## Benchmark
+
+![Benchmark](assets/benchmark.svg)
 
 On a 20-call task, the agent used 74-76% fewer input tokens through mcporter,
 and a saved script cut the time in half. Method and full results:

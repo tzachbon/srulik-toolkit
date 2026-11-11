@@ -25,6 +25,8 @@ Claude Code. Times are Claude Code's `duration_ms`. Values are medians of 3 runs
 
 ## Results
 
+![Benchmark](../assets/benchmark.svg)
+
 2026-11-11, Claude Code 2.1.322, `--model sonnet`, all 18 runs correct (the
 whole reply must be the integer). Every run starts in a fresh project folder;
 only the `saved-script` arm gets the example scripts.

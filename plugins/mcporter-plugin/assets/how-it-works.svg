@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="760" height="300" role="img" aria-labelledby="t d" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<title id="t">How mcporter-plugin works</title>
+<desc id="d">Native: every MCP call is one agent turn and its full result enters the context. With mcporter: the agent runs one Bash command or saved script that makes all the calls and prints only the answer. Setup copies servers into the mcporter home config, verifies them, then disables the native copies with a backup and undo receipt.</desc>
+<style>
+.bg{fill:#fff}.tx{fill:#1f2328}.mu{fill:#59636e}.bx{fill:#f6f8fa;stroke:#d1d9e0}.hi{fill:#ddf4ff;stroke:#0969da}.ln{stroke:#818b98;fill:none}.ar{fill:#818b98}.bad{fill:#cf222e}.ok{fill:#1a7f37}
+@media (prefers-color-scheme:dark){.bg{fill:#0d1117}.tx{fill:#f0f6fc}.mu{fill:#9198a1}.bx{fill:#151b23;stroke:#3d444d}.hi{fill:#0c2d6b;stroke:#4493f8}.ln{stroke:#656c76}.ar{fill:#656c76}.bad{fill:#ff7b72}.ok{fill:#3fb950}}
+</style>
+<defs><marker id="m" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="ar" d="M0 0L8 4L0 8z"/></marker></defs>
+<rect class="bg" width="760" height="300" rx="8"/>
+<text class="tx" x="20" y="30" font-size="15" font-weight="600">Native MCP</text>
+<text class="bad" x="20" y="48" font-size="12">1 turn per call; every result stays in context</text>
+<rect class="bx" x="20" y="62" width="110" height="40" rx="6"/><text class="tx" x="75" y="87" font-size="13" text-anchor="middle">Agent</text>
+<rect class="bx" x="250" y="62" width="110" height="40" rx="6"/><text class="tx" x="305" y="87" font-size="13" text-anchor="middle">MCP server</text>
+<path class="ln" d="M130 72H248" marker-end="url(#m)"/><text class="mu" x="190" y="68" font-size="11" text-anchor="middle">call × 20</text>
+<path class="ln" d="M250 94H132" marker-end="url(#m)"/><text class="mu" x="190" y="112" font-size="11" text-anchor="middle">20 full pages back</text>
+<text class="tx" x="400" y="30" font-size="15" font-weight="600">With mcporter</text>
+<text class="ok" x="400" y="48" font-size="12">1 command; only the answer comes back</text>
+<rect class="bx" x="400" y="62" width="90" height="40" rx="6"/><text class="tx" x="445" y="87" font-size="13" text-anchor="middle">Agent</text>
+<rect class="hi" x="520" y="62" width="110" height="40" rx="6"/><text class="tx" x="575" y="80" font-size="12" text-anchor="middle">saved script</text><text class="mu" x="575" y="95" font-size="11" text-anchor="middle">.mcporter/scripts</text>
+<rect class="bx" x="660" y="62" width="80" height="40" rx="6"/><text class="tx" x="700" y="80" font-size="12" text-anchor="middle">MCP</text><text class="tx" x="700" y="95" font-size="12" text-anchor="middle">server</text>
+<path class="ln" d="M490 74H518" marker-end="url(#m)"/><path class="ln" d="M520 92H492" marker-end="url(#m)"/>
+<path class="ln" d="M630 74H658" marker-end="url(#m)"/><text class="mu" x="645" y="118" font-size="11" text-anchor="middle">× 20</text>
+<path class="ln" d="M660 92H632" marker-end="url(#m)"/><text class="mu" x="505" y="118" font-size="11" text-anchor="middle">1 number</text>
+<line class="ln" x1="20" y1="140" x2="740" y2="140"/>
+<text class="tx" x="20" y="166" font-size="15" font-weight="600">/mcporter-setup, once</text>
+<g font-size="12">
+<rect class="bx" x="20" y="180" width="160" height="56" rx="6"/><text class="tx" x="100" y="203" text-anchor="middle">1. Inventory</text><text class="mu" x="100" y="221" text-anchor="middle" font-size="11">Claude Code, Codex, Cursor…</text>
+<rect class="bx" x="206" y="180" width="160" height="56" rx="6"/><text class="tx" x="286" y="203" text-anchor="middle">2. Copy to mcporter</text><text class="mu" x="286" y="221" text-anchor="middle" font-size="11">home config, owner-only</text>
+<rect class="bx" x="392" y="180" width="160" height="56" rx="6"/><text class="tx" x="472" y="203" text-anchor="middle">3. Verify it answers</text><text class="mu" x="472" y="221" text-anchor="middle" font-size="11">else restore, stay native</text>
+<rect class="hi" x="578" y="180" width="162" height="56" rx="6"/><text class="tx" x="659" y="203" text-anchor="middle">4. Disable native copy</text><text class="mu" x="659" y="221" text-anchor="middle" font-size="11">backup + undo receipt</text>
+</g>
+<path class="ln" d="M180 208H204" marker-end="url(#m)"/><path class="ln" d="M366 208H390" marker-end="url(#m)"/><path class="ln" d="M552 208H576" marker-end="url(#m)"/>
+<text class="mu" x="20" y="268" font-size="12">Every session: a startup hint lists the mcporter servers, and a warn-mode hook adds the matching</text>
+<text class="mu" x="20" y="285" font-size="12"><tspan font-family="ui-monospace,Menlo,monospace">mcporter call</tspan> to any native MCP call it sees. Same-name servers with a different definition stay native.</text>
+</svg>
