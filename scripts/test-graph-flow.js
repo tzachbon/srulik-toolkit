@@ -362,6 +362,16 @@ module.exports = {
     const picked = spawnSync(process.execPath, [CLI, 'pick', file, run, 'a', '0', '--candidates', cf, '--usage', uf], { encoding: 'utf8', env: process.env });
     assert.equal(picked.status, 0, picked.stderr);
     assert.equal(events(run, 'pick').at(-1).round, 2, 'a pick in round 2 records round 2');
+    // a round that ends while pick works makes the pick stale: it is refused, not logged into the next round
+    const hook = join(d4, 'hook.js');
+    writeFileSync(hook, `const fs = require('fs'), read = fs.readFileSync; fs.readFileSync = function (f, ...a) { const out = read.call(this, f, ...a);
+      if (String(f) === ${JSON.stringify(cf)}) fs.appendFileSync(${JSON.stringify(join(run, 'run.jsonl'))}, JSON.stringify({ t: 1, type: 'round', loop: 'lp', round: 3 }) + '\\n');
+      return out; };`);
+    const before = events(run, 'pick').length;
+    const stale = spawnSync(process.execPath, ['--require', hook, CLI, 'pick', file, run, 'a', '0', '--candidates', cf, '--usage', uf], { encoding: 'utf8', env: process.env });
+    assert.notEqual(stale.status, 0, 'a stale pick fails');
+    assert.match(stale.stderr, /a: round 2 ended while picking; pick again/);
+    assert.equal(events(run, 'pick').length, before, 'and logs nothing');
   },
 
   // review fixes: loop sinks, admission failures, the after field, view rounds, and task.yaml stop points
@@ -416,7 +426,7 @@ module.exports = {
     assert.match(yaml, /rerun the audit until ok is true; if a gap cannot close, report failed with final true/);
     assert.match(yaml, /If the checks cannot pass, report this task failed with final true/);
     assert.match(yaml, /nested graphs\/pr-review\.yaml run before MERGE READY/);
-    assert.match(yaml, /With no Git repository,\n\s+back up each file first/);
+    assert.match(yaml, /With no Git repository,\r?\n\s+back up each file first/);
   },
 
   // the bundled task graph walks a task with and without Git hosting
