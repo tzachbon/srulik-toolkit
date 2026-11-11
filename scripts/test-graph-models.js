@@ -127,6 +127,12 @@ module.exports = {
     const big = await loadArena({ fetch: paged, cachePath: join(temp('arena-'), 'a.json'), now: NOW, configs: ['webdev'] });
     assert.equal(big.webdev.length, 150, 'every page is fetched'); assert.deepEqual(pages, [0, 100]);
     const fail = async () => { throw new Error('offline'); };
+    const a1 = await loadArena({ fetch: ok(1818), cachePath, now: NOW, configs: ['webdev'] });
+    assert.equal(a1.webdev[0].rating, 1818); assert.equal(a1.stale, false);
+    const a2 = await loadArena({ fetch: fail, cachePath, now: NOW + 2 * 864e5, configs: ['webdev'] });
+    assert.equal(a2.webdev[0].rating, 1818); assert.equal(a2.stale, true);
+    const a3 = await loadArena({ fetch: ok(1820), cachePath, now: NOW + 1000, configs: ['webdev'], force: true });
+    assert.equal(a3.webdev[0].rating, 1820);
     // #80: a transient 502 or timeout on one page is retried instead of failing the whole refresh
     let flaky = 0;
     const blip = async url => (flaky++ === 0 ? { ok: false, status: 502 } : ok(1900)(url));
@@ -139,15 +145,16 @@ module.exports = {
     const down = async () => { tries++; return { ok: false, status: 503 }; };
     const d = await loadArena({ fetch: down, cachePath: join(temp('arena-'), 'd.json'), now: NOW, configs: ['webdev'] });
     assert.equal(d.stale, true, 'a persistent failure still fails'); assert.equal(tries, 3, 'retries are bounded');
+    let net = 0;
+    const reset = async url => { if (net++ === 0) throw new Error('ECONNRESET'); return ok(1902)(url); };
+    assert.equal((await loadArena({ fetch: reset, cachePath: join(temp('arena-'), 'f.json'), now: NOW, configs: ['webdev'] })).webdev[0].rating, 1902, 'one network error is retried');
+    assert.equal(net, 2);
+    tries = 0;
+    const kept = await loadArena({ fetch: down, cachePath, now: NOW + 3 * 864e5, configs: ['webdev'] });
+    assert.equal(tries, 3); assert.equal(kept.stale, true); assert.equal(kept.webdev[0].rating, 1820, 'a persistent 503 keeps the cached rows');
     let notFound = 0;
     await loadArena({ fetch: async () => { notFound++; return { ok: false, status: 404 }; }, cachePath: join(temp('arena-'), 'e.json'), now: NOW, configs: ['webdev'] });
     assert.equal(notFound, 1, 'a 4xx is not retried');
-    const a1 = await loadArena({ fetch: ok(1818), cachePath, now: NOW, configs: ['webdev'] });
-    assert.equal(a1.webdev[0].rating, 1818); assert.equal(a1.stale, false);
-    const a2 = await loadArena({ fetch: fail, cachePath, now: NOW + 2 * 864e5, configs: ['webdev'] });
-    assert.equal(a2.webdev[0].rating, 1818); assert.equal(a2.stale, true);
-    const a3 = await loadArena({ fetch: ok(1820), cachePath, now: NOW + 1000, configs: ['webdev'], force: true });
-    assert.equal(a3.webdev[0].rating, 1820);
     const { loadAll } = mod('data.js');
     const usageFile = join(temp('usage-'), 'u.json'); writeFileSync(usageFile, JSON.stringify({ accounts: [], notes: [] }));
     const all = await loadAll({ usageFile, aaLoader: () => { throw new Error('offline'); }, arenaLoader: async () => ({ webdev: [], stale: true }) });
