@@ -30,6 +30,12 @@ whole reply must be the integer). Every run starts in a fresh project folder;
 only the `saved-script` arm gets the example scripts.
 Raw data: [results-4-pages.json](results-4-pages.json), [results-20-pages.json](results-20-pages.json).
 
+`run.js` now records each run's tool calls (`calls`) and whether the run used
+its arm's path (`followed`: native tools only; `mcporter` from Bash; the saved
+`inventory-gold-stock.mjs`). The stored results above predate that field. A
+traced spot check at 4 pages (one run per arm, same day) followed every arm's
+path and matched the stored input tokens within 3: 20,301, 18,334 and 17,143.
+
 ### 20 pages (20 tool calls)
 
 | Arm | Turns | Input tokens | Time | Cost |

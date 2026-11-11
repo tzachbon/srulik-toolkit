@@ -2,8 +2,10 @@
 // Benchmark: the same task through native MCP tools vs. mcporter.
 //   node benchmark/run.js [--runs 3] [--model sonnet] [--pages 4]
 // Needs `claude` and `mcporter` (or npx). Writes benchmark/results.json.
-// Each arm runs `claude -p --output-format json` with hooks, CLAUDE.md and
-// other MCP servers turned off, so only the arm's tools differ.
+// Each arm runs `claude -p --output-format stream-json` with hooks, CLAUDE.md
+// and other MCP servers turned off, so only the arm's tools differ. The stream
+// records which tools each run called, so a run that skipped its arm's
+// workflow is marked `followed: false`.
 const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
@@ -65,15 +67,28 @@ function once(name) {
   const started = Date.now();
   const out = execFileSync(
     "claude",
-    ["-p", prompt, "--output-format", "json", "--model", model, "--setting-sources", "", "--no-session-persistence", "--disable-slash-commands", ...args],
+    ["-p", prompt, "--output-format", "stream-json", "--verbose", "--model", model, "--setting-sources", "", "--no-session-persistence", "--disable-slash-commands", ...args],
     { cwd: work, encoding: "utf8", timeout: 600_000, maxBuffer: 64 << 20, env: { ...process.env, MCPORTER_CONFIG: path.join(work, "config", "mcporter.json") } },
   );
   fs.rmSync(work, { recursive: true, force: true });
-  const r = JSON.parse(out);
+  const events = out.split("\n").filter(Boolean).map((l) => JSON.parse(l));
+  const r = events.find((e) => e.type === "result");
+  const calls = events
+    .filter((e) => e.type === "assistant")
+    .flatMap((e) => e.message?.content || [])
+    .filter((c) => c.type === "tool_use")
+    .map((c) => (c.name === "Bash" ? `Bash: ${String(c.input?.command).slice(0, 160)}` : c.name));
   const u = r.usage || {};
   return {
     arm: name,
     correct: String(r.result).trim() === String(expected),
+    // The arm's own path: native tools only; mcporter from Bash; the saved script.
+    followed: {
+      native: calls.length > 0 && calls.every((c) => c.startsWith("mcp__inventory__")),
+      mcporter: calls.some((c) => /\bmcporter\b/.test(c)) && !calls.some((c) => c.startsWith("mcp__")),
+      "saved-script": calls.some((c) => c.includes("inventory-gold-stock")),
+    }[name],
+    calls,
     answer: String(r.result).slice(0, 200),
     turns: r.num_turns,
     wallMs: Date.now() - started,
@@ -105,6 +120,7 @@ for (const name of Object.keys(arms)) {
   summary[name] = {
     runs: rs.length,
     correct: rs.filter((r) => r.correct).length,
+    followed: rs.filter((r) => r.followed).length,
     ...Object.fromEntries(["turns", "durationMs", "inputTokens", "cacheWriteTokens", "cacheReadTokens", "outputTokens", "costUsd"].map((k) => [k, median(rs.map((r) => r[k]))])),
   };
 }
