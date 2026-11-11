@@ -293,9 +293,10 @@ function exec(spec, dir, name) {
   const attempt = i.failures + 1;
   const argv = argvFor(spec.nodes[name].run, s.started ? s : { inputs: spec.inputs });
   const r = spawnSync(argv[0], argv.slice(1), { shell: false, cwd: s.cwd ?? undefined, encoding: 'utf8', timeout: 120000, maxBuffer: 64 * 1024 * 1024 });
-  if (r.status === 0) return { output: { text: r.stdout }, writes: done(spec, dir, { node: name, output: { text: r.stdout } }).writes };
+  const round = roundOf(s, name); // a run node inside a loop reports its round like any other task
+  if (r.status === 0) return { output: { text: r.stdout }, writes: done(spec, dir, { node: name, round, output: { text: r.stdout } }).writes };
   const reason = (r.error?.message || r.stderr || `exit ${r.status}`).trim().slice(-500);
-  done(spec, dir, { node: name, failed: reason, final: attempt >= 2 });
+  done(spec, dir, { node: name, round, failed: reason, final: attempt >= 2 });
   return { failed: reason, final: attempt >= 2 };
 }
 

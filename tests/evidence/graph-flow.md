@@ -22,7 +22,7 @@ Before the engine existed, C40–C45 and C47 failed with `unknown key` errors, C
 
 ## Per-assertion red proof
 
-Each mutation ran in a pristine copy of the repository, then the copy was discarded. The original group passes. 41 mutations, 41 failed as targeted:
+Each mutation ran in a pristine copy of the repository, then the copy was discarded. The original group passes. 43 mutations, 43 failed as targeted:
 
 | Mutation | Group | Result |
 | --- | --- | --- |
@@ -62,7 +62,9 @@ Each mutation ran in a pristine copy of the repository, then the copy was discar
 | cap-trim-after | C44 | red |
 | prev-two-part | C42 | red |
 | pick-round | C47 | red |
-| page-round-clears | C47 | red |
+| page-round-clears | C47 | MUTATION NOT FOUND |
+| exec-round | C41 | red |
+| page-round-capskip | C47 | red |
 | task-merge-gate | C48 | red |
 | task-post-hosted | C48 | red |
 | task-draft-prev | C48 | red |
@@ -107,3 +109,8 @@ An independent `review-pro-max` pass on `641625c` reproduced five defects. Each 
 5. **Two-part `prev` refs.** `check` accepted `${prev.x}`, and `next` then crashed on it. `check` now rejects it (`prev-two-part`).
 
 The `when` row in `graph-spec.md` now says what the engine does: a reference that failed finally or was blocked blocks the node, rather than skipping it.
+
+A second review pass on `b5c0439` found two more defects. Both are fixed, and each has its mutation in the table above:
+
+- `exec` recorded a `run` node inside a loop without its round, so from round 2 on the node was refused and stayed dispatched forever (`exec-round`).
+- In the view, a node's cap-skipped card from an earlier round stayed on screen in later rounds (`page-round-capskip`).

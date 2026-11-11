@@ -132,6 +132,17 @@ module.exports = {
     assert.deepEqual(events(d2, 'loop-exit').map(e => e.reason), ['failed']);
     assert.ok(events(d2, 'blocked').some(e => e.node === 'outside'), 'consumers of a failed exit are blocked');
     assert.equal(status(spec, d2).state, 'blocked');
+
+    // a run node inside a loop records its round through exec, in every round
+    const { exec } = mod('run.js');
+    const d3 = temp('graph-');
+    const withRun = check({ name: 'x', limits: { max_agents: 2 }, loops: { lp: { nodes: ['t', 'j'], until: 'j.ok == true', max_rounds: 2 } },
+      nodes: { t: { run: [process.execPath, '-e', 'process.stdout.write("hi")'] }, j: { agent: 'j', needs: ['t'], out: ['ok'] } } });
+    next(withRun, d3); exec(withRun, d3, 't');
+    next(withRun, d3); done(withRun, d3, { node: 'j', round: 1, output: { ok: false }, model: 'm' });
+    assert.deepEqual(ids(next(withRun, d3)), ['t#0']);
+    assert.equal(exec(withRun, d3, 't').output.text, 'hi', 'exec records a round-2 run node');
+    assert.ok(existsSync(join(d3, 'nodes', 't-0.r2.md')));
   },
 
   // ${prev.node.field}: the previous round's value, null in round 1, no edge, same loop only
@@ -328,8 +339,10 @@ module.exports = {
     const page2 = vm.runInNewContext(section + '\n;({ run, apply })');
     page2.apply({ type: 'spec', t: 1, name: 'x', nodes: ['g', 'h'], edges: {}, loops: { lp: { nodes: ['g', 'h'], max_rounds: 2 } } });
     page2.apply({ type: 'skipped', node: 'h', reason: 'when false' });
+    page2.apply({ type: 'cap-skipped', node: 'g', count: 1 });
     page2.apply({ type: 'round', loop: 'lp', round: 2 });
     assert.equal(page2.run.skipped.h, undefined, 'a new round clears the loop\'s skips');
+    assert.equal(page2.run.capSkipped.g, undefined, 'and its cap skips');
     // pick events from the CLI carry the round, so a later round's model lands on its own card
     const d4 = temp('graph-'); const file = join(d4, 'g.yaml');
     writeFileSync(file, 'name: g\nlimits:\n  max_agents: 2\nloops:\n  lp:\n    nodes: [a]\n    until: a.stop == true\n    max_rounds: 2\nnodes:\n  a:\n    agent: a\n    pick: { tier: cheap }\n    out: [stop]\n');
