@@ -31,6 +31,8 @@ user approves step 3 before anything is written.
      server, into the mcporter home config: the existing `mcporter.json` or `.jsonc` under
      `$XDG_CONFIG_HOME/mcporter` or `~/.mcporter`, else `~/.mcporter/mcporter.json`
      (a home config with comments is refused);
+   - leaves a name alone when mcporter already holds a different definition of
+     it (for example another project's server), listed under `conflicts`;
    - runs `mcporter list <name>`; only a server that answers counts as migrated.
      A project `config/mcporter.json` that defines the same name would win over
      the home config, so that server is listed under `failed` as shadowed; so is

@@ -239,6 +239,14 @@ function apply(names, dryRun) {
     // to ${VAR} placeholders by hand when sharing the config.
     const config = before === null ? {} : JSON.parse(before);
     const def = resolved(sources[0]);
+    // A different definition already in mcporter (for example another
+    // project's same-name server, bound to its folder) is not replaced.
+    const existing = config.mcpServers?.[name];
+    if (existing && JSON.stringify(existing) !== JSON.stringify(def)) {
+      conflictNames.add(name);
+      receipt.conflicts.push(`${name} (mcporter: ${mcporterHome}): already defined differently there; not replaced, native copies left enabled`);
+      continue;
+    }
     // Owner-only before the secret-bearing file appears, not after.
     writeJson(mcporterHome, { ...config, mcpServers: { ...config.mcpServers, [name]: def } }, 0o600);
     let status = "unknown";

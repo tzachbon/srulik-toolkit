@@ -34,3 +34,20 @@ assert.deepEqual(fromHome.conflicts, []);
 assert.equal(JSON.parse(fs.readFileSync(path.join(home, ".config", "mcporter", "mcporter.json"), "utf8")).mcpServers.bound.cwd, undefined);
 execFileSync("sh", ["-c", fromHome.undo], { env, cwd: proj });
 fs.writeFileSync(codexHome, codexBefore);
+
+// A different definition already in mcporter (another project's server) is
+// not overwritten, and nothing is disabled.
+const homeCfg = path.join(home, ".config", "mcporter", "mcporter.json");
+const keepCfg = fs.existsSync(homeCfg) ? fs.readFileSync(homeCfg) : null;
+const prev = keepCfg ? JSON.parse(keepCfg) : { mcpServers: {} };
+fs.mkdirSync(path.dirname(homeCfg), { recursive: true });
+prev.mcpServers.projmcp = { command: "run-projmcp", cwd: path.join(tmp, "project-a") };
+fs.writeFileSync(homeCfg, JSON.stringify(prev));
+const clash = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "projmcp"]));
+assert.deepEqual(clash.migrated, []);
+assert.deepEqual(clash.disabled.claude, []);
+assert.match(clash.conflicts.join(), /projmcp \(mcporter: .*already defined differently/);
+assert.equal(JSON.parse(fs.readFileSync(homeCfg, "utf8")).mcpServers.projmcp.cwd, path.join(tmp, "project-a"));
+execFileSync("sh", ["-c", `${clash.undo} --force`], { env, cwd: proj });
+if (keepCfg) fs.writeFileSync(homeCfg, keepCfg);
+else fs.rmSync(homeCfg);
