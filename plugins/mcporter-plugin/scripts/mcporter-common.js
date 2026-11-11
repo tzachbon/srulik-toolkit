@@ -99,4 +99,4 @@ function writeText(file, text, force) {
 }
 const writeJson = (file, value, mode) => writeText(file, `${JSON.stringify(value, null, 2)}\n`, mode);
 
-module.exports = { home, dataRoot, serverCache, mcporter, listServers, importedSources, mcporterHomeConfig, toolKey, writeJson, writeText };
+module.exports = { onPath, home, dataRoot, serverCache, mcporter, listServers, importedSources, mcporterHomeConfig, toolKey, writeJson, writeText };

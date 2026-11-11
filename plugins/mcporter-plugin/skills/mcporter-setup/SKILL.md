@@ -64,5 +64,5 @@ user approves step 3 before anything is written.
 
 - Never delete a harness MCP entry. Disable only, and only after mcporter reached the server.
 - Never print secret values from configs. Refer to them by key name.
-- If `mcporter` is missing, the scripts fall back to `npx -y mcporter@0.17.0`; mcporter targets Node 24 or newer.
+- `apply` needs mcporter installed (`npm install -g mcporter@0.17.0`; Node 24 or newer), because everyday calls use the `mcporter` command. Inventory and dry runs fall back to `npx -y mcporter@0.17.0`.
 - After setup, daily use follows the `mcporter` skill.

@@ -6,7 +6,7 @@
 // Node.js standard library only.
 const fs = require("node:fs");
 const path = require("node:path");
-const { home, dataRoot, mcporter, listServers, importedSources, mcporterHomeConfig, writeJson, writeText } = require("./mcporter-common");
+const { onPath, home, dataRoot, mcporter, listServers, importedSources, mcporterHomeConfig, writeJson, writeText } = require("./mcporter-common");
 
 const claudeSettings = () => path.join(home(), ".claude", "settings.json");
 
@@ -127,6 +127,12 @@ const groupBy =(xs, key) => {
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function apply(names, dryRun) {
+  // After setup the hint, hook and skill call a bare `mcporter`. The npx
+  // fallback adds it to PATH only for its own process, so without an install
+  // the native copies would be disabled with nothing left to call them.
+  if (!dryRun && !process.env.MCPORTER_BIN && !onPath("mcporter")) {
+    throw new Error("mcporter is not installed. Run `npm install -g mcporter@0.17.0`, then rerun. Nothing was changed.");
+  }
   // Every source of each name; the first one is the definition that is copied.
   const found = new Map();
   for (const s of importedSources()) found.set(s.name, [...(found.get(s.name) || []), s]);

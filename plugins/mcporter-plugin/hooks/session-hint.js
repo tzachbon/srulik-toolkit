@@ -10,7 +10,7 @@ const ttl = Number(process.env.MCPORTER_HINT_TTL_MS) || 3_600_000;
 // stale cache, if any, is reused and re-dated, so the next sessions skip the
 // slow call until the TTL passes again.
 // ponytail: without mcporter on PATH the npx fallback may need longer than 5 s
-// on first use; the skill tells the user to install mcporter globally.
+// on first use; setup apply requires a global install.
 function servers() {
   let stale;
   try {

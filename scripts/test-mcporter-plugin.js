@@ -2,18 +2,7 @@
 // The hook tests (test-mcporter-plugin-hooks.js) run last, on the state left here.
 const { assert, execFileSync, fs, path, plugin, tmp, home, env, run, proj, codexHome, projectCodex, imports, codexBefore, projectBefore } = require("./mcporter-plugin-test-fixture");
 
-const { disableCodex } = require(path.join(plugin, "scripts", "setup.js"));
-// A table with a multi-line string is left alone and reported.
-const ml = disableCodex('[mcp_servers.m]\nargs = ["-e", """\nenabled = true;\n"""]\nenabled = true\n', ["m"]);
-assert.deepEqual(ml.missed, ["m"]);
-assert.match(ml.text, /"""\nenabled = true;\n"""\]\nenabled = true\n$/);
-// A multi-line string elsewhere can fake a table header, so the whole file is left alone.
-const fakeHeader = '[agent]\nnote = """\n[mcp_servers.inv]\nenabled = true\n[other]\n"""\n\n[mcp_servers.inv]\ncommand = "i"\n';
-assert.deepEqual(disableCodex(fakeHeader, ["inv"]), { text: fakeHeader, missed: ["inv"] });
-// Codex TOML: indented key, quoted name, header comment, inline table.
-const toml = disableCodex("[mcp_servers.a]\n  enabled = true\n\n [ mcp_servers.'b' ] # note\nx = 1\n[mcp_servers.d]\n'enabled' = true\n[mcp_servers]\nc = { command = 'x' }\n", ["a", "b", "c", "d"]);
-assert.equal(toml.text, "[mcp_servers.a]\n  enabled = false\n\n [ mcp_servers.'b' ] # note\nenabled = false\nx = 1\n[mcp_servers.d]\nenabled = false\n[mcp_servers]\nc = { command = 'x' }\n");
-assert.deepEqual(toml.missed, ["c"]);
+require("./test-mcporter-plugin-toml");
 fs.writeFileSync(path.join(home, ".codex", "config.toml"), codexBefore);
 
 // Setup with no Claude settings file: undo removes the files it created.
@@ -22,6 +11,13 @@ run("scripts/setup.js", ["undo", first.receipt]);
 assert.ok(!fs.existsSync(path.join(home, ".claude", "settings.json")));
 assert.ok(!fs.existsSync(path.join(home, ".config", "mcporter", "mcporter.json")));
 assert.equal(fs.readFileSync(path.join(home, ".codex", "config.toml"), "utf8"), codexBefore);
+// Without an installed mcporter, apply refuses before anything is read or written.
+const { MCPORTER_BIN: _bin, ...noBin } = env;
+assert.throws(
+  () => execFileSync(process.execPath, [path.join(plugin, "scripts", "setup.js"), "apply", "--servers", "inv"], { env: { ...noBin, PATH: path.dirname(process.execPath) }, stdio: "pipe", cwd: proj }),
+  (err) => err.status === 1 && /mcporter is not installed/.test(err.stderr),
+);
+assert.ok(!fs.existsSync(path.join(home, ".config", "mcporter", "mcporter.json")));
 // Malformed Claude settings: apply fails before writing anything.
 fs.writeFileSync(path.join(home, ".claude", "settings.json"), "{ not json");
 assert.throws(
