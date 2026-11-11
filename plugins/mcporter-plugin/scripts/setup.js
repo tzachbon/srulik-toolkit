@@ -323,11 +323,14 @@ function apply(names, dryRun) {
   receipt.manual = manual.map((c) => `${c.name} (${c.kind}: ${c.path}): disable it in that editor`);
 
   if (!dryRun) {
-    // Servers now in mcporter whose native copy is another backend: the hint
-    // and the redirect hook leave those to the native tools.
-    const inMcporter = new Set([...ok, ...receipt.authRequired].map((m) => m.name));
-    const next = new Set([...conflicted()].filter((n) => !inMcporter.has(n) || conflictNames.has(n)));
-    for (const n of conflictNames) if (inMcporter.has(n)) next.add(n);
+    // Names in mcporter whose native copy here is another backend (including
+    // one rejected because mcporter already holds a different definition): the
+    // hint and the redirect hook leave those to the native tools.
+    let inMcporter = new Set();
+    try {
+      inMcporter = new Set(Object.keys(JSON.parse(fs.readFileSync(mcporterHome, "utf8")).mcpServers || {}));
+    } catch {}
+    const next = new Set([...conflicted(), ...[...conflictNames].filter((n) => inMcporter.has(n))]);
     if (next.size !== conflicted().size || [...next].some((n) => !conflicted().has(n))) {
       keep(conflictFile());
       writeJson(conflictFile(), [...next].sort());

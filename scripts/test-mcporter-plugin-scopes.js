@@ -43,11 +43,14 @@ const prev = keepCfg ? JSON.parse(keepCfg) : { mcpServers: {} };
 fs.mkdirSync(path.dirname(homeCfg), { recursive: true });
 prev.mcpServers.projmcp = { command: "run-projmcp", cwd: path.join(tmp, "project-a") };
 fs.writeFileSync(homeCfg, JSON.stringify(prev));
+fs.rmSync(path.join(tmp, "data with 'space", "conflicts.json"), { force: true });
 const clash = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "projmcp"]));
 assert.deepEqual(clash.migrated, []);
 assert.deepEqual(clash.disabled.claude, []);
 assert.match(clash.conflicts.join(), /projmcp \(mcporter: .*already defined differently/);
 assert.equal(JSON.parse(fs.readFileSync(homeCfg, "utf8")).mcpServers.projmcp.cwd, path.join(tmp, "project-a"));
+// The hooks then leave this project's native projmcp alone.
+assert.deepEqual(JSON.parse(fs.readFileSync(path.join(tmp, "data with 'space", "conflicts.json"), "utf8")), ["projmcp"]);
 execFileSync("sh", ["-c", `${clash.undo} --force`], { env, cwd: proj });
 if (keepCfg) fs.writeFileSync(homeCfg, keepCfg);
 else fs.rmSync(homeCfg);
