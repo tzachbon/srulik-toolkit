@@ -1,17 +1,17 @@
-{"t":1794389958713,"type":"spec","name":"old","nodes":["review","verify","report"],"edges":{"review":[],"verify":["review"],"report":["verify"]},"inputs":{},"cwd":"/home/tzach/srulik-toolkit"}
+{"t":1794389958713,"type":"spec","name":"old","nodes":["review","verify","report"],"edges":{"review":[],"verify":["review"],"report":["verify"]},"inputs":{},"cwd":"/work/project"}
 {"t":1794389958713,"type":"admit","node":"review","count":2,"items":[{"item":"bugs","src":null},{"item":"perf","src":null}]}
 {"t":1794389958714,"type":"dispatch","node":"review","index":0,"attempt":1,"taskType":"agent","item":"bugs","src":null}
 {"t":1794389958714,"type":"dispatch","node":"review","index":1,"attempt":1,"taskType":"agent","item":"perf","src":null}
-{"t":1794389958716,"type":"result","node":"review","index":0,"output":{"findings":[{"id":1},{"id":2}]},"model":"m","file":"/tmp/old-cDqKgK/nodes/review-0.md","summary":"findings: 2","attachments":[]}
+{"t":1794389958716,"type":"result","node":"review","index":0,"output":{"findings":[{"id":1},{"id":2}]},"model":"m","file":"/work/run/nodes/review-0.md","summary":"findings: 2","attachments":[]}
 {"t":1794389958717,"type":"failed","node":"review","index":1,"attempt":1,"reason":"x","final":true}
 {"t":1794389958717,"type":"admit","node":"verify","count":2,"items":[{"item":{"id":1},"src":{"node":"review","index":0}},{"item":{"id":2},"src":{"node":"review","index":0}}]}
 {"t":1794389958717,"type":"dispatch","node":"verify","index":0,"attempt":1,"taskType":"agent","item":{"id":1},"src":{"node":"review","index":0}}
 {"t":1794389958718,"type":"dispatch","node":"verify","index":1,"attempt":1,"taskType":"agent","item":{"id":2},"src":{"node":"review","index":0}}
-{"t":1794389958718,"type":"result","node":"verify","index":0,"output":{"confirmed":true},"model":"v","file":"/tmp/old-cDqKgK/nodes/verify-0.md","summary":"confirmed: true","attachments":[]}
+{"t":1794389958718,"type":"result","node":"verify","index":0,"output":{"confirmed":true},"model":"v","file":"/work/run/nodes/verify-0.md","summary":"confirmed: true","attachments":[]}
 {"t":1794389958718,"type":"outcome","node":"verify","index":0,"model":"m","kind":"agentic","ok":true}
-{"t":1794389958719,"type":"result","node":"verify","index":1,"output":{"confirmed":false},"model":"v","file":"/tmp/old-cDqKgK/nodes/verify-1.md","summary":"confirmed: false","attachments":[],"dropped":true}
+{"t":1794389958719,"type":"result","node":"verify","index":1,"output":{"confirmed":false},"model":"v","file":"/work/run/nodes/verify-1.md","summary":"confirmed: false","attachments":[],"dropped":true}
 {"t":1794389958719,"type":"gate-dropped","node":"verify","index":1}
 {"t":1794389958719,"type":"outcome","node":"verify","index":1,"model":"m","kind":"agentic","ok":false}
 {"t":1794389958719,"type":"admit","node":"report","count":1,"items":[{"item":null,"src":null}]}
 {"t":1794389958719,"type":"dispatch","node":"report","index":0,"attempt":1,"taskType":"agent","item":null,"src":null}
-{"t":1794389958720,"type":"result","node":"report","index":0,"output":{"body":"b"},"model":"w","file":"/tmp/old-cDqKgK/nodes/report-0.md","summary":"body: b","attachments":[]}
+{"t":1794389958720,"type":"result","node":"report","index":0,"output":{"body":"b"},"model":"w","file":"/work/run/nodes/report-0.md","summary":"body: b","attachments":[]}
