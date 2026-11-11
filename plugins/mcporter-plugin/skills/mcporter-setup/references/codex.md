@@ -18,5 +18,7 @@ Each `config.toml` is imported on its own: the project's `.codex/config.toml`,
   - a server defined as an inline table goes to `manual`;
   - every server in a file that holds a multi-line string (`"""` or `'''`)
     goes to `manual`, because such a string could hide or fake a table header.
-- mcporter's Codex import drops `cwd`, so a server with `cwd` is not migrated
-  and goes to `failed`.
+- mcporter's Codex import drops `cwd`, `enabled_tools` and `disabled_tools`, so
+  a server with `cwd`, `enabled_tools` or `disabled_tools` is not migrated and
+  goes to `failed`: its copy would start in another folder or expose tools
+  Codex hid.

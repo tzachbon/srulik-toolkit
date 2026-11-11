@@ -4,12 +4,12 @@ const { assert, execFileSync, fs, path, plugin, tmp, env, run, proj } = require(
 // Session hint lists servers from `mcporter config list --json` and caches them.
 const hint = run("hooks/session-hint.js", []);
 assert.match(hint, /MCP servers via mcporter.*inv/);
-const { serverCache } = require(path.join(plugin, "scripts", "mcporter-common.js"));
+const { serverCache, discoveryCache } = require(path.join(plugin, "scripts", "mcporter-common.js"));
 assert.ok(fs.existsSync(path.join(tmp, "data with 'space", path.basename(serverCache(proj)))));
 // The cache is per project: another directory gets its own list, not proj's.
 const other = path.join(tmp, "other");
 fs.mkdirSync(other);
-fs.writeFileSync(path.join(tmp, "data with 'space", path.basename(serverCache(proj))), JSON.stringify(["only-in-proj"]));
+fs.writeFileSync(path.join(tmp, "data with 'space", path.basename(discoveryCache(proj))), JSON.stringify([{ name: "only-in-proj" }]));
 const otherHint = execFileSync(process.execPath, [path.join(plugin, "hooks", "session-hint.js")], { env, encoding: "utf8", cwd: other });
 assert.doesNotMatch(otherHint, /only-in-proj/);
 assert.match(run("hooks/session-hint.js", []), /only-in-proj/);
@@ -49,8 +49,8 @@ assert.equal(decide({ tool_name: "mcp__inv__", tool_input: {} }, ["inv"]), null)
 assert.equal(decide({ tool_name: "mcp__my_srv__x", tool_input: {} }, ["my.srv", "my_srv"]), null);
 assert.equal(decide({ tool_name: "mcp__my_srv__x", tool_input: {} }, ["my.srv", "my_srv"], "block"), null);
 // Startup discovery: a slow or failing mcporter reuses the stale cache and re-dates it.
-const cacheFile = path.join(tmp, "data with 'space", path.basename(serverCache(proj)));
-fs.writeFileSync(cacheFile, JSON.stringify(["stale-srv"]));
+const cacheFile = path.join(tmp, "data with 'space", path.basename(discoveryCache(proj)));
+fs.writeFileSync(cacheFile, JSON.stringify([{ name: "stale-srv" }]));
 fs.utimesSync(cacheFile, 0, 0);
 const failEnv = { ...env, MCPORTER_BIN: path.join(tmp, "missing-mcporter.js") };
 assert.match(execFileSync(process.execPath, [path.join(plugin, "hooks", "session-hint.js")], { env: failEnv, encoding: "utf8", cwd: proj }), /stale-srv/);

@@ -7,7 +7,7 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { disableCodex, codexHasCwd } = require("./codex-toml");
+const { disableCodex, codexDropped } = require("./codex-toml");
 const { importErrors, claudeDir, claudeJson, conflictFile, conflicted, onPath, home, dataRoot, mcporter, listServers, importedSources, mcporterHomeConfig, writeJson, writeText } = require("./mcporter-common");
 
 const claudeSettings = () => path.join(claudeDir(), "settings.json");
@@ -81,6 +81,13 @@ function claudeJsonCopies(name) {
   }
 }
 
+// Whether f is dir or inside it. path.relative gives an absolute path across
+// Windows drives, which is never inside.
+const under = (dir, f, p = path) => {
+  const rel = p.relative(dir, f);
+  return !p.isAbsolute(rel) && rel !== ".." && !rel.startsWith(`..${p.sep}`);
+};
+
 // A source that runs only in this project: a file under it (not a user-level
 // config, even when setup runs from $HOME), or a Claude Code local-scope server
 // in ~/.claude.json's block for this project with no user-scope copy.
@@ -96,7 +103,6 @@ function projectBound(s) {
       return false;
     }
   }
-  const under = (dir, f) => !path.relative(dir, f).startsWith("..");
   return !user.includes(s.path) && !under(claudeDir(), s.path) && under(process.cwd(), s.path);
 }
 
@@ -173,11 +179,12 @@ function apply(names, dryRun) {
     // Claude Code's denylist is by name, so it would also block a different
     // Claude Code definition: leave those copies for the user.
     let nameOnly = other.some((x) => x.kind === "claude-code");
-    if (sources.some((x) => x.kind === "codex" && codexHasCwd(x))) {
-      // Its mcporter import would start in the wrong folder, so the hooks
-      // must not point calls at it either.
+    const dropped = sources.filter((x) => x.kind === "codex").map(codexDropped).find(Boolean);
+    if (dropped) {
+      // Its mcporter import would run in the wrong folder or expose tools
+      // Codex hid, so the hooks must not point calls at it either.
       conflictNames.add(name);
-      receipt.failed.push({ name, from: ref, reason: "Codex `cwd` is not imported by mcporter; add it to mcporter by hand, then disable the native copy" });
+      receipt.failed.push({ name, from: ref, reason: `Codex \`${dropped}\` is not imported by mcporter; add it to mcporter by hand, then disable the native copy` });
       continue;
     }
     if (claudeJsonCopies(name) > 1) {
@@ -318,7 +325,7 @@ function apply(names, dryRun) {
 // Refresh every project's session hint and redirect hook.
 function clearHintCaches() {
   try {
-    for (const f of fs.readdirSync(dataRoot())) if (/^servers-.*\.json$/.test(f)) fs.rmSync(path.join(dataRoot(), f), { force: true });
+    for (const f of fs.readdirSync(dataRoot())) if (/^(servers|discovery)-.*\.json$/.test(f)) fs.rmSync(path.join(dataRoot(), f), { force: true });
   } catch {}
 }
 
@@ -362,4 +369,4 @@ if (require.main === module) {
   console.log(JSON.stringify(out, null, 2));
 }
 
-module.exports = { backup };
+module.exports = { backup, under };

@@ -1,46 +1,67 @@
 // SessionStart: tell the agent which MCP servers to reach through mcporter.
-// Reads `mcporter config list --json` (cached for an hour) and lists saved scripts.
+// Reads `mcporter config list --json` (cached for an hour), drops names this
+// project still loads natively, and lists saved scripts.
 const fs = require("node:fs");
 const path = require("node:path");
-const { serverCache, listServers, writeJson, conflicted, toolKey } = require("../scripts/mcporter-common");
+const { claudeJson, discoveryCache, serverCache, listServers, writeJson, conflicted, toolKey } = require("../scripts/mcporter-common");
 
 const ttl = Number(process.env.MCPORTER_HINT_TTL_MS) || 3_600_000;
 
-// Discovery runs inside the 10 s hook budget, so it gets 5 s. On failure the
-// stale cache, if any, is reused and re-dated, so the next sessions skip the
-// slow call until the TTL passes again.
+// Discovery runs inside the 10 s hook budget, so it gets 5 s. Its raw result
+// is cached for the TTL; on failure the stale copy, if any, is reused and
+// re-dated, so the next sessions skip the slow call until the TTL passes again.
 // ponytail: without mcporter on PATH the npx fallback may need longer than 5 s
 // on first use; setup apply requires a global install.
-function servers() {
+function discover() {
+  const file = discoveryCache();
   let stale;
   try {
-    stale = JSON.parse(fs.readFileSync(serverCache(), "utf8"));
-    if (Date.now() - fs.statSync(serverCache()).mtimeMs < ttl) return stale;
+    stale = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (Date.now() - fs.statSync(file).mtimeMs < ttl) return stale;
   } catch {}
   try {
-    const here = path.resolve(process.cwd());
-    // Native copies this project still loads from its own .mcp.json.
-    let native = {};
-    let off = [];
-    try {
-      native = JSON.parse(fs.readFileSync(path.join(here, ".mcp.json"), "utf8")).mcpServers || {};
-      off = JSON.parse(fs.readFileSync(path.join(here, ".claude", "settings.local.json"), "utf8")).disabledMcpjsonServers || [];
-    } catch {}
-    // Not a replacement here: a server bound to another project's folder, or a
-    // name this project still defines and loads natively (setup never ran here).
-    // ponytail: other per-project sources (.claude.json local scope, .codex) are
-    // not checked here. Upgrade: compare against setup's per-project import.
-    const elsewhere = (s) => s.cwd && path.resolve(s.cwd) !== here && path.resolve(s.cwd) !== path.dirname(path.resolve(s.source?.path || ""));
-    // By tool key: "my.srv" and "my_srv" both reach mcp__my_srv__ natively.
-    const loaded = new Set(Object.keys(native).filter((n) => !off.includes(n)).map(toolKey));
-    const names = [...new Set(listServers([], { timeout: 5_000 }).filter((s) => !elsewhere(s) && !loaded.has(toolKey(s.name))).map((s) => s.name))].sort();
-    writeJson(serverCache(), names);
-    return names;
+    const found = listServers([], { timeout: 5_000 }).map((s) => ({ name: s.name, cwd: s.cwd, path: s.source?.path }));
+    writeJson(file, found);
+    return found;
   } catch (err) {
     if (!stale) throw err;
-    writeJson(serverCache(), stale);
+    writeJson(file, stale);
     return stale;
   }
+}
+
+const read = (f) => {
+  try {
+    return JSON.parse(fs.readFileSync(f, "utf8"));
+  } catch {
+    return {};
+  }
+};
+
+// The servers this project should reach through mcporter, rechecked against
+// its native config on every start, so a native copy added within the TTL
+// still wins. Written for the redirect hook to read.
+// ponytail: a project's .codex config is not checked here. Upgrade: compare
+// against setup's per-project import.
+function servers() {
+  const here = path.resolve(process.cwd());
+  // Native copies this project still loads: its .mcp.json servers, and its
+  // Claude Code local-scope servers (its block in ~/.claude.json).
+  const off = read(path.join(here, ".claude", "settings.local.json")).disabledMcpjsonServers || [];
+  const local = read(claudeJson()).projects?.[here] || {};
+  const native = [
+    ...Object.keys(read(path.join(here, ".mcp.json")).mcpServers || {}).filter((n) => !off.includes(n)),
+    ...Object.keys(local.mcpServers || {}).filter((n) => !(local.disabledMcpServers || []).includes(n)),
+  ];
+  const found = discover();
+  // A server bound to another project's folder belongs to that project. Its
+  // tool key goes too, so a same-key name ("my.srv", "my_srv") is not offered
+  // for the other one's native calls.
+  const elsewhere = (s) => s.cwd && path.resolve(s.cwd) !== here && path.resolve(s.cwd) !== path.dirname(path.resolve(s.path || ""));
+  const taken = new Set([...native, ...found.filter(elsewhere).map((s) => s.name)].map(toolKey));
+  const names = [...new Set(found.map((s) => s.name).filter((n) => !taken.has(toolKey(n))))].sort();
+  writeJson(serverCache(), names);
+  return names;
 }
 
 function scripts() {

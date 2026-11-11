@@ -106,10 +106,10 @@ const median = (xs) => {
   return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
 };
 
-// Each finished run is appended to a partial file, so a later failure keeps
-// the paid runs; the results file is replaced only when every run finished.
-const partial = path.join(here, `results-${pages}-pages.partial.jsonl`);
-fs.rmSync(partial, { force: true });
+// Each finished run is appended to this invocation's own partial file, so a
+// failure keeps the paid runs, including an earlier interrupted invocation's.
+// The results file is replaced only when every run finished.
+const partial = path.join(here, `results-${pages}-pages.partial-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`);
 const results = [];
 for (let i = 0; i < runs; i++) {
   for (const name of Object.keys(arms)) {

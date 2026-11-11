@@ -38,7 +38,7 @@ if any(t in setup_core for t in ["deniedMcpServers", "disabledMcpjsonServers", "
     raise SystemExit("mcporter-setup core must keep host switches in its references")
 for ref, tokens in {
     "claude-code.md": ["deniedMcpServers", "disabledMcpjsonServers", "disabledMcpServers", "CLAUDE_CONFIG_DIR", ".mcp.json", "manual"],
-    "codex.md": ["enabled = false", "$CODEX_HOME", "inline table", "multi-line string", "cwd"],
+    "codex.md": ["enabled = false", "$CODEX_HOME", "inline table", "multi-line string", "with `cwd`, `enabled_tools` or `disabled_tools` is not migrated"],
 }.items():
     text = (setup_refs / ref).read_text(encoding="utf-8")
     if not all(t in text for t in tokens):
@@ -50,4 +50,4 @@ bench = (mcp_plugin / "benchmark" / "README.md").read_text(encoding="utf-8")
 if not all(t in bench for t in ["Input tokens", "Time", "results-20-pages.json", "results-4-pages.json"]):
     raise SystemExit("mcporter benchmark README must report tokens and time with raw data")
 
-subprocess.run([node, str(root / "scripts" / "test-mcporter-plugin.js")], check=True, timeout=60, stdout=subprocess.DEVNULL)
+subprocess.run([node, str(root / "scripts" / "test-mcporter-plugin.js")], check=True, timeout=300, stdout=subprocess.DEVNULL)

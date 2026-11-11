@@ -10,8 +10,11 @@ const dataRoot = () =>
   process.env.PLUGIN_DATA || process.env.CLAUDE_PLUGIN_DATA || path.join(home(), ".mcporter", "plugin");
 // Discovery depends on the project (its config/mcporter.json and editor
 // files), so the cache is per working directory.
-const serverCache = (cwd = process.cwd()) =>
-  path.join(dataRoot(), `servers-${crypto.createHash("sha256").update(cwd).digest("hex").slice(0, 16)}.json`);
+// servers-*: the names the hint offered (the redirect hook reads them);
+// discovery-*: mcporter's raw list, rechecked against native config each start.
+const projectId = (cwd) => crypto.createHash("sha256").update(cwd).digest("hex").slice(0, 16);
+const serverCache = (cwd = process.cwd()) => path.join(dataRoot(), `servers-${projectId(cwd)}.json`);
+const discoveryCache = (cwd = process.cwd()) => path.join(dataRoot(), `discovery-${projectId(cwd)}.json`);
 
 // Claude Code's config dir and global config, moved by CLAUDE_CONFIG_DIR.
 const claudeDir = () => process.env.CLAUDE_CONFIG_DIR || path.join(home(), ".claude");
@@ -140,4 +143,4 @@ const conflicted = () => {
   }
 };
 
-module.exports = { importErrors, launcher, which, claudeDir, claudeJson, conflictFile, conflicted, onPath, home, dataRoot, serverCache, mcporter, listServers, importedSources, mcporterHomeConfig, toolKey, writeJson, writeText };
+module.exports = { importErrors, launcher, which, claudeDir, claudeJson, conflictFile, conflicted, onPath, home, dataRoot, serverCache, discoveryCache, mcporter, listServers, importedSources, mcporterHomeConfig, toolKey, writeJson, writeText };

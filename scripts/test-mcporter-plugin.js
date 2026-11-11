@@ -278,4 +278,5 @@ execFileSync("sh", ["-c", bound.undo], { env, cwd: proj });
 fs.writeFileSync(codexHome, codexBefore);
 
 require("./test-mcporter-plugin-auth");
+require("./test-mcporter-plugin-review");
 require("./test-mcporter-plugin-hooks");

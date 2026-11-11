@@ -35,18 +35,21 @@ function codexTable(text, name) {
   return { start, end, body: text.slice(start, end) };
 }
 
-// mcporter 0.17's Codex import drops `cwd`, so the copy would start elsewhere.
-// When the table cannot be located (an inline table), any `cwd` in the file counts.
-const codexHasCwd = (s) => {
+// Keys mcporter 0.17's Codex import drops: `cwd` (the copy would start
+// elsewhere) and the tool filters (the copy would expose tools Codex hid).
+// Returns the first one the server sets, or null. When the table cannot be
+// located (an inline table, or a multi-line string that could fake its
+// header), any of them anywhere in the file counts.
+const DROPPED = ["cwd", "enabled_tools", "disabled_tools"];
+const codexDropped = (s) => {
   try {
     const text = fs.readFileSync(s.path, "utf8");
-    // A multi-line string can fake the table header, so then check the whole file.
     const table = /"""|'''/.test(text) ? null : codexTable(text, s.name);
-    return table ? /^[ \t]*(?:cwd|"cwd"|'cwd')[ \t]*=/m.test(table.body) : /(?:^|[{,\s])["']?cwd["']?[ \t]*=/m.test(text);
+    return DROPPED.find((k) => (table ? new RegExp(`^[ \\t]*["']?${k}["']?[ \\t]*=`, "m").test(table.body) : new RegExp(`(?:^|[{,\\s])["']?${k}["']?[ \\t]*=`, "m").test(text))) ?? null;
   } catch {
-    return true;
+    return "cwd";
   }
 };
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-module.exports = { disableCodex, codexHasCwd };
+module.exports = { disableCodex, codexDropped };
