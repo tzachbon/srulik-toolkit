@@ -12,17 +12,20 @@ if codex_catalog["plugins"][1].get("source") != {"source": "local", "path": "./p
     raise SystemExit("wrong mcporter-plugin Codex catalog entry")
 
 mcp_hooks = json.loads((mcp_plugin / "hooks" / "hooks.json").read_text(encoding="utf-8"))["hooks"]
-if set(mcp_hooks) != {"SessionStart", "PreToolUse"} or mcp_hooks["PreToolUse"][0]["matcher"] != "mcp__.*":
-    raise SystemExit("mcporter-plugin hooks must be SessionStart and PreToolUse on mcp__.*")
-for event, script in [("SessionStart", "session-hint.js"), ("PreToolUse", "redirect-mcp.js")]:
-    if script not in mcp_hooks[event][0]["hooks"][0]["command"] or not (mcp_plugin / "hooks" / script).is_file():
-        raise SystemExit(f"mcporter-plugin {event} hook must run hooks/{script}")
+codex_hooks = json.loads((mcp_plugin / "hooks" / "codex-hooks.json").read_text(encoding="utf-8"))["hooks"]
+# Codex has no PostToolUseFailure; its PostToolUse also runs after a failed command.
+for hooks, failure in [(mcp_hooks, "PostToolUseFailure"), (codex_hooks, "PostToolUse")]:
+    if set(hooks) != {"SessionStart", "PreToolUse", failure} or hooks["PreToolUse"][0]["matcher"] != "mcp__.*" or hooks[failure][0]["matcher"] != "Bash":
+        raise SystemExit(f"mcporter-plugin hooks must be SessionStart, PreToolUse on mcp__.* and {failure} on Bash")
+    for event, script in [("SessionStart", "session-hint.js"), ("PreToolUse", "redirect-mcp.js"), (failure, "auth-notice.js")]:
+        if script not in hooks[event][0]["hooks"][0]["command"] or not (mcp_plugin / "hooks" / script).is_file():
+            raise SystemExit(f"mcporter-plugin {event} hook must run hooks/{script}")
 if "config\", \"list\", \"--json\"" not in (mcp_plugin / "scripts" / "mcporter-common.js").read_text(encoding="utf-8"):
     raise SystemExit("session hint must read `mcporter config list --json`")
 
 for name, tokens in {
     "mcporter-setup": ["Never delete a harness MCP entry", "Disable only", "receipt", "undo", "approves step 3", "mcporter auth", "only after mcporter reached the server", "Never print secret values", "--force", "narrowest scope", "references/claude-code.md", "references/codex.md"],
-    "mcporter": [".mcporter/scripts/", "README.md", "createRuntime()", "mcporter record", "mcporter replay", "Reuse or extend", "stderr"],
+    "mcporter": [".mcporter/scripts/", "README.md", "createRuntime()", "mcporter record", "mcporter replay", "Reuse or extend", "stderr", "mcporter auth <name>", "MCPORTER_OAUTH_NO_BROWSER=1"],
 }.items():
     text = (mcp_plugin / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
     if not text.startswith(f"---\nname: {name}\n") or not all(t in text for t in tokens):

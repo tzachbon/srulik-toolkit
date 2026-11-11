@@ -51,6 +51,14 @@ function scripts() {
   }
 }
 
+// A server that needs a login fails at once with "run 'mcporter auth <name>'"
+// instead of opening a browser nobody watches and waiting 5 minutes; the
+// auth-notice hook then tells the user. Silent token refresh still works.
+// ponytail: Claude Code only (Codex has no env file); Codex relies on the skill rule.
+try {
+  if (process.env.CLAUDE_ENV_FILE) fs.appendFileSync(process.env.CLAUDE_ENV_FILE, "export MCPORTER_OAUTH_NO_BROWSER=1\n");
+} catch {}
+
 try {
   // A name whose native copy is another backend stays on the native tools,
   // and so does any name sharing its tool key ("my.srv" and "my_srv").

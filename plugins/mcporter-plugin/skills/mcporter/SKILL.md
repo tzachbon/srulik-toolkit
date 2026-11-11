@@ -24,6 +24,14 @@ you need.
 Servers the harness injects itself (they are absent from `mcporter list`) stay
 on their native tools.
 
+## Login needed
+
+When a call fails with `Authorization required ... run 'mcporter auth <name>'`,
+stop. Do not retry, switch to the native tool, or edit the config: ask the user
+to run that command (with `--no-browser` it prints the login URL), then
+continue. Run with `MCPORTER_OAUTH_NO_BROWSER=1` so a call fails at once
+instead of opening a browser and waiting for a login.
+
 ## Write a script
 
 1. Read `.mcporter/scripts/README.md`. Reuse or extend an existing script

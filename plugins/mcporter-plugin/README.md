@@ -24,8 +24,23 @@ claude plugin install mcporter-plugin@srulik-toolkit
   disable by hand.
 - A startup hint lists the servers from `mcporter config list`, and a hook adds
   the matching `mcporter call` command to any native MCP call for those servers.
+- When a server needs a login, a hook shows you the `mcporter auth <name>`
+  command and tells the agent to wait, instead of retrying. On a remote machine,
+  see [Logging in over SSH](#logging-in-over-ssh).
 - The `mcporter` skill says when to write a script, where to save it
   (`.mcporter/scripts/`), and how to check it with recorded fixtures.
+
+## Logging in over SSH
+
+mcporter's login sends the browser back to `localhost` on the machine running
+it, which your own browser cannot reach. Pin the callback port, forward it,
+then log in:
+
+1. Set `"oauthRedirectUrl": "http://localhost:47610/callback"` on the server in
+   `~/.mcporter/mcporter.json`.
+2. On your computer: `ssh -L 47610:localhost:47610 <host>`.
+3. In that SSH session: `mcporter auth <name> --no-browser`, then open the
+   printed URL in your browser.
 
 ## Benchmark
 
