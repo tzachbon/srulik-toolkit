@@ -11,6 +11,8 @@ const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "mcporter-plug
 const home = path.join(tmp, "home");
 fs.mkdirSync(path.join(home, ".codex"), { recursive: true });
 fs.mkdirSync(path.join(home, ".claude"), { recursive: true });
+// The fake imports serve the entries; the files only need to exist.
+fs.writeFileSync(path.join(home, ".claude.json"), "{}");
 
 // Fake mcporter, matching 0.17 behavior the plugin relies on:
 // - `config import <kind> --json` lists that kind's entries, first definition of a
@@ -69,6 +71,7 @@ const imports = [
 ];
 const env = {
   ...process.env,
+  CLAUDE_CONFIG_DIR: "",
   HOME: home,
   CODEX_HOME: path.join(home, ".codex"),
   XDG_CONFIG_HOME: path.join(home, ".config"),

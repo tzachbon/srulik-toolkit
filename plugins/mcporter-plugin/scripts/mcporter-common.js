@@ -13,24 +13,43 @@ const dataRoot = () =>
 const serverCache = (cwd = process.cwd()) =>
   path.join(dataRoot(), `servers-${crypto.createHash("sha256").update(cwd).digest("hex").slice(0, 16)}.json`);
 
+// Claude Code's config dir and global config, moved by CLAUDE_CONFIG_DIR.
+const claudeDir = () => process.env.CLAUDE_CONFIG_DIR || path.join(home(), ".claude");
+const claudeJson = () => path.join(process.env.CLAUDE_CONFIG_DIR || home(), ".claude.json");
+
 // MCPORTER_BIN overrides the command (tests use a fake). Otherwise prefer a
-// global install and fall back to npx.
+// global install and fall back to npx. Windows npm installs are .cmd shims,
+// which execFile cannot start without a shell, so there the package's CLI (or
+// npm's npx-cli.js) runs under node directly and no argument passes a shell.
+function launcher(platform = process.platform) {
+  if (process.env.MCPORTER_BIN) return [process.execPath, [process.env.MCPORTER_BIN]];
+  const found = which("mcporter", platform);
+  if (found && platform !== "win32") return [found, []];
+  const cli = found && path.join(path.dirname(found), "node_modules", "mcporter", "dist", "cli.js");
+  if (cli && fs.existsSync(cli)) return [process.execPath, [cli]];
+  const npx = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npx-cli.js");
+  if (platform === "win32" && fs.existsSync(npx)) return [process.execPath, [npx, "-y", "mcporter@0.17.0"]];
+  return ["npx", ["-y", "mcporter@0.17.0"]];
+}
 function mcporter(args, { timeout = 30_000 } = {}) {
-  const bin = process.env.MCPORTER_BIN;
-  const [cmd, pre] = bin ? [process.execPath, [bin]] : onPath("mcporter") ? ["mcporter", []] : ["npx", ["-y", "mcporter@0.17.0"]];
+  const [cmd, pre] = launcher();
   return execFileSync(cmd, [...pre, ...args], { encoding: "utf8", timeout, stdio: ["ignore", "pipe", "pipe"] });
 }
 
-function onPath(name) {
-  return (process.env.PATH || "").split(path.delimiter).some((dir) => {
-    try {
-      fs.accessSync(path.join(dir, name), fs.constants.X_OK);
-      return true;
-    } catch {
-      return false;
+// The first PATH entry for `name` (with .cmd/.exe on Windows), or undefined.
+function which(name, platform = process.platform) {
+  const exts = platform === "win32" ? ["", ".cmd", ".exe"] : [""];
+  for (const dir of (process.env.PATH || "").split(path.delimiter).filter(Boolean)) {
+    for (const ext of exts) {
+      const file = path.join(dir, name + ext);
+      try {
+        fs.accessSync(file, platform === "win32" ? fs.constants.F_OK : fs.constants.X_OK);
+        return file;
+      } catch {}
     }
-  });
+  }
 }
+const onPath = (name) => Boolean(which(name));
 
 // mcporter's home config, as mcporter 0.17 config/path-discovery.js picks it:
 // the first existing of mcporter.json / mcporter.jsonc under
@@ -57,9 +76,9 @@ const importFrom = (kind, file) => {
 };
 
 // One entry per source file. mcporter keeps only the first definition of a name,
-// even across files of one editor, so Codex files (which setup edits) are read
-// one by one; mcporter 0.17 reads <cwd>/.codex and ~/.codex but not $CODEX_HOME.
-// Its claude-code import also skips the project's .mcp.json, so that is read too.
+// even across files of one editor, so the Codex and Claude Code files (which
+// setup edits) are read one by one, in mcporter 0.17's order. mcporter misses
+// $CODEX_HOME, CLAUDE_CONFIG_DIR and the project's .mcp.json; those are read too.
 function importedSources() {
   const codexFiles = [
     path.resolve(".codex", "config.toml"),
@@ -67,9 +86,15 @@ function importedSources() {
     path.join(home(), ".codex", "config.toml"),
   ];
   const codex = [...new Set(codexFiles)].filter((f) => fs.existsSync(f)).flatMap((f) => importFrom("codex", f));
-  const mcpJson = path.resolve(".mcp.json");
-  const project = fs.existsSync(mcpJson) ? importFrom("claude-code", mcpJson) : [];
-  const all = [...IMPORT_KINDS.filter((k) => k !== "codex").flatMap((k) => importFrom(k)), ...project, ...codex];
+  const claudeFiles = [
+    ...["settings.local.json", "settings.json", "mcp.json"].map((f) => path.resolve(".claude", f)),
+    ...["settings.local.json", "settings.json", "mcp.json"].map((f) => path.join(claudeDir(), f)),
+    claudeJson(),
+    path.resolve(".mcp.json"),
+  ];
+  // Read in mcporter's own order, so the first copy listed is the one it would pick.
+  const claude = [...new Set(claudeFiles)].filter((f) => fs.existsSync(f)).flatMap((f) => importFrom("claude-code", f));
+  const all = IMPORT_KINDS.flatMap((k) => (k === "claude-code" ? claude : k === "codex" ? codex : importFrom(k)));
   return all.filter((s, i) => all.findIndex((o) => o.name === s.name && o.path === s.path) === i);
 }
 
@@ -99,4 +124,15 @@ function writeText(file, text, force) {
 }
 const writeJson = (file, value, mode) => writeText(file, `${JSON.stringify(value, null, 2)}\n`, mode);
 
-module.exports = { onPath, home, dataRoot, serverCache, mcporter, listServers, importedSources, mcporterHomeConfig, toolKey, writeJson, writeText };
+// Names whose native copy is defined differently from the mcporter one: the
+// hint and the redirect hook leave those to the native tools.
+const conflictFile = () => path.join(dataRoot(), "conflicts.json");
+const conflicted = () => {
+  try {
+    return new Set(JSON.parse(fs.readFileSync(conflictFile(), "utf8")));
+  } catch {
+    return new Set();
+  }
+};
+
+module.exports = { launcher, which, claudeDir, claudeJson, conflictFile, conflicted, onPath, home, dataRoot, serverCache, mcporter, listServers, importedSources, mcporterHomeConfig, toolKey, writeJson, writeText };

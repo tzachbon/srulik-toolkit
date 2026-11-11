@@ -3,7 +3,7 @@
 // not know, such as harness-injected session servers, pass through silently.
 // MCPORTER_HOOK_MODE=block denies the call instead.
 const fs = require("node:fs");
-const { serverCache, toolKey } = require("../scripts/mcporter-common");
+const { serverCache, toolKey, conflicted } = require("../scripts/mcporter-common");
 
 function decide(input, names, mode = "warn") {
   const name = input.tool_name || "";
@@ -29,7 +29,9 @@ if (require.main === module) {
   process.stdin.on("end", () => {
     try {
       const input = JSON.parse(raw);
-      const names = JSON.parse(fs.readFileSync(serverCache(input.cwd || process.cwd()), "utf8"));
+      // A name whose native copy is another backend is not the same server.
+      const skip = conflicted();
+      const names = JSON.parse(fs.readFileSync(serverCache(input.cwd || process.cwd()), "utf8")).filter((n) => !skip.has(n));
       const out = decide(input, names, process.env.MCPORTER_HOOK_MODE);
       if (out) console.log(JSON.stringify(out));
     } catch {}

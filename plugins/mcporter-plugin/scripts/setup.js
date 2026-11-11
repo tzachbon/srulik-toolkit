@@ -4,11 +4,21 @@
 //   setup.js apply --servers a,b [--dry-run]  -> copy to home config, verify, disable native copies
 //   setup.js undo <receipt.json>              -> restore every backed-up file
 // Node.js standard library only.
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { onPath, home, dataRoot, mcporter, listServers, importedSources, mcporterHomeConfig, writeJson, writeText } = require("./mcporter-common");
+const { claudeDir, claudeJson, conflictFile, conflicted, onPath, home, dataRoot, mcporter, listServers, importedSources, mcporterHomeConfig, writeJson, writeText } = require("./mcporter-common");
 
-const claudeSettings = () => path.join(home(), ".claude", "settings.json");
+const claudeSettings = () => path.join(claudeDir(), "settings.json");
+// Per-project switches Claude Code reads (as `/mcp disable` writes them).
+const projectClaudeLocal = () => path.resolve(".claude", "settings.local.json");
+const hash = (f) => {
+  try {
+    return crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex");
+  } catch {
+    return null;
+  }
+};
 
 function inventory() {
   const local = listServers(["--source", "local"]);
@@ -22,12 +32,17 @@ function inventory() {
 }
 
 // Back up once per file before the first write. A file that did not exist is
-// recorded with backup: null so undo deletes it.
+// recorded with backup: null so undo deletes it. Backups can hold inline
+// secrets, so they go owner-only under the plugin data dir, never beside a
+// project file where `git add` could pick them up.
+// ponytail: backups are kept for undo and never pruned; delete old ones by hand.
 function backup(file, stamp, receipt) {
   if (receipt.backups.some((b) => b.file === file)) return;
   if (!fs.existsSync(file)) return receipt.backups.push({ file, backup: null });
-  const copy = `${file}.mcporter-backup-${stamp}`;
+  const copy = path.join(dataRoot(), "backups", stamp, path.resolve(file).replace(/[:\\/]/g, "_"));
+  fs.mkdirSync(path.dirname(copy), { recursive: true, mode: 0o700 });
   fs.copyFileSync(file, copy);
+  fs.chmodSync(copy, 0o600);
   receipt.backups.push({ file, backup: copy });
 }
 
@@ -38,6 +53,13 @@ function disableClaude(names) {
   const denied = Array.isArray(settings.deniedMcpServers) ? settings.deniedMcpServers : [];
   for (const serverName of names) if (!denied.some((d) => d.serverName === serverName)) denied.push({ serverName });
   writeJson(file, { ...settings, deniedMcpServers: denied });
+}
+// Add names to a string list in a JSON file, at `at(value)` (created if missing).
+function addNames(file, at, names) {
+  const value = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : {};
+  const [obj, key] = at(value);
+  obj[key] = [...new Set([...(Array.isArray(obj[key]) ? obj[key] : []), ...names])];
+  writeJson(file, value);
 }
 
 // Codex: set `enabled = false` inside each [mcp_servers.<name>] table.
@@ -93,7 +115,7 @@ const codexHasCwd = (s) => {
 // than one block (user or project) is a conflict, even with equal definitions.
 function claudeJsonCopies(name) {
   try {
-    const raw = JSON.parse(fs.readFileSync(path.join(home(), ".claude.json"), "utf8"));
+    const raw = JSON.parse(fs.readFileSync(claudeJson(), "utf8"));
     return [raw.mcpServers?.[name], ...Object.values(raw.projects || {}).map((p) => p?.mcpServers?.[name])].filter(Boolean).length;
   } catch {
     return 0;
@@ -106,11 +128,10 @@ function claudeJsonCopies(name) {
 // ponytail: other editors' user files under $HOME (e.g. ~/.cursor) still count
 // as project files when setup runs from $HOME; those copies are manual anyway.
 function projectBound(s) {
-  const claudeJson = path.join(home(), ".claude.json");
-  const user = [claudeJson, path.join(process.env.CODEX_HOME || path.join(home(), ".codex"), "config.toml"), path.join(home(), ".codex", "config.toml")];
-  if (s.path === claudeJson) {
+  const user = [claudeJson(), path.join(process.env.CODEX_HOME || path.join(home(), ".codex"), "config.toml"), path.join(home(), ".codex", "config.toml")];
+  if (s.path === claudeJson()) {
     try {
-      const raw = JSON.parse(fs.readFileSync(claudeJson, "utf8"));
+      const raw = JSON.parse(fs.readFileSync(claudeJson(), "utf8"));
       return !raw.mcpServers?.[s.name] && Boolean(raw.projects?.[process.cwd()]?.mcpServers?.[s.name]);
     } catch {
       return false;
@@ -151,7 +172,7 @@ function apply(names, dryRun) {
   // Fail before any write when a file we must edit is unreadable.
   // ponytail: a .jsonc home config with comments is refused (no JSONC parser in
   // the stdlib); mcporter itself drops comments when it rewrites the file.
-  for (const file of [claudeSettings(), mcporterHome]) {
+  for (const file of [claudeSettings(), claudeJson(), projectClaudeLocal(), mcporterHome]) {
     if (!fs.existsSync(file)) continue;
     try {
       JSON.parse(fs.readFileSync(file, "utf8"));
@@ -160,6 +181,7 @@ function apply(names, dryRun) {
     }
   }
 
+  const conflictNames = new Set();
   for (const name of names) {
     const sources = found.get(name);
     if (!sources) {
@@ -183,6 +205,7 @@ function apply(names, dryRun) {
     const same = (s) => JSON.stringify(resolved(s)) === JSON.stringify(resolved(sources[0]));
     const native = sources.filter(same).map((s) => ({ kind: s.kind, path: s.path }));
     const other = sources.filter((x) => !same(x));
+    if (other.length) conflictNames.add(name);
     for (const s of other) receipt.conflicts.push(`${name} (${s.kind}: ${s.path}): defined differently from ${ref} (or bound to another project folder); left enabled`);
     // Claude Code's denylist is by name, so it would also block a different
     // Claude Code definition: leave those copies for the user.
@@ -193,7 +216,8 @@ function apply(names, dryRun) {
     }
     if (claudeJsonCopies(name) > 1) {
       nameOnly = true;
-      receipt.conflicts.push(`${name} (claude-code: ${path.join(home(), ".claude.json")}): defined in more than one scope (user or project); not denied`);
+      conflictNames.add(name);
+      receipt.conflicts.push(`${name} (claude-code: ${claudeJson()}): defined in more than one scope (user or project); not denied`);
     }
     if (!sources[0].entry) {
       receipt.failed.push({ name, from: ref, reason: "mcporter returned no definition" });
@@ -251,14 +275,32 @@ function apply(names, dryRun) {
 
   const ok = receipt.migrated.filter((m) => !m.dryRun);
   const copies = ok.flatMap((m) => m.native.map((n) => ({ name: m.name, conflict: m.claudeConflict, ...n })));
-  const manual = copies.filter((c) => (c.kind !== "claude-code" || c.conflict) && c.kind !== "codex");
-  // Claude Code: one user-level denylist covers user, project and .mcp.json scopes.
-  const claudeNames = [...new Set(copies.filter((c) => c.kind === "claude-code" && !c.conflict).map((c) => c.name))];
-  if (claudeNames.length) {
+  // Claude Code, by where the copy lives. A user-scope server loads in every
+  // project, so it goes on the user denylist. A project's .mcp.json server and
+  // a local-scope server (this project's block in ~/.claude.json) are switched
+  // off for this project only, so another project's same-name server is untouched.
+  // Project .claude/*.json copies and same-name conflicts are left for the user.
+  // ponytail: a user-scope deny also hides another project's same-name project
+  // server, which setup does not see. Upgrade: scan every project for the name.
+  const userClaude = [claudeJson(), ...["settings.local.json", "settings.json", "mcp.json"].map((f) => path.join(claudeDir(), f))];
+  const claudeCopies = copies.filter((c) => c.kind === "claude-code" && !c.conflict);
+  const scope = (c) =>
+    c.path === path.resolve(".mcp.json") ? "mcpjson" : c.path === claudeJson() && projectBound(c) ? "local" : userClaude.includes(c.path) ? "user" : "manual";
+  const manual = copies.filter((c) => (c.kind !== "claude-code" || c.conflict || scope(c) === "manual") && c.kind !== "codex");
+  const named = (s) => [...new Set(claudeCopies.filter((c) => scope(c) === s).map((c) => c.name))];
+  if (named("user").length) {
     keep(claudeSettings());
-    disableClaude(claudeNames);
-    receipt.disabled.claude = claudeNames;
+    disableClaude(named("user"));
   }
+  if (named("mcpjson").length) {
+    keep(projectClaudeLocal());
+    addNames(projectClaudeLocal(), (v) => [v, "disabledMcpjsonServers"], named("mcpjson"));
+  }
+  if (named("local").length) {
+    keep(claudeJson());
+    addNames(claudeJson(), (v) => [v.projects[process.cwd()], "disabledMcpServers"], named("local"));
+  }
+  receipt.disabled.claude = [...new Set(claudeCopies.filter((c) => scope(c) !== "manual").map((c) => c.name))];
   // Codex: edit each config.toml that defines the server (home or project).
   for (const [file, names] of groupBy(copies.filter((c) => c.kind === "codex"), (c) => c.path)) {
     if (!fs.existsSync(file)) {
@@ -273,6 +315,17 @@ function apply(names, dryRun) {
   receipt.manual = manual.map((c) => `${c.name} (${c.kind}: ${c.path}): disable it in that editor`);
 
   if (!dryRun) {
+    // Servers now in mcporter whose native copy is another backend: the hint
+    // and the redirect hook leave those to the native tools.
+    const inMcporter = new Set([...ok, ...receipt.authRequired].map((m) => m.name));
+    const next = new Set([...conflicted()].filter((n) => !inMcporter.has(n) || conflictNames.has(n)));
+    for (const n of conflictNames) if (inMcporter.has(n)) next.add(n);
+    if (next.size !== conflicted().size || [...next].some((n) => !conflicted().has(n))) {
+      keep(conflictFile());
+      writeJson(conflictFile(), [...next].sort());
+    }
+    // State after apply, so undo can refuse to overwrite later changes.
+    for (const b of receipt.backups) b.after = hash(b.file);
     save();
     receipt.receipt = receiptFile;
     clearHintCaches();
@@ -287,8 +340,13 @@ function clearHintCaches() {
   } catch {}
 }
 
-function undo(file) {
+function undo(file, force) {
   const receipt = JSON.parse(fs.readFileSync(file, "utf8"));
+  // A later apply or edit would be lost by restoring the older snapshot.
+  const changed = receipt.backups.filter((b) => "after" in b && hash(b.file) !== b.after).map((b) => b.file);
+  if (changed.length && !force) {
+    throw new Error(`changed since this apply: ${changed.join(", ")}. Undo newer receipts first, or rerun with --force to restore anyway. Nothing was changed.`);
+  }
   for (const { file: target, backup: copy } of receipt.backups) {
     if (copy) fs.copyFileSync(copy, target);
     else fs.rmSync(target, { force: true });
@@ -306,7 +364,7 @@ if (require.main === module) {
   const commands = {
     inventory: () => inventory(),
     apply: () => flag("--servers") && apply(flag("--servers").split(",").filter(Boolean), rest.includes("--dry-run")),
-    undo: () => rest[0] && undo(rest[0]),
+    undo: () => rest[0] && undo(rest[0], rest.includes("--force")),
   };
   let out;
   try {

@@ -12,3 +12,26 @@ assert.deepEqual(disableCodex(fakeHeader, ["inv"]), { text: fakeHeader, missed: 
 const toml = disableCodex("[mcp_servers.a]\n  enabled = true\n\n [ mcp_servers.'b' ] # note\nx = 1\n[mcp_servers.d]\n'enabled' = true\n[mcp_servers]\nc = { command = 'x' }\n", ["a", "b", "c", "d"]);
 assert.equal(toml.text, "[mcp_servers.a]\n  enabled = false\n\n [ mcp_servers.'b' ] # note\nenabled = false\nx = 1\n[mcp_servers.d]\nenabled = false\n[mcp_servers]\nc = { command = 'x' }\n");
 assert.deepEqual(toml.missed, ["c"]);
+
+// Windows: an npm `mcporter.cmd` shim is found, and its package CLI runs under
+// node directly (execFile cannot start a .cmd without a shell).
+const { launcher, claudeDir, claudeJson } = require(path.join(plugin, "scripts", "mcporter-common.js"));
+const fs = require("node:fs");
+const os = require("node:os");
+const shim = fs.mkdtempSync(path.join(os.tmpdir(), "mcporter-shim-"));
+fs.writeFileSync(path.join(shim, "mcporter.cmd"), "@echo off\n");
+fs.mkdirSync(path.join(shim, "node_modules", "mcporter", "dist"), { recursive: true });
+fs.writeFileSync(path.join(shim, "node_modules", "mcporter", "dist", "cli.js"), "");
+const saved = { PATH: process.env.PATH, MCPORTER_BIN: process.env.MCPORTER_BIN, CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR };
+delete process.env.MCPORTER_BIN;
+process.env.PATH = shim;
+assert.deepEqual(launcher("win32"), [process.execPath, [path.join(shim, "node_modules", "mcporter", "dist", "cli.js")]]);
+// Without any install, Windows never asks execFile to start the npx.cmd shim.
+process.env.PATH = path.join(shim, "none");
+assert.notEqual(launcher("win32")[0], "npx.cmd");
+// CLAUDE_CONFIG_DIR moves both Claude Code's settings and its .claude.json.
+process.env.CLAUDE_CONFIG_DIR = path.join(shim, "cc");
+assert.equal(claudeDir(), path.join(shim, "cc"));
+assert.equal(claudeJson(), path.join(shim, "cc", ".claude.json"));
+for (const [k, v] of Object.entries(saved)) v === undefined ? delete process.env[k] : (process.env[k] = v);
+fs.rmSync(shim, { recursive: true, force: true });

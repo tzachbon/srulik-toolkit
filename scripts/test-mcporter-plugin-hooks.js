@@ -51,6 +51,11 @@ const failEnv = { ...env, MCPORTER_BIN: path.join(tmp, "missing-mcporter.js") };
 assert.match(execFileSync(process.execPath, [path.join(plugin, "hooks", "session-hint.js")], { env: failEnv, encoding: "utf8", cwd: proj }), /stale-srv/);
 assert.ok(Date.now() - fs.statSync(cacheFile).mtimeMs < 60_000);
 fs.rmSync(cacheFile);
+// A conflicting name (another backend natively) gets no hint and no redirect.
+fs.writeFileSync(path.join(tmp, "data with 'space", "conflicts.json"), JSON.stringify(["inv"]));
+assert.equal(run("hooks/redirect-mcp.js", [], JSON.stringify({ tool_name: "mcp__inv__get_item", tool_input: {}, cwd: other })), "");
+assert.doesNotMatch(execFileSync(process.execPath, [path.join(plugin, "hooks", "session-hint.js")], { env, encoding: "utf8", cwd: other }), /\binv\b/);
+fs.rmSync(path.join(tmp, "data with 'space", "conflicts.json"));
 const piped = run("hooks/redirect-mcp.js", [], JSON.stringify({ tool_name: "mcp__inv__get_item", tool_input: { id: "a" }, cwd: other }));
 assert.match(JSON.parse(piped).hookSpecificOutput.additionalContext, /'id:a'/);
 

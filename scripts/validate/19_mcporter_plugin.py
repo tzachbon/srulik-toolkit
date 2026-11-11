@@ -21,7 +21,7 @@ if "config\", \"list\", \"--json\"" not in (mcp_plugin / "scripts" / "mcporter-c
     raise SystemExit("session hint must read `mcporter config list --json`")
 
 for name, tokens in {
-    "mcporter-setup": ["Never delete a harness MCP entry", "Disable only", "deniedMcpServers", "enabled = false", "receipt", "undo", "approves step 3", "mcporter auth"],
+    "mcporter-setup": ["Never delete a harness MCP entry", "Disable only", "deniedMcpServers", "enabled = false", "receipt", "undo", "approves step 3", "mcporter auth", "only after mcporter reached the server", "Never print secret values", "disabledMcpjsonServers", "--force"],
     "mcporter": [".mcporter/scripts/", "README.md", "createRuntime()", "mcporter record", "mcporter replay", "Reuse or extend", "stderr"],
 }.items():
     text = (mcp_plugin / "skills" / name / "SKILL.md").read_text(encoding="utf-8")

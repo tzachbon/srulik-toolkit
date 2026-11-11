@@ -49,13 +49,22 @@ user approves step 3 before anything is written.
      are not denied at all (the denylist is by name) and go to `manual`. A Codex
      server with `cwd` is not migrated (mcporter's import drops `cwd`) and is listed
      under `failed`
-     (Claude Code: `deniedMcpServers` in `~/.claude/settings.json`; Codex:
+     (Claude Code, by scope: a user-scope server goes on `deniedMcpServers` in
+     `~/.claude/settings.json`; a project `.mcp.json` server on
+     `disabledMcpjsonServers` in the project's `.claude/settings.local.json`; a
+     local-scope server on `disabledMcpServers` in this project's block of
+     `~/.claude.json`, all under `CLAUDE_CONFIG_DIR` when it is set. Copies in a
+     project's `.claude/*.json` go to `manual`. Codex:
      `enabled = false` in every `config.toml` that defines it, home or project). Other editors, Claude
      Desktop, Codex servers defined as inline tables, and every server in a Codex
      file that holds multi-line strings are listed under `manual`;
-   - checks `~/.claude/settings.json` and the home config parse before writing anything, backs
-     up every file before writing, and saves the receipt with its `undo`
-     command after each backup.
+   - checks every JSON file it edits parses before writing anything, backs up
+     every file owner-only under the plugin data dir (never beside a project
+     file) before writing, and saves the receipt with its `undo` command after
+     each backup. Undo refuses when a file changed after that apply, such as
+     by a later apply; undo the newer receipt first, or pass `--force`;
+   - records conflicting names, so the session hint and the redirect hook
+     leave those servers to the native tools.
 6. **Report** the receipt: migrated, authRequired, conflicts, failed (native copy left enabled), manual
    steps, OAuth logins still needed, and the undo command. Tell the user to
    restart the coding agent so the native copies unload.

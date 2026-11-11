@@ -2,7 +2,7 @@
 // Reads `mcporter config list --json` (cached for an hour) and lists saved scripts.
 const fs = require("node:fs");
 const path = require("node:path");
-const { serverCache, listServers, writeJson } = require("../scripts/mcporter-common");
+const { serverCache, listServers, writeJson, conflicted } = require("../scripts/mcporter-common");
 
 const ttl = Number(process.env.MCPORTER_HINT_TTL_MS) || 3_600_000;
 
@@ -37,7 +37,9 @@ function scripts() {
 }
 
 try {
-  const names = servers();
+  // A name whose native copy is another backend stays on the native tools.
+  const skip = conflicted();
+  const names = servers().filter((n) => !skip.has(n));
   if (!names.length) {
     console.log("mcporter: no servers configured. Run /mcporter-setup to move harness MCP servers into mcporter.");
   } else {

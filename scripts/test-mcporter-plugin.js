@@ -31,7 +31,7 @@ fs.chmodSync(path.join(home, ".claude", "settings.json"), 0o600);
 // Inventory lists every importable server.
 // The project .mcp.json is read too, and no definition (which may hold secrets) is printed.
 const inv = JSON.parse(run("scripts/setup.js", ["inventory"])).importable;
-assert.deepEqual(inv.map((s) => s.name), ["cur", "inv", "linear", "cc", "oauth", "desk", "cc", "bound", "projmcp", "projonly", "twice", "split", "linear", "broken", "twice", "split", "bound"]);
+assert.deepEqual(inv.map((s) => s.name), ["cur", "inv", "linear", "cc", "oauth", "cc", "bound", "projmcp", "desk", "projonly", "twice", "split", "linear", "broken", "twice", "split", "bound"]);
 assert.ok(inv.every((s) => !("entry" in s)));
 
 // Dry run writes nothing.
@@ -108,7 +108,10 @@ assert.equal(JSON.parse(fs.readFileSync(path.join(home, ".claude", "settings.jso
 // drops the cached server lists so hints stop naming moved servers.
 const staleCache = path.join(tmp, "data with 'space", "servers-stale.json");
 fs.writeFileSync(staleCache, "[]");
-execFileSync("sh", ["-c", receipt.undo], { env, cwd: proj });
+// Files changed by later applies: undo refuses and changes nothing, unless forced.
+assert.throws(() => execFileSync("sh", ["-c", receipt.undo], { env, cwd: proj, stdio: "pipe" }), (err) => /changed since this apply/.test(err.stderr));
+assert.ok(fs.existsSync(staleCache));
+execFileSync("sh", ["-c", `${receipt.undo} --force`], { env, cwd: proj });
 assert.ok(!fs.existsSync(staleCache));
 assert.equal(fs.readFileSync(projectCodex, "utf8"), projectBefore);
 assert.equal(fs.readFileSync(path.join(home, ".codex", "config.toml"), "utf8"), codexBefore);
@@ -151,6 +154,12 @@ assert.deepEqual(custom2.migrated.map((m) => m.name), ["custom", "projmcp"]);
 assert.deepEqual(JSON.parse(fs.readFileSync(cfgPath, "utf8")).mcpServers.custom, { command: "run-custom" }); // user scope: no fixed cwd
 assert.equal(fs.readFileSync(customCodex, "utf8"), '[mcp_servers.custom]\nenabled = false\ncommand = "c"\n');
 assert.deepEqual(custom2.disabled.claude, ["projmcp"]);
+// A .mcp.json server is switched off for this project only, not on the user denylist.
+assert.deepEqual(JSON.parse(fs.readFileSync(path.join(proj, ".claude", "settings.local.json"), "utf8")).disabledMcpjsonServers, ["projmcp"]);
+assert.ok(!JSON.stringify(JSON.parse(fs.readFileSync(path.join(home, ".claude", "settings.json"), "utf8")).deniedMcpServers ?? []).includes("projmcp"));
+// Backups are owner-only under the plugin data dir, none inside the project.
+assert.ok(custom2.backups.every((b) => !b.backup || b.backup.startsWith(path.join(tmp, "data with 'space", "backups"))));
+assert.ok(!fs.readdirSync(path.join(proj, ".codex")).some((f) => f.includes("backup")));
 // A project-file stdio server keeps the project as its working directory.
 assert.equal(JSON.parse(fs.readFileSync(cfgPath, "utf8")).mcpServers.projmcp.cwd, proj);
 execFileSync("sh", ["-c", custom2.undo], { env: customEnv, cwd: proj });
@@ -165,6 +174,8 @@ assert.deepEqual(JSON.parse(fs.readFileSync(cfgPath, "utf8")).mcpServers.split, 
 assert.deepEqual(split.disabled.codex, [`split (${projectCodex})`]);
 assert.equal(fs.readFileSync(codexHome, "utf8"), homeSplit);
 assert.equal(split.conflicts.length, 1);
+// The hooks leave a conflicting name to the native tools.
+assert.deepEqual(JSON.parse(fs.readFileSync(path.join(tmp, "data with 'space", "conflicts.json"), "utf8")), ["split"]);
 assert.match(split.conflicts[0], new RegExp(`^split \\(codex: ${codexHome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\)`));
 execFileSync("sh", ["-c", split.undo], { env, cwd: proj });
 // Two Claude Code definitions of one name: the name-wide denylist would block
@@ -177,34 +188,7 @@ execFileSync("sh", ["-c", cc.undo], { env, cwd: proj });
 fs.writeFileSync(projectCodex, projectBefore);
 fs.writeFileSync(codexHome, codexBefore);
 
-// ~/.claude.json with different user and project definitions of one name:
-// mcporter shows only one, but the name-wide denylist would block both.
-fs.writeFileSync(path.join(home, ".claude.json"), JSON.stringify({ mcpServers: { inv: { command: "u" } }, projects: { [proj]: { mcpServers: { inv: { command: "p" } } } } }));
-const scoped = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "inv"]));
-assert.deepEqual(scoped.disabled.claude, []);
-assert.match(scoped.conflicts.join(), /inv \(claude-code: .*more than one scope/);
-execFileSync("sh", ["-c", scoped.undo], { env, cwd: proj });
-// Identical local-scope copies in two projects: each runs in its own folder,
-// so the name-wide denylist would break the other project.
-fs.writeFileSync(path.join(home, ".claude.json"), JSON.stringify({ projects: { [proj]: { mcpServers: { inv: { command: "p" } } }, [path.join(tmp, "b")]: { mcpServers: { inv: { command: "p" } } } } }));
-const twoProj = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "inv"]));
-assert.deepEqual(twoProj.disabled.claude, []);
-assert.match(twoProj.conflicts.join(), /inv \(claude-code: .*more than one scope/);
-execFileSync("sh", ["-c", twoProj.undo], { env, cwd: proj });
-// A local-scope server (only under this project's block) keeps the project as cwd.
-fs.writeFileSync(path.join(home, ".claude.json"), JSON.stringify({ projects: { [proj]: { mcpServers: { inv: { command: "p" } } } } }));
-const local = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "inv"]));
-assert.equal(JSON.parse(fs.readFileSync(path.join(home, ".config", "mcporter", "mcporter.json"), "utf8")).mcpServers.inv.cwd, proj);
-execFileSync("sh", ["-c", local.undo], { env, cwd: proj });
-fs.rmSync(path.join(home, ".claude.json"));
-// Run from $HOME: the user-level Codex copy is not pinned to $HOME, so it
-// matches the identical copy and is disabled too.
-fs.appendFileSync(codexHome, '\n[mcp_servers.bound]\ncommand = "b"\n');
-const fromHome = JSON.parse(execFileSync(process.execPath, [path.join(plugin, "scripts/setup.js"), "apply", "--servers", "bound"], { env, encoding: "utf8", cwd: home }));
-assert.deepEqual(fromHome.conflicts, []);
-assert.equal(JSON.parse(fs.readFileSync(path.join(home, ".config", "mcporter", "mcporter.json"), "utf8")).mcpServers.bound.cwd, undefined);
-execFileSync("sh", ["-c", fromHome.undo], { env, cwd: proj });
-fs.writeFileSync(codexHome, codexBefore);
+require("./test-mcporter-plugin-scopes");
 
 // A Codex server with `cwd` is not migrated: mcporter's import drops it.
 fs.writeFileSync(projectCodex, '[mcp_servers.projonly]\ncommand = "p"\ncwd = "sub"\n');
