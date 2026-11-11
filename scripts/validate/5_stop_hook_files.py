@@ -137,7 +137,8 @@ forbidden = [
     "WPX-",
 ]
 for path in skill_root.rglob("*"):
-    if not path.is_file():
+    # Git-ignored bytecode embeds its absolute source path and is never published (#81).
+    if not path.is_file() or (path.suffix == ".pyc" and "__pycache__" in path.relative_to(skill_root).parts):
         continue
     text = path.read_text(encoding="utf-8", errors="ignore")
     if re.search(r"/Users/[A-Za-z0-9_.-]+|/home/[A-Za-z0-9_.-]+|[A-Za-z]:[\\/]Users[\\/]", text):
