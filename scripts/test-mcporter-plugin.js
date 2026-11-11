@@ -166,8 +166,15 @@ fs.writeFileSync(codexHome, codexBefore);
 fs.writeFileSync(path.join(home, ".claude.json"), JSON.stringify({ mcpServers: { inv: { command: "u" } }, projects: { [proj]: { mcpServers: { inv: { command: "p" } } } } }));
 const scoped = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "inv"]));
 assert.deepEqual(scoped.disabled.claude, []);
-assert.match(scoped.conflicts.join(), /inv \(claude-code: .*user and project scopes/);
+assert.match(scoped.conflicts.join(), /inv \(claude-code: .*more than one scope/);
 execFileSync("sh", ["-c", scoped.undo], { env, cwd: proj });
+// Identical local-scope copies in two projects: each runs in its own folder,
+// so the name-wide denylist would break the other project.
+fs.writeFileSync(path.join(home, ".claude.json"), JSON.stringify({ projects: { [proj]: { mcpServers: { inv: { command: "p" } } }, [path.join(tmp, "b")]: { mcpServers: { inv: { command: "p" } } } } }));
+const twoProj = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "inv"]));
+assert.deepEqual(twoProj.disabled.claude, []);
+assert.match(twoProj.conflicts.join(), /inv \(claude-code: .*more than one scope/);
+execFileSync("sh", ["-c", twoProj.undo], { env, cwd: proj });
 // A local-scope server (only under this project's block) keeps the project as cwd.
 fs.writeFileSync(path.join(home, ".claude.json"), JSON.stringify({ projects: { [proj]: { mcpServers: { inv: { command: "p" } } } } }));
 const local = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "inv"]));
@@ -195,7 +202,7 @@ fs.writeFileSync(projectCodex, projectBefore);
 fs.mkdirSync(path.join(proj, "config"));
 fs.writeFileSync(path.join(proj, "config", "mcporter.json"), JSON.stringify({ mcpServers: { inv: { command: "other" } } }));
 const shadow = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "inv"]));
-assert.match(shadow.failed[0]?.reason ?? "", /shadowed by .*config\/mcporter\.json/);
+assert.match(shadow.failed[0]?.reason ?? "", /shadowed by .*config[\\/]mcporter\.json/);
 assert.deepEqual(shadow.disabled.claude, []);
 execFileSync("sh", ["-c", shadow.undo], { env, cwd: proj });
 fs.rmSync(path.join(proj, "config"), { recursive: true });

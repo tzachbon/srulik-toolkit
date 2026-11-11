@@ -45,7 +45,7 @@ user approves step 3 before anything is written.
      user-level copy when the moved one came from a project file and is bound
      to that project's folder: ask the user which
      one to keep, or rename one. Two different Claude Code definitions of one
-     name, including different user and project definitions in `~/.claude.json`,
+     name, including the same name in more than one scope of `~/.claude.json`,
      are not denied at all (the denylist is by name) and go to `manual`. A Codex
      server with `cwd` is not migrated (mcporter's import drops `cwd`) and is listed
      under `failed`

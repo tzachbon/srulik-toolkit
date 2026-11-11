@@ -88,13 +88,13 @@ const codexHasCwd = (s) => {
 };
 
 // ~/.claude.json holds user-scope servers and one block per project, but
-// mcporter returns only one definition per name. The denylist is name-wide, so
-// any two different definitions there are a conflict.
-function claudeJsonDefinitions(name) {
+// mcporter returns only one definition per name. The denylist is name-wide,
+// and each project's copy runs in its own folder, so a name defined in more
+// than one block (user or project) is a conflict, even with equal definitions.
+function claudeJsonCopies(name) {
   try {
     const raw = JSON.parse(fs.readFileSync(path.join(home(), ".claude.json"), "utf8"));
-    const defs = [raw.mcpServers?.[name], ...Object.values(raw.projects || {}).map((p) => p?.mcpServers?.[name])];
-    return new Set(defs.filter(Boolean).map((d) => JSON.stringify(d))).size;
+    return [raw.mcpServers?.[name], ...Object.values(raw.projects || {}).map((p) => p?.mcpServers?.[name])].filter(Boolean).length;
   } catch {
     return 0;
   }
@@ -185,9 +185,9 @@ function apply(names, dryRun) {
       receipt.failed.push({ name, from: ref, reason: "Codex `cwd` is not imported by mcporter; add it to mcporter by hand, then disable the native copy" });
       continue;
     }
-    if (claudeJsonDefinitions(name) > 1) {
+    if (claudeJsonCopies(name) > 1) {
       nameOnly = true;
-      receipt.conflicts.push(`${name} (claude-code: ${path.join(home(), ".claude.json")}): defined differently in user and project scopes; not denied`);
+      receipt.conflicts.push(`${name} (claude-code: ${path.join(home(), ".claude.json")}): defined in more than one scope (user or project); not denied`);
     }
     if (!sources[0].entry) {
       receipt.failed.push({ name, from: ref, reason: "mcporter returned no definition" });

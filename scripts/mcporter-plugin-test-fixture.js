@@ -6,7 +6,8 @@ const os = require("node:os");
 const path = require("node:path");
 
 const plugin = path.join(__dirname, "..", "plugins", "mcporter-plugin");
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "mcporter-plugin-test-"));
+// Real path: on macOS the temp dir is behind a symlink, and process.cwd() resolves it.
+const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "mcporter-plugin-test-")));
 const home = path.join(tmp, "home");
 fs.mkdirSync(path.join(home, ".codex"), { recursive: true });
 fs.mkdirSync(path.join(home, ".claude"), { recursive: true });
