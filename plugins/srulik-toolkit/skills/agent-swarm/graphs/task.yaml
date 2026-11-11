@@ -71,8 +71,6 @@ nodes:
       - "${plan-review.plan_file}"
       - "${plan-review.hosted}"
     parent: |
-      Readiness ${reresearch.ready} and plan review ${plan-review.clean} must both be true. A false one means its loop ran out
-      of rounds: ask the owner to continue planning in a new run or stop, and either way report this task failed with final true.
       Show the owner the plan at ${plan-review.plan_file} and confirm execution, unless the request already authorized it.
       If the owner declines, report this task failed with final true, which stops the run.
       merge is true only when the owner explicitly authorized merging this task's PR.

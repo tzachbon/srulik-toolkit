@@ -84,8 +84,10 @@ function propagate(spec, dir, s) {
   while (blockAfter(spec, dir, s)) { /* an instance blocked by a sibling can block the next one */ }
   for (const node of spec.order) {
     if (node in s.blocked || node in s.admitted || node in s.skipped) continue;
-    const cause = spec.edges[node].find(d => impossible(s, d));
-    if (cause) emit(dir, s, { type: 'blocked', node, cause });
+    // a loop that stopped short of its until condition never converged, so work outside it can't use it
+    const short = d => s.loopOf[d] && s.loopOf[d] !== s.loopOf[node] && s.loopExit[s.loopOf[d]] && s.loopExit[s.loopOf[d]] !== 'until';
+    const dep = spec.edges[node].find(d => impossible(s, d) || short(d));
+    if (dep) emit(dir, s, { type: 'blocked', node, cause: impossible(s, dep) ? dep : `${s.loopOf[dep]} (${s.loopExit[s.loopOf[dep]]})` });
   }
 }
 

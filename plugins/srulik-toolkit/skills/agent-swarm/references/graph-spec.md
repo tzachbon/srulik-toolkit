@@ -93,6 +93,8 @@ When every node of a round has settled, in the same locked call that settled the
 - exit with reason `max_rounds` after the last round;
 - exit with reason `cap` when the next round's static agents don't fit `max_agents`.
 
+Only an `until` exit releases the nodes outside the loop. After any other exit the loop never converged, so its consumers outside it are blocked with cause `<loop> (<reason>)`.
+
 A `round` event moves the round's instances, picks, blocks, skips and failures into history, so each round starts clean. Earlier rounds' files stay as `nodes/<node>-<index>.md`; round n ≥ 2 writes `nodes/<node>-<index>.r<n>.md` and attachments under `nodes/<node>-<index>.r<n>/`. Node names have no dots, so these never collide.
 
 `dispatch`, every task and every `done` carry `round`; a report for another round is a duplicate. From round 2 on, `done` refuses a loop node's report without `round`, because attempt numbers restart each round. `pick` events carry the round too. A node outside the loop treats a loop node as unsettled until `loop-exit`, then sees the final round. The round decision happens in the same locked call that settles a round, so `status` never sees a settled round without it.

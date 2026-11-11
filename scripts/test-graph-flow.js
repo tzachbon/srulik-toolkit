@@ -397,8 +397,13 @@ module.exports = {
     assert.equal(pg.cards('h').map(c => c.state).join(), 'done,skipped', 'round 1 stays visible beside the round-2 skip');
     assert.match(PAGE, /to\.src \? \[key\(to\.src\.node, to\.src\.index, run\.loopOf\?\.\[to\.src\.node\] === run\.loopOf\?\.\[node\]/);
     // task.yaml: approve refuses a plan whose loops ran out, publication needs a passing audit, babysit re-reviews
-    const yaml = readFileSync(TASK_YAML, 'utf8');
-    assert.match(yaml, /Readiness \$\{reresearch\.ready\} and plan review \$\{plan-review\.clean\} must both be true/);
+    const yaml = readFileSync(TASK_YAML, 'utf8'); const spec48 = () => check(mod('yaml.js').parse(yaml));
+    // a loop that runs out of rounds blocks the work after it: an unready plan never reaches approve
+    const ex = temp('graph-');
+    const early = { research: { notes: 'n' }, grill: { answers: 'a' }, reresearch: { ready: false, questions: ['q'], notes: 'n' } };
+    drive(spec48(), ex, t => { assert.ok(t.node in early, `${t.node} must not start after an unready plan`); return early[t.node]; });
+    assert.equal(events(ex, 'blocked').find(e => e.node === 'draft')?.cause, 'grill-rounds (max_rounds)');
+    assert.equal(status(spec48(), ex).state, 'blocked');
     assert.match(yaml, /rerun the audit until ok is true; if a gap cannot close, report failed with final true/);
     assert.match(yaml, /If the checks cannot pass, report this task failed with final true/);
     assert.match(yaml, /nested graphs\/pr-review\.yaml run before MERGE READY/);
