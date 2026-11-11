@@ -195,9 +195,10 @@ planning research, and how the skills hand off to each other.
 - `pr-babysit` uses a subagent under the original conversation for bounded
   read-only triage. The parent owns the native PR watch, receives completion
   and PR events, applies fixes, and merges only with explicit authority. It
-  never creates a separate babysitter conversation. Listening continues after
-  green CI and quiet passes until closure or STOP; an explicit end-to-end
-  invocation uses its own terminal gate. Hosts missing child/result/watch
+  never creates a separate babysitter conversation. After addressing feedback,
+  it applies the hand-back the repository documents, such as a label swap.
+  Listening continues after green CI and quiet passes until closure or STOP;
+  an explicit end-to-end invocation uses its own terminal gate. Hosts missing child/result/watch
   capabilities report the limitation. T3 Code's tool mapping is in
   [`plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md`](plugins/srulik-toolkit/skills/pr-babysit/references/t3-code.md).
 - `agent-swarm` and `pr-babysit` use

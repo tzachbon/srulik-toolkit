@@ -32,6 +32,10 @@ tstack_contracts = {
         "unless evidence shows the changed flow or a supported caller reaches it",
         "base commits that landed after the last green run touch this PR's files",
         "never with an administrator bypass",
+        "the PR label changes and review re-requests that the repository's contributing guide or PR template prescribes",
+        "read the repository's contributing guide, PR template, and agent instructions for its PR workflow conventions",
+        "apply the hand-back step those conventions prescribe",
+        "When the conventions are silent, skip it",
     ]),
     "pr-babysit comments": (pr_comments, [
         "> 🤖 **<model> responding on behalf of <user>**",
