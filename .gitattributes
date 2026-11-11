@@ -4,3 +4,4 @@ plugins/srulik-toolkit/skills/ui-ux-review/references/pro-rules.md linguist-vend
 plugins/srulik-toolkit/skills/ui-ux-review/references/unslop/** linguist-vendored=true -text -whitespace
 plugins/srulik-toolkit/skills/skill-creator/eval-viewer/viewer.html linguist-vendored=true
 scripts/validate/*.py text eol=lf
+plugins/mcporter-plugin/skills/mcporter/examples/.mcporter/fixtures/inventory-gold-stock.ndjson linguist-generated=true

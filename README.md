@@ -13,7 +13,7 @@
 
 **Twenty-six focused skills for understanding, planning, and shipping software with Claude Code, Codex, and Cursor.**
 
-[Install](#install) · [Skills](#skills) · [Contributing](#contributing) · [Reference](docs/reference.md)
+[Install](#install) · [Skills](#skills) · [mcporter](#mcporter-plugin) · [Contributing](#contributing) · [Reference](docs/reference.md)
 
 </div>
 
@@ -97,6 +97,16 @@ $execute-task-end-to-end Add offline support and drive its PR to MERGE READY
 
 More examples are in the [reference](docs/reference.md#example-prompts); how skills
 hand off to each other is in [docs/workflow.md](docs/workflow.md).
+
+## mcporter plugin
+
+[`mcporter-plugin`](plugins/mcporter-plugin/README.md), installed separately, moves
+your MCP servers into [mcporter](https://github.com/openclaw/mcporter); agents then
+call them through its CLI and saved scripts, with 74-76% fewer input tokens on a
+20-call task.
+
+![How it works](plugins/mcporter-plugin/assets/how-it-works.svg)
+![Benchmark](plugins/mcporter-plugin/assets/benchmark.svg)
 
 ## Contributing
 

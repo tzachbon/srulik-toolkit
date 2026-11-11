@@ -59,10 +59,11 @@ for manifest in [
 claude_catalog = manifests[".claude-plugin/marketplace.json"]
 codex_catalog = manifests[".agents/plugins/marketplace.json"]
 cursor_catalog = manifests[".cursor-plugin/marketplace.json"]
-for catalog in [claude_catalog, codex_catalog, cursor_catalog]:
-    entries = catalog.get("plugins", [])
-    if len(entries) != 1 or entries[0].get("name") != "srulik-toolkit":
-        raise SystemExit("catalog must contain exactly the srulik-toolkit plugin")
+for catalog in [claude_catalog, codex_catalog]:
+    if [entry.get("name") for entry in catalog.get("plugins", [])] != ["srulik-toolkit", "mcporter-plugin"]:
+        raise SystemExit("catalog must list srulik-toolkit, then mcporter-plugin")
+if [entry.get("name") for entry in cursor_catalog.get("plugins", [])] != ["srulik-toolkit"]:
+    raise SystemExit("Cursor catalog must contain exactly the srulik-toolkit plugin")
 if cursor_catalog.get("owner", {}).get("name") != "Zach Bonfil":
     raise SystemExit("Cursor marketplace needs an owner name")
 if cursor_catalog["plugins"][0] != {"name": "srulik-toolkit", "source": "plugins/srulik-toolkit"}:

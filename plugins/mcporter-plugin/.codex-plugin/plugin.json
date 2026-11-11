@@ -1,0 +1,23 @@
+{
+  "name": "mcporter-plugin",
+  "version": "0.1.0",
+  "description": "Use MCP servers through the mcporter CLI and saved scripts instead of native MCP tools.",
+  "author": {
+    "name": "Zach Bonfil",
+    "url": "https://github.com/tzachbon"
+  },
+  "homepage": "https://github.com/tzachbon/srulik-toolkit",
+  "repository": "https://github.com/tzachbon/srulik-toolkit",
+  "license": "MIT",
+  "keywords": ["mcp", "mcporter", "scripts", "tokens"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "mcporter",
+    "shortDescription": "Call MCP servers through mcporter scripts.",
+    "longDescription": "Moves configured MCP servers into mcporter, then has the agent call them through the mcporter CLI and saved deterministic scripts instead of one native tool call per turn.",
+    "developerName": "Zach Bonfil",
+    "category": "Productivity",
+    "capabilities": ["MCP", "Scripting"],
+    "defaultPrompt": ["Set up mcporter for my MCP servers."]
+  }
+}
