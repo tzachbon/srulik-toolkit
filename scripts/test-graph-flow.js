@@ -390,7 +390,7 @@ module.exports = {
     // the view: a skip in round 2 keeps round 1's card; a fan-out from outside the loop draws from round 1
     const { PAGE } = mod('view.js');
     const section = PAGE.split('// ---- state folded from run.jsonl')[1].split('// ---- preferences')[0];
-    const cardsSrc = 'function cards(node) {' + PAGE.split('function cards(node) {')[1].split('\n}\n')[0] + '\n}';
+    const cardsSrc = 'function cards(node) {' + PAGE.split('function cards(node) {')[1].split(/\r?\n}\r?\n/)[0] + '\n}';
     const pre = PAGE.split('const itemLabel')[1].split('function cards(node) {')[0];
     const pg = vm.runInNewContext(section + '\nconst itemLabel' + pre + cardsSrc + '\n;({ run, apply, cards })');
     pg.apply({ type: 'spec', t: 1, name: 'x', nodes: ['h'], edges: {}, loops: { lp: { nodes: ['h'], max_rounds: 2 } } });
