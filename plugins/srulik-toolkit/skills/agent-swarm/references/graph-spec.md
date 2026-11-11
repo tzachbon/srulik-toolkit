@@ -86,7 +86,7 @@ The listed nodes repeat as one round. `check` requires:
 - the `until` node is in the group, single-instance, with its field in `out`, and is the only group node with dependents outside the group;
 - each node is in at most one loop, and `max_rounds` is an integer from 1 to 20;
 - `prev` refs stay inside one loop;
-- no two loops wait on each other's exit through their nodes' dependencies.
+- no two loops wait on each other's exit through their nodes' dependencies, directly or through nodes outside any loop.
 
 When every node of a round has settled, in the same locked call that settled the last one, the loop either exits or starts round n+1:
 - exit with reason `until` when the `until` condition holds;

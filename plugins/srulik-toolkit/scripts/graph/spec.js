@@ -170,7 +170,11 @@ function checkLoops(raw = {}, nodes, deps) {
   }
   // a loop exits only once all its nodes settle, and a node in another loop waits for that exit; so loops that
   // wait on each other deadlock even when the node graph is acyclic
-  const waits = L => new Set(loops[L].nodes.flatMap(n => [...deps[n]]).map(d => loopOf[d]).filter(M => M && M !== L));
+  // the walk passes through ordinary nodes, which wait for every loop they depend on
+  const waits = L => { const out = new Set(), seen = new Set();
+    const walk = n => { for (const d of deps[n]) { if (seen.has(d)) continue; seen.add(d);
+      if (!loopOf[d]) walk(d); else if (loopOf[d] !== L) out.add(loopOf[d]); } };
+    loops[L].nodes.forEach(walk); return out; };
   const state = {};
   const visit = (L, path) => {
     if (state[L] === 'done') return;

@@ -377,6 +377,11 @@ module.exports = {
     assert.throws(() => check({ name: 'c', limits: { max_agents: 8 }, loops: { la: { nodes: ['a', 'atail'], until: 'a.stop == true', max_rounds: 1 },
       lb: { nodes: ['b', 'btail'], until: 'b.stop == true', max_rounds: 1 } }, nodes: { a: { agent: 'a', out: ['stop'] }, b: { agent: 'b', out: ['stop'] },
       atail: { agent: 't', needs: ['a', 'b'] }, btail: { agent: 't', needs: ['a', 'b'] } } }), /loops: (la -> lb -> la|lb -> la -> lb) wait on each other's exit/);
+    // the same wait routed through ordinary nodes is caught too
+    assert.throws(() => check({ name: 'c', limits: { max_agents: 8 }, loops: { la: { nodes: ['a', 'atail'], until: 'a.stop == true', max_rounds: 1 },
+      lb: { nodes: ['b', 'btail'], until: 'b.stop == true', max_rounds: 1 } }, nodes: { a: { agent: 'a', out: ['stop'] }, b: { agent: 'b', out: ['stop'] },
+      x: { agent: 'x', needs: ['b'] }, y: { agent: 'y', needs: ['a'] }, atail: { agent: 't', needs: ['a', 'x'] }, btail: { agent: 't', needs: ['b', 'y'] } } }),
+      /loops: (la -> lb -> la|lb -> la -> lb) wait on each other's exit/);
     // a fan-out whose after lists fail ordering blocks its consumer instead of dispatching it
     const ad = temp('graph-');
     const aspec = check({ name: 'a', limits: { max_agents: 6 }, nodes: { p: { agent: 'p', out: ['tasks'] },
