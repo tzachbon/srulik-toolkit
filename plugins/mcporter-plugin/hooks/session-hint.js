@@ -6,13 +6,26 @@ const { serverCache, listServers, writeJson } = require("../scripts/mcporter-com
 
 const ttl = Number(process.env.MCPORTER_HINT_TTL_MS) || 3_600_000;
 
+// Discovery runs inside the 10 s hook budget, so it gets 5 s. On failure the
+// stale cache, if any, is reused and re-dated, so the next sessions skip the
+// slow call until the TTL passes again.
+// ponytail: without mcporter on PATH the npx fallback may need longer than 5 s
+// on first use; the skill tells the user to install mcporter globally.
 function servers() {
+  let stale;
   try {
-    if (Date.now() - fs.statSync(serverCache()).mtimeMs < ttl) return JSON.parse(fs.readFileSync(serverCache(), "utf8"));
+    stale = JSON.parse(fs.readFileSync(serverCache(), "utf8"));
+    if (Date.now() - fs.statSync(serverCache()).mtimeMs < ttl) return stale;
   } catch {}
-  const names = [...new Set(listServers().map((s) => s.name))].sort();
-  writeJson(serverCache(), names);
-  return names;
+  try {
+    const names = [...new Set(listServers([], { timeout: 5_000 }).map((s) => s.name))].sort();
+    writeJson(serverCache(), names);
+    return names;
+  } catch (err) {
+    if (!stale) throw err;
+    writeJson(serverCache(), stale);
+    return stale;
+  }
 }
 
 function scripts() {

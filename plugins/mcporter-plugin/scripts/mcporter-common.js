@@ -73,16 +73,17 @@ function importedSources() {
   return all.filter((s, i) => all.findIndex((o) => o.name === s.name && o.path === s.path) === i);
 }
 
-function listServers(extra = []) {
-  return JSON.parse(mcporter(["config", "list", "--json", ...extra])).servers || [];
+function listServers(extra = [], opts) {
+  return JSON.parse(mcporter(["config", "list", "--json", ...extra], opts)).servers || [];
 }
 
 // Claude Code exposes server "my.server" as mcp__my_server__tool.
 const toolKey = (name) => name.replace(/[^A-Za-z0-9_-]/g, "_");
 
-// Atomic replace that keeps the original file mode (new files: owner-only).
-// A symlinked config (dotfiles) is written through, so the link survives.
-function writeText(file, text) {
+// Atomic replace that keeps the original file mode (new files: owner-only),
+// or sets `force` when given. A symlinked config (dotfiles) is written
+// through, so the link survives.
+function writeText(file, text, force) {
   try {
     file = fs.realpathSync(file);
   } catch {}
@@ -93,9 +94,9 @@ function writeText(file, text) {
   } catch {}
   const tmp = `${file}.${process.pid}`;
   fs.writeFileSync(tmp, text, { mode: 0o600 });
-  fs.chmodSync(tmp, mode);
+  fs.chmodSync(tmp, force ?? mode);
   fs.renameSync(tmp, file);
 }
-const writeJson = (file, value) => writeText(file, `${JSON.stringify(value, null, 2)}\n`);
+const writeJson = (file, value, mode) => writeText(file, `${JSON.stringify(value, null, 2)}\n`, mode);
 
 module.exports = { home, dataRoot, serverCache, mcporter, listServers, importedSources, mcporterHomeConfig, toolKey, writeJson, writeText };

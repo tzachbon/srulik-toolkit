@@ -61,7 +61,7 @@ assert.deepEqual(Object.keys(mcpCfg.mcpServers).sort(), ["cur", "desk", "inv", "
 // The copied definition is the one from the first source file.
 assert.deepEqual(mcpCfg.mcpServers.linear, { command: "run-linear" });
 assert.deepEqual(receipt.manual.map((m) => m.split(" ")[0]), ["cur", "desk"]);
-if (process.platform !== "win32") if (process.platform !== "win32") assert.equal(fs.statSync(path.join(home, ".claude", "settings.json")).mode & 0o777, 0o600);
+if (process.platform !== "win32") assert.equal(fs.statSync(path.join(home, ".claude", "settings.json")).mode & 0o777, 0o600);
 const settings = JSON.parse(fs.readFileSync(path.join(home, ".claude", "settings.json"), "utf8"));
 assert.deepEqual(settings, { model: "keep", deniedMcpServers: [{ serverName: "inv" }, { serverName: "linear" }] });
 const codexAfter = fs.readFileSync(path.join(home, ".codex", "config.toml"), "utf8");
@@ -72,9 +72,29 @@ assert.ok(fs.existsSync(receipt.receipt));
 // An OAuth server that needs a login stays in mcporter, and its native copy stays enabled.
 const auth = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "oauth"]));
 assert.deepEqual(auth.authRequired.map((a) => a.name), ["oauth"]);
+assert.equal(auth.authRequired[0].next, "mcporter auth 'oauth', then rerun apply --servers 'oauth'");
 assert.deepEqual(auth.disabled.claude, []);
 assert.ok("oauth" in JSON.parse(fs.readFileSync(path.join(home, ".config", "mcporter", "mcporter.json"), "utf8")).mcpServers);
 run("scripts/setup.js", ["undo", auth.receipt]);
+// An existing world-readable mcporter config never holds secrets at that mode:
+// the write itself is owner-only (a chmod after the rename would leave a window).
+if (process.platform !== "win32") {
+  const cfg = path.join(home, ".config", "mcporter", "mcporter.json");
+  const saved = fs.readFileSync(cfg);
+  const savedMode = fs.statSync(cfg).mode & 0o777;
+  fs.writeFileSync(cfg, '{"mcpServers":{}}');
+  fs.chmodSync(cfg, 0o644);
+  const realChmod = fs.chmodSync;
+  const modes = [];
+  const common = require(path.join(plugin, "scripts", "mcporter-common.js"));
+  fs.chmodSync = (f, m) => (modes.push(m), realChmod(f, m));
+  common.writeJson(cfg, { mcpServers: { s: { env: { TOKEN: "x" } } } }, 0o600);
+  fs.chmodSync = realChmod;
+  assert.deepEqual(modes, [0o600]);
+  assert.equal(fs.statSync(cfg).mode & 0o777, 0o600);
+  fs.writeFileSync(cfg, saved);
+  fs.chmodSync(cfg, savedMode);
+}
 
 // Re-migrating a server already in mcporter that then fails keeps the old definition.
 const cfgPath = path.join(home, ".config", "mcporter", "mcporter.json");

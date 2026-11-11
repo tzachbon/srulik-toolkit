@@ -39,6 +39,18 @@ assert.equal(decide({ tool_name: "mcp__t3-code__task_status", tool_input: {} }, 
 assert.equal(decide({ tool_name: "Bash", tool_input: {} }, ["inv"]), null);
 assert.equal(decide({ tool_name: "mcp__my_srv__x", tool_input: {} }, ["my.srv"]).hookSpecificOutput.additionalContext.includes('"my.srv"'), true);
 assert.equal(decide({ tool_name: "mcp__inv__x", tool_input: {} }, ["inv"], "block").hookSpecificOutput.permissionDecision, "deny");
+// A server name with "__" is matched whole, longest known prefix first.
+assert.match(decide({ tool_name: "mcp__my__server__get", tool_input: {} }, ["my", "my__server"]).hookSpecificOutput.additionalContext, /'my__server\.get'/);
+assert.equal(decide({ tool_name: "mcp__my__server__get", tool_input: {} }, ["my__server"], "block").hookSpecificOutput.permissionDecision, "deny");
+assert.equal(decide({ tool_name: "mcp__inv__", tool_input: {} }, ["inv"]), null);
+// Startup discovery: a slow or failing mcporter reuses the stale cache and re-dates it.
+const cacheFile = path.join(tmp, "data with 'space", path.basename(serverCache(proj)));
+fs.writeFileSync(cacheFile, JSON.stringify(["stale-srv"]));
+fs.utimesSync(cacheFile, 0, 0);
+const failEnv = { ...env, MCPORTER_BIN: path.join(tmp, "missing-mcporter.js") };
+assert.match(execFileSync(process.execPath, [path.join(plugin, "hooks", "session-hint.js")], { env: failEnv, encoding: "utf8", cwd: proj }), /stale-srv/);
+assert.ok(Date.now() - fs.statSync(cacheFile).mtimeMs < 60_000);
+fs.rmSync(cacheFile);
 const piped = run("hooks/redirect-mcp.js", [], JSON.stringify({ tool_name: "mcp__inv__get_item", tool_input: { id: "a" }, cwd: other }));
 assert.match(JSON.parse(piped).hookSpecificOutput.additionalContext, /'id:a'/);
 

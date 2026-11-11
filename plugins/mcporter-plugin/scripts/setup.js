@@ -209,8 +209,8 @@ function apply(names, dryRun) {
     // to ${VAR} placeholders by hand when sharing the config.
     const config = before === null ? {} : JSON.parse(before);
     const def = resolved(sources[0]);
-    writeJson(mcporterHome, { ...config, mcpServers: { ...config.mcpServers, [name]: def } });
-    fs.chmodSync(mcporterHome, 0o600);
+    // Owner-only before the secret-bearing file appears, not after.
+    writeJson(mcporterHome, { ...config, mcpServers: { ...config.mcpServers, [name]: def } }, 0o600);
     let status = "unknown";
     try {
       status = JSON.parse(mcporter(["--config", mcporterHome, "list", name, "--json"], { timeout: 60_000 })).status;
@@ -234,7 +234,7 @@ function apply(names, dryRun) {
     else if (status === "auth") {
       // Keep the definition so `mcporter auth <name>` can log in; the native copy
       // stays enabled until a later apply sees the server answer.
-      receipt.authRequired.push({ ...entry, next: `mcporter auth ${name}, then rerun apply --servers ${name}` });
+      receipt.authRequired.push({ ...entry, next: `mcporter auth ${sh(name)}, then rerun apply --servers ${sh(name)}` });
     } else {
       // Keep the session hint truthful: put mcporter's config back as it was.
       if (before === null) fs.rmSync(mcporterHome, { force: true });

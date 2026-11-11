@@ -6,11 +6,13 @@ const fs = require("node:fs");
 const { serverCache, toolKey } = require("../scripts/mcporter-common");
 
 function decide(input, names, mode = "warn") {
-  const match = /^mcp__(.+?)__(.+)$/.exec(input.tool_name || "");
-  if (!match) return null;
-  const [, key, tool] = match;
-  const server = names.find((n) => toolKey(n) === key);
+  const name = input.tool_name || "";
+  // A server name may itself contain "__": take the longest known prefix.
+  const server = names
+    .filter((n) => name.startsWith(`mcp__${toolKey(n)}__`) && name.length > `mcp__${toolKey(n)}__`.length)
+    .sort((a, b) => toolKey(b).length - toolKey(a).length)[0];
   if (!server) return null;
+  const tool = name.slice(`mcp__${toolKey(server)}__`.length);
   const quote = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
   const args = Object.entries(input.tool_input || {})
     .map(([k, v]) => quote(`${k}:${typeof v === "string" ? v : JSON.stringify(v)}`))
