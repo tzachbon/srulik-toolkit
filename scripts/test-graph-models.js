@@ -127,6 +127,21 @@ module.exports = {
     const big = await loadArena({ fetch: paged, cachePath: join(temp('arena-'), 'a.json'), now: NOW, configs: ['webdev'] });
     assert.equal(big.webdev.length, 150, 'every page is fetched'); assert.deepEqual(pages, [0, 100]);
     const fail = async () => { throw new Error('offline'); };
+    // #80: a transient 502 or timeout on one page is retried instead of failing the whole refresh
+    let flaky = 0;
+    const blip = async url => (flaky++ === 0 ? { ok: false, status: 502 } : ok(1900)(url));
+    const b = await loadArena({ fetch: blip, cachePath: join(temp('arena-'), 'b.json'), now: NOW, configs: ['webdev'] });
+    assert.equal(b.stale, false, 'one 502 is retried'); assert.equal(b.webdev[0].rating, 1900); assert.equal(flaky, 2);
+    let hung = 0;
+    const slow = async url => { if (hung++ === 0) { const e = new Error('The operation was aborted due to timeout'); e.name = 'TimeoutError'; throw e; } return ok(1901)(url); };
+    assert.equal((await loadArena({ fetch: slow, cachePath: join(temp('arena-'), 'c.json'), now: NOW, configs: ['webdev'] })).webdev[0].rating, 1901, 'one timeout is retried');
+    let tries = 0;
+    const down = async () => { tries++; return { ok: false, status: 503 }; };
+    const d = await loadArena({ fetch: down, cachePath: join(temp('arena-'), 'd.json'), now: NOW, configs: ['webdev'] });
+    assert.equal(d.stale, true, 'a persistent failure still fails'); assert.equal(tries, 3, 'retries are bounded');
+    let notFound = 0;
+    await loadArena({ fetch: async () => { notFound++; return { ok: false, status: 404 }; }, cachePath: join(temp('arena-'), 'e.json'), now: NOW, configs: ['webdev'] });
+    assert.equal(notFound, 1, 'a 4xx is not retried');
     const a1 = await loadArena({ fetch: ok(1818), cachePath, now: NOW, configs: ['webdev'] });
     assert.equal(a1.webdev[0].rating, 1818); assert.equal(a1.stale, false);
     const a2 = await loadArena({ fetch: fail, cachePath, now: NOW + 2 * 864e5, configs: ['webdev'] });

@@ -20,7 +20,7 @@ for graph_phrase in ["| ui-ux | arena.webdev", "30-day half-life", "whole popula
                      "`attachments: [{name, text}]`", "Node names match `[a-z0-9_-]+`", "top-down by default", "follows the system", "only when the real path stays inside `<run-dir>/nodes`"]:
     if graph_phrase not in graph_spec_ref:
         raise SystemExit(f"graph-spec reference must document: {graph_phrase}")
-for graph_phrase in ["delegate_task", "orchestrator_capabilities", "schedule_task", "sudo -n aa-models usage", "preview_open"]:
+for graph_phrase in ["delegate_task", "orchestrator_capabilities", "schedule_task", "scripts/models.js usage > <run-dir>/usage.json", "sudo -n node <plugin root>/scripts/models.js usage", "preview_open"]:
     if graph_phrase not in graph_t3_ref:
         raise SystemExit(f"agent-swarm T3 reference must map: {graph_phrase}")
 for graph_phrase in ["outlives the turn", "at most one view server", "--port 47812", "Never use `0.0.0.0` or a public address", "pass the printed page URL as `url` when `--host` is set", "never change or restart the T3 server"]:
@@ -46,3 +46,5 @@ if (root / "scripts" / "validate" / "18_graph.py").stat().st_size >= 20 * 1024:
 subprocess.run([node, str(plugin / "scripts" / "graph.js"), "check",
                 str(skill_root / "agent-swarm" / "graphs" / "pr-review.yaml")], check=True, timeout=30, stdout=subprocess.DEVNULL)
 subprocess.run([node, str(root / "scripts" / "test-graph.js")], check=True, timeout=120, stdout=subprocess.DEVNULL)  # also loads test-graph-run.js, test-graph-models.js, test-graph-review.js, test-graph-e2e.js, test-graph-later.js and test-graph-view.js
+if "Run `aa-models usage" in graph_t3_ref:
+    raise SystemExit("agent-swarm T3 reference must read quota through models.js, not call aa-models directly (#79)")

@@ -23,13 +23,25 @@ function readJSON(path) {
   try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return null; }
 }
 
+// The rows endpoint sometimes answers a page with a 502 or hangs; a quick retry usually succeeds (#80).
+async function fetchPage(fetch, url, config, tries = 3) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      if (response.ok) return await response.json();
+      const error = new Error(`LMArena ${config} returned HTTP ${response.status}`);
+      if (response.status < 500 || attempt >= tries) throw Object.assign(error, { final: true });
+    } catch (error) {
+      if (error.final || attempt >= tries) throw error;
+    }
+  }
+}
+
 async function fetchConfig(fetch, config) {
   const rows = [];
   for (let offset = 0, total = Infinity; offset < total; offset += PAGE) {
     const url = `${ARENA}&config=${encodeURIComponent(config)}&split=latest&offset=${offset}&length=${PAGE}`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(20000) });
-    if (!response.ok) throw new Error(`LMArena ${config} returned HTTP ${response.status}`);
-    const body = await response.json();
+    const body = await fetchPage(fetch, url, config);
     total = Number(body.num_rows_total ?? 0);
     for (const { row } of body.rows ?? []) {
       if (row.category !== 'overall') continue;
