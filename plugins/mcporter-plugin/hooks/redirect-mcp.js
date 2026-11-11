@@ -8,10 +8,14 @@ const { serverCache, toolKey, conflicted } = require("../scripts/mcporter-common
 function decide(input, names, mode = "warn") {
   const name = input.tool_name || "";
   // A server name may itself contain "__": take the longest known prefix.
-  const server = names
+  const hits = names
     .filter((n) => name.startsWith(`mcp__${toolKey(n)}__`) && name.length > `mcp__${toolKey(n)}__`.length)
-    .sort((a, b) => toolKey(b).length - toolKey(a).length)[0];
+    .sort((a, b) => toolKey(b).length - toolKey(a).length);
+  const server = hits[0];
   if (!server) return null;
+  // Names like "my.srv" and "my_srv" share one tool key, so the call could be
+  // either backend: leave it alone rather than guess.
+  if (hits.filter((n) => toolKey(n) === toolKey(server)).length > 1) return null;
   const tool = name.slice(`mcp__${toolKey(server)}__`.length);
   const quote = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
   const args = Object.entries(input.tool_input || {})

@@ -43,6 +43,9 @@ assert.equal(decide({ tool_name: "mcp__inv__x", tool_input: {} }, ["inv"], "bloc
 assert.match(decide({ tool_name: "mcp__my__server__get", tool_input: {} }, ["my", "my__server"]).hookSpecificOutput.additionalContext, /'my__server\.get'/);
 assert.equal(decide({ tool_name: "mcp__my__server__get", tool_input: {} }, ["my__server"], "block").hookSpecificOutput.permissionDecision, "deny");
 assert.equal(decide({ tool_name: "mcp__inv__", tool_input: {} }, ["inv"]), null);
+// Two names with the same tool key ("my.srv", "my_srv"): no guess, in either mode.
+assert.equal(decide({ tool_name: "mcp__my_srv__x", tool_input: {} }, ["my.srv", "my_srv"]), null);
+assert.equal(decide({ tool_name: "mcp__my_srv__x", tool_input: {} }, ["my.srv", "my_srv"], "block"), null);
 // Startup discovery: a slow or failing mcporter reuses the stale cache and re-dates it.
 const cacheFile = path.join(tmp, "data with 'space", path.basename(serverCache(proj)));
 fs.writeFileSync(cacheFile, JSON.stringify(["stale-srv"]));
