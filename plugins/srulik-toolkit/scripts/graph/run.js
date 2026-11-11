@@ -238,7 +238,7 @@ function orderItems(items, field) {
   return items.some((_, n) => visit(n)) ? 'after: the items\' after lists form a cycle' : null;
 }
 
-function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
+function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd(), resume = false } = {}) {
   const s = fold(dir);
   if (!s.started) {
     const inputs = { ...spec.inputs, ...overrides };
@@ -263,8 +263,9 @@ function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
         const attempt = (i.failures ?? 0) + 1; const id = key(name, i.index);
         if (i.settled || offered.has(id)) continue;
         const resumed = (i.attempts ?? []).includes(attempt);
-        // an open parent task comes back from every next, so the orchestrator can pick it up after a break
-        if (resumed && taskType !== 'parent') continue;
+        // an open parent task comes back from every next, so the orchestrator can pick it up after a break;
+        // an open agent or run task only with resume, so a polling orchestrator never dispatches it twice
+        if (resumed && taskType !== 'parent' && !resume) continue;
         if (i.deps && !i.deps.every(d => list[d].result !== undefined && !list[d].dropped)) continue;
         if (!resumed) emit(dir, s, { type: 'dispatch', node: name, index: i.index, attempt, taskType, item: i.item, src: i.src });
         offered.add(id);

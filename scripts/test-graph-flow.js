@@ -429,6 +429,20 @@ module.exports = {
     assert.match(yaml, /With no Git repository,\r?\n\s+back up each file first/);
   },
 
+  // #82: a dispatched agent task whose next output was lost comes back from next --resume, with its pick
+  C50() {
+    const { check } = mod('spec.js'); const { next, done } = mod('run.js');
+    const dir = temp('graph-');
+    const spec = check({ name: 'r', limits: { max_agents: 2 }, nodes: { a: { agent: 'a', out: ['x'] }, b: { agent: 'b', needs: ['a'] } } });
+    assert.deepEqual(ids(next(spec, dir)), ['a#0']);
+    assert.deepEqual(next(spec, dir), [], 'plain next offers an agent attempt once, so a polling orchestrator never dispatches it twice');
+    const [lost] = next(spec, dir, {}, { resume: true });
+    assert.equal(lost.node, 'a'); assert.equal(lost.resumed, true, 'next --resume returns the open agent task');
+    assert.equal(lost.attempt, 1); assert.equal(events(dir, 'dispatch').filter(e => e.node === 'a').length, 1, 'resuming does not dispatch again');
+    done(spec, dir, { node: 'a', attempt: 1, output: { x: 1 }, model: 'm' });
+    assert.deepEqual(ids(next(spec, dir, {}, { resume: true })), ['b#0'], 'a recorded task is not resumed');
+  },
+
   // the bundled task graph walks a task with and without Git hosting
   C48() {
     const { check } = mod('spec.js'); const { status } = mod('run.js');

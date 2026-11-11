@@ -13,7 +13,7 @@ const { scoreThreads, nextWatermark } = require('./graph/score.js');
 
 const USAGE = `Usage: node graph.js <command> ...
   check   <spec.yaml>
-  next    <spec.yaml> <run-dir> [--input k=v ...] [--cwd <dir>]
+  next    <spec.yaml> <run-dir> [--input k=v ...] [--cwd <dir>] [--resume]
   exec    <spec.yaml> <run-dir> <node>
   pick    <spec.yaml> <run-dir> <node> <index> --candidates <file> [--usage <file>] [--exclude <model> ...] [--fallback same-creator]
   done    <spec.yaml> <run-dir> <result.json>
@@ -67,9 +67,10 @@ async function main([command, ...args]) {
   if (!command || command === '--help') { console.log(USAGE); return; }
   if (command === 'check') { if (args.length !== 1) usage(); load(args[0]); console.log('ok'); return; }
   if (command === 'next') {
-    const { found, rest } = flags(args, ['input', 'cwd']); if (rest.length !== 2 || found.cwd.length > 1) usage();
+    const resume = args.includes('--resume'); const { found, rest } = flags(args.filter(a => a !== '--resume'), ['input', 'cwd']);
+    if (rest.length !== 2 || found.cwd.length > 1) usage();
     const inputs = Object.fromEntries(found.input.map(kv => { const at = kv.indexOf('='); if (at < 1) usage(); return [kv.slice(0, at), kv.slice(at + 1)]; }));
-    out(run.next(load(rest[0]), resolve(rest[1]), inputs, { cwd: resolve(found.cwd[0] ?? process.cwd()) })); return;
+    out(run.next(load(rest[0]), resolve(rest[1]), inputs, { cwd: resolve(found.cwd[0] ?? process.cwd()), resume })); return;
   }
   if (command === 'exec') { if (args.length !== 3) usage(); out(run.exec(load(args[0]), resolve(args[1]), args[2])); return; }
   if (command === 'done') { if (args.length !== 3) usage(); out(run.done(load(args[0]), resolve(args[1]), JSON.parse(readFileSync(args[2], 'utf8')))); return; }
