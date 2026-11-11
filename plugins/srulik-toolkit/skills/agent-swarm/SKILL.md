@@ -233,7 +233,10 @@ another.
    post, or merge, as its prompt says, then record its JSON with `done`. To
    reject, such as an owner who declines the plan, record it failed with
    `final: true`, which stops everything after it. `next` returns an open parent
-   task again, marked `resumed`, until it is recorded. A `resumed` task is
+   task again, marked `resumed`, until it is recorded. An agent task is offered
+   once; after a break that lost it, `next --resume` also returns open agent
+   tasks, marked `resumed`, so check whether their child is still running before
+   delegating again. A `resumed` task is
    continued, never restarted: check the target first, such as whether the
    comment, issue, PR or merge already exists. When only parent tasks that wait
    on a host event remain, end the turn with the watch active and call `next`

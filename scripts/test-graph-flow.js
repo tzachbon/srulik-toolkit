@@ -2,7 +2,7 @@
 // the round-aware index and view, and the bundled task.yaml. Local fakes only.
 'use strict';
 const { assert, writeFileSync, readFileSync, existsSync, join, spawnSync, http, temp, mod, CLI, log, PLUGIN } = require('./graph-fixtures.js');
-const { copyFileSync } = require('node:fs');
+const { copyFileSync, appendFileSync } = require('node:fs');
 const vm = require('node:vm');
 
 const ids = tasks => tasks.map(t => `${t.node}#${t.index}`);
@@ -427,6 +427,26 @@ module.exports = {
     assert.match(yaml, /If the checks cannot pass, report this task failed with final true/);
     assert.match(yaml, /nested graphs\/pr-review\.yaml run before MERGE READY/);
     assert.match(yaml, /With no Git repository,\r?\n\s+back up each file first/);
+  },
+
+  // #82: a dispatched agent task whose next output was lost comes back from next --resume, with its pick
+  C50() {
+    const { check } = mod('spec.js'); const { next, done } = mod('run.js');
+    const dir = temp('graph-');
+    const spec = check({ name: 'r', limits: { max_agents: 2 }, nodes: { a: { agent: 'a', out: ['x'] }, b: { agent: 'b', needs: ['a'] } } });
+    assert.deepEqual(ids(next(spec, dir)), ['a#0']);
+    assert.deepEqual(next(spec, dir), [], 'plain next offers an agent attempt once, so a polling orchestrator never dispatches it twice');
+    appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: Date.now(), type: 'pick', node: 'a', index: 0, provider: 'p', model: 'm1', effort: 'high', creator: 'C' }) + '\n');
+    const [lost] = next(spec, dir, {}, { resume: true });
+    assert.equal(lost.node, 'a'); assert.equal(lost.resumed, true, 'next --resume returns the open agent task');
+    assert.deepEqual(lost.picked, { provider: 'p', model: 'm1', effort: 'high' }, 'a resumed agent task carries its latest pick');
+    assert.equal(lost.attempt, 1); assert.equal(events(dir, 'dispatch').filter(e => e.node === 'a').length, 1, 'resuming does not dispatch again');
+    done(spec, dir, { node: 'a', attempt: 1, output: { x: 1 }, model: 'm' });
+    assert.deepEqual(ids(next(spec, dir, {}, { resume: true })), ['b#0'], 'a recorded task is not resumed');
+    const rdir = temp('graph-');
+    const rspec = check({ name: 'r2', limits: { max_agents: 1 }, nodes: { c: { run: ['true'] } } });
+    assert.deepEqual(ids(next(rspec, rdir)), ['c#0']);
+    assert.deepEqual(next(rspec, rdir, {}, { resume: true }), [], 'a run task is never re-offered, so exec cannot repeat its effect');
   },
 
   // the bundled task graph walks a task with and without Git hosting

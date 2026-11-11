@@ -1,6 +1,6 @@
 {
   "name": "srulik-toolkit",
-  "version": "1.23.0",
+  "version": "1.23.1",
   "description": "Twenty-six portable skills for request triage, research, planning, plan execution, skill authoring, explanation, code and UI/UX review, verification contracts, scoped implementation, writing, product videos, session recaps, handoffs, agent takeovers, retrospectives, and pull request maintenance.",
   "author": {
     "name": "Zach Bonfil",

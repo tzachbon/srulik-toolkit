@@ -91,8 +91,9 @@ nodes:
     needs: [approve, issue]
     agent: |
       Implement this task from the plan at ${plan-review.plan_file}: {item}
-      Follow $srulik-toolkit:implement-plan step 4 with $srulik-toolkit:tdd. Work on your own branch, based on the
-      branches in input.after (the tasks you wait for) or on the plan's base when there are none. With no Git repository,
+      Follow $srulik-toolkit:implement-plan step 4 with $srulik-toolkit:tdd. Work in your own worktree on your own branch,
+      never switching the shared checkout's branch, based on the branches in input.after (the tasks you wait for)
+      or on the plan's base when there are none. With no Git repository,
       back up each file first, change the target in place, and return the backup directory as branch.
       Return JSON {"branch":"<branch>","checks":"<commands and results>"}.
     out: [branch, checks]

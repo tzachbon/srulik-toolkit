@@ -57,3 +57,8 @@ for graph_host_name in ["delegate_task", "watch_pull_request", "preview_open"]:
     if graph_host_name in graph_e2e_core:
         raise SystemExit(f"execute-task-end-to-end workflow must not name host tool: {graph_host_name}")
 subprocess.run([node, str(root / "scripts" / "test-graph.js")], check=True, timeout=120, stdout=subprocess.DEVNULL)  # also loads test-graph-run.js, test-graph-models.js, test-graph-review.js, test-graph-e2e.js, test-graph-later.js, test-graph-view.js and test-graph-flow.js
+for graph_phrase in ["next --resume"]:
+    if graph_phrase not in graph_skill or graph_phrase not in graph_spec_ref:
+        raise SystemExit(f"agent-swarm graph mode and spec must document: {graph_phrase} (#82)")
+if "own worktree" not in (skill_root / "agent-swarm" / "graphs" / "task.yaml").read_text(encoding="utf-8") or 'isolation: "worktree"' not in graph_t3_ref:
+    raise SystemExit("task.yaml implement children must work in their own worktree, and the T3 mapping must isolate them (#83)")

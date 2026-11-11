@@ -238,7 +238,7 @@ function orderItems(items, field) {
   return items.some((_, n) => visit(n)) ? 'after: the items\' after lists form a cycle' : null;
 }
 
-function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
+function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd(), resume = false } = {}) {
   const s = fold(dir);
   if (!s.started) {
     const inputs = { ...spec.inputs, ...overrides };
@@ -263,8 +263,10 @@ function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
         const attempt = (i.failures ?? 0) + 1; const id = key(name, i.index);
         if (i.settled || offered.has(id)) continue;
         const resumed = (i.attempts ?? []).includes(attempt);
-        // an open parent task comes back from every next, so the orchestrator can pick it up after a break
-        if (resumed && taskType !== 'parent') continue;
+        // an open parent task comes back from every next, so the orchestrator can pick it up after a break;
+        // an open agent task only with resume, so a polling orchestrator never dispatches it twice; a run task never,
+        // because exec has no claim and a second run could repeat its effect
+        if (resumed && (taskType === 'run' || (taskType === 'agent' && !resume))) continue;
         if (i.deps && !i.deps.every(d => list[d].result !== undefined && !list[d].dropped)) continue;
         if (!resumed) emit(dir, s, { type: 'dispatch', node: name, index: i.index, attempt, taskType, item: i.item, src: i.src });
         offered.add(id);
@@ -274,7 +276,9 @@ function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
         if (i.deps) input.after = i.deps.map(d => ({ id: list[d].item[node.after], file: list[d].file, summary: list[d].summary }));
         const task = { node: name, index: i.index, attempt, round, taskType, item: i.item, prompt: substitute(node.agent ?? node.parent, s, i.item, spec), input,
           graph: join(resolve(dir), 'nodes', 'index.md'), ...(resumed ? { resumed: true } : {}) };
-        tasks.push(taskType === 'agent' ? { ...task, kind: node.kind ?? 'agentic', pick: node.pick ?? null, model: node.model ?? null } : task);
+        const picked = resumed && taskType === 'agent' ? (s.picks[name] ?? []).filter(p => p.index === i.index).at(-1) : null;
+        tasks.push(taskType === 'agent' ? { ...task, kind: node.kind ?? 'agentic', pick: node.pick ?? null, model: node.model ?? null,
+          ...(picked ? { picked: { provider: picked.provider, model: picked.model, effort: picked.effort } } : {}) } : task);
       }
     }
     if (settle(spec, dir, s)) changed = true;
