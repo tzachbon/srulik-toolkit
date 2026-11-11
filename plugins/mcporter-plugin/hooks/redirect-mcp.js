@@ -37,8 +37,10 @@ if (require.main === module) {
     try {
       const input = JSON.parse(raw);
       // A name whose native copy is another backend is not the same server.
-      const skip = conflicted();
-      const names = JSON.parse(fs.readFileSync(serverCache(input.cwd || process.cwd()), "utf8")).filter((n) => !skip.has(n));
+      // Skip every name sharing a conflicted name's tool key too: "my.srv" and
+      // "my_srv" look the same to the native tools.
+      const skip = new Set([...conflicted()].map(toolKey));
+      const names = JSON.parse(fs.readFileSync(serverCache(input.cwd || process.cwd()), "utf8")).filter((n) => !skip.has(toolKey(n)));
       const out = decide(input, names, process.env.MCPORTER_HOOK_MODE);
       if (out) console.log(JSON.stringify(out));
     } catch {}

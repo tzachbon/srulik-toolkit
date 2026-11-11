@@ -60,6 +60,13 @@ fs.rmSync(cacheFile);
 fs.writeFileSync(path.join(tmp, "data with 'space", "conflicts.json"), JSON.stringify(["inv"]));
 assert.equal(run("hooks/redirect-mcp.js", [], JSON.stringify({ tool_name: "mcp__inv__get_item", tool_input: {}, cwd: other })), "");
 assert.doesNotMatch(execFileSync(process.execPath, [path.join(plugin, "hooks", "session-hint.js")], { env, encoding: "utf8", cwd: other }), /\binv\b/);
+// A conflict on "my_srv" also covers "my.srv": both look like mcp__my_srv__.
+const cacheNow = path.join(tmp, "data with 'space", path.basename(serverCache(other)));
+const savedCache = fs.readFileSync(cacheNow);
+fs.writeFileSync(cacheNow, JSON.stringify(["my.srv", "my_srv"]));
+fs.writeFileSync(path.join(tmp, "data with 'space", "conflicts.json"), JSON.stringify(["my_srv"]));
+assert.equal(execFileSync(process.execPath, [path.join(plugin, "hooks", "redirect-mcp.js")], { env: { ...env, MCPORTER_HOOK_MODE: "block" }, encoding: "utf8", input: JSON.stringify({ tool_name: "mcp__my_srv__delete_item", tool_input: {}, cwd: other }) }), "");
+fs.writeFileSync(cacheNow, savedCache);
 fs.rmSync(path.join(tmp, "data with 'space", "conflicts.json"));
 const piped = run("hooks/redirect-mcp.js", [], JSON.stringify({ tool_name: "mcp__inv__get_item", tool_input: { id: "a" }, cwd: other }));
 assert.match(JSON.parse(piped).hookSpecificOutput.additionalContext, /'id:a'/);
