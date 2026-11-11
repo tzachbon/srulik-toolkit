@@ -197,8 +197,13 @@ require("./test-mcporter-plugin-scopes");
 
 // A Codex server with `cwd` is not migrated: mcporter's import drops it.
 fs.writeFileSync(projectCodex, '[mcp_servers.projonly]\ncommand = "p"\ncwd = "sub"\n');
+const conflictsFile = path.join(tmp, "data with 'space", "conflicts.json");
+fs.rmSync(conflictsFile, { force: true });
 const withCwd = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "projonly"]));
 assert.match(withCwd.failed[0]?.reason ?? "", /cwd/);
+// The hooks leave it native: mcporter's import would run in the wrong folder.
+assert.deepEqual(JSON.parse(fs.readFileSync(conflictsFile, "utf8")), ["projonly"]);
+execFileSync("sh", ["-c", withCwd.undo], { env, cwd: proj });
 assert.equal(fs.readFileSync(projectCodex, "utf8"), '[mcp_servers.projonly]\ncommand = "p"\ncwd = "sub"\n');
 fs.writeFileSync(projectCodex, projectBefore);
 
@@ -213,6 +218,12 @@ assert.deepEqual(shadow.disabled.claude, []);
 // The hooks then leave the native inv alone.
 assert.deepEqual(JSON.parse(fs.readFileSync(path.join(tmp, "data with 'space", "conflicts.json"), "utf8")), ["inv"]);
 execFileSync("sh", ["-c", shadow.undo], { env, cwd: proj });
+// A server that needs a login is checked for shadowing too.
+fs.writeFileSync(path.join(proj, "config", "mcporter.json"), JSON.stringify({ mcpServers: { oauth: { command: "other" } } }));
+const shadowAuth = JSON.parse(run("scripts/setup.js", ["apply", "--servers", "oauth"]));
+assert.deepEqual(shadowAuth.authRequired, []);
+assert.match(shadowAuth.failed[0]?.reason ?? "", /shadowed by/);
+execFileSync("sh", ["-c", shadowAuth.undo], { env, cwd: proj });
 fs.rmSync(path.join(proj, "config"), { recursive: true });
 
 // A server that ordinary mcporter discovery cannot find (MCPORTER_CONFIG points

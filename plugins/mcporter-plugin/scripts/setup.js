@@ -174,6 +174,9 @@ function apply(names, dryRun) {
     // Claude Code definition: leave those copies for the user.
     let nameOnly = other.some((x) => x.kind === "claude-code");
     if (sources.some((x) => x.kind === "codex" && codexHasCwd(x))) {
+      // Its mcporter import would start in the wrong folder, so the hooks
+      // must not point calls at it either.
+      conflictNames.add(name);
       receipt.failed.push({ name, from: ref, reason: "Codex `cwd` is not imported by mcporter; add it to mcporter by hand, then disable the native copy" });
       continue;
     }
@@ -220,7 +223,9 @@ function apply(names, dryRun) {
     }
     // A project config/mcporter.json defining the same name wins over the home
     // config, so ordinary calls would not reach the copy just checked.
-    if (status === "ok") {
+    // Also for a server that needs a login: `mcporter auth` would log in to
+    // whichever definition ordinary discovery finds.
+    if (status === "ok" || status === "auth") {
       let effective;
       try {
         effective = listServers(["--source", "local"]).find((x) => x.name === name)?.source?.path;
