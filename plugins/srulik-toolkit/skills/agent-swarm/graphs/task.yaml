@@ -71,6 +71,8 @@ nodes:
       - "${plan-review.plan_file}"
       - "${plan-review.hosted}"
     parent: |
+      Readiness ${reresearch.ready} and plan review ${plan-review.clean} must both be true. A false one means its loop ran out
+      of rounds: ask the owner to continue planning in a new run or stop, and either way report this task failed with final true.
       Show the owner the plan at ${plan-review.plan_file} and confirm execution, unless the request already authorized it.
       If the owner declines, report this task failed with final true, which stops the run.
       merge is true only when the owner explicitly authorized merging this task's PR.
@@ -92,14 +94,16 @@ nodes:
     agent: |
       Implement this task from the plan at ${plan-review.plan_file}: {item}
       Follow $srulik-toolkit:implement-plan step 4 with $srulik-toolkit:tdd. Work on your own branch, based on the
-      branches in input.after (the tasks you wait for) or on the plan's base when there are none.
+      branches in input.after (the tasks you wait for) or on the plan's base when there are none. With no Git repository,
+      back up each file first, change the target in place, and return the backup directory as branch.
       Return JSON {"branch":"<branch>","checks":"<commands and results>"}.
     out: [branch, checks]
   integrate:
     needs: [implement]
     parent: |
       Follow $srulik-toolkit:implement-plan step 5: integrate the implement branches into one task branch in
-      dependency order, then run the plan's checks on the integrated state.
+      dependency order, then run the plan's checks on the integrated state. Without Git, base and branch name the backup
+      directory and the target. If the checks cannot pass, report this task failed with final true.
       Return JSON {"base":"<base commit>","branch":"<task branch>","ok":true|false}.
     out: [base, branch, ok]
   audit:
@@ -109,7 +113,8 @@ nodes:
       - "${integrate.base}"
       - "${integrate.branch}"
     agent: |
-      Run $srulik-toolkit:make-it-verifiable audit mode on git diff ${integrate.base}...${integrate.branch}.
+      Run $srulik-toolkit:make-it-verifiable audit mode on git diff ${integrate.base}...${integrate.branch}
+      (without Git, diff the backup against the target).
       ok is true only when every claim is verified or accepted-unverified.
       Return JSON {"ok":true|false,"gaps":[]}.
     out: [ok, gaps]
@@ -117,7 +122,7 @@ nodes:
     needs: [audit]
     when: plan-review.hosted == true
     parent: |
-      Fix every audit gap first. Then follow execute-task-end-to-end step 4 with $srulik-toolkit:create-pr, and
+      Fix every audit gap and rerun the audit until ok is true; if a gap cannot close, report failed with final true. Then follow execute-task-end-to-end step 4 with $srulik-toolkit:create-pr, and
       run its ownership handoff and watch registration from step 5.
       Return JSON {"number":0,"url":"<PR URL>"}.
     out: [number, url]
@@ -130,7 +135,8 @@ nodes:
       - "${integrate.base}"
       - "${integrate.branch}"
     agent: |
-      Review git diff ${integrate.base}...<current head of ${integrate.branch}> for {item} defects only.
+      Review git diff ${integrate.base}...<current head of ${integrate.branch}> (without Git, the backup against the
+      target) for {item} defects only.
       Findings already decided in earlier rounds; report only new ones: ${prev.fix.decided}
       Return JSON {"findings":[{"title":"","file":"","line":0,"why":""}]}; use an empty list when there are none.
     out: [findings]
@@ -157,7 +163,8 @@ nodes:
   fix:
     needs: [verify, post]
     parent: |
-      Fix each confirmed finding test-first, push, and reply on it, as execute-task-end-to-end step 5 says.
+      Fix each confirmed finding test-first, push, and reply on it, as execute-task-end-to-end step 5 says. Without hosting,
+      first close the audit gaps the same way: audit ok is ${audit.ok}; if a gap cannot close, report failed with final true.
       clean is true only when this round confirmed nothing new and no reviewer or verifier failed or was cap-skipped.
       decided is every finding confirmed or refuted so far, this round and earlier: ${prev.fix.decided}
       Return JSON {"clean":true|false,"decided":[]}.
@@ -168,6 +175,7 @@ nodes:
     parent: |
       Drive the PR to MERGE READY as execute-task-end-to-end step 5 and $srulik-toolkit:pr-babysit describe. While
       checks or reviews are pending, end the turn with the watch active; this task comes back from next as resumed.
+      After any push that fixes a finding, review the new head with a nested graphs/pr-review.yaml run before MERGE READY.
       merge is true only when the state is MERGE READY and approve.merge is ${approve.merge}.
       Return JSON {"state":"MERGE READY|WAITING|BLOCKED","merge":true|false}.
     in: ${approve.merge}

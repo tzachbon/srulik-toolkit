@@ -94,8 +94,9 @@ async function main([command, ...args]) {
     const choice = pick(node, JSON.parse(readFileSync(found.candidates[0], 'utf8')), data, { ...pickContext(spec, dir, name, Number(indexArg), found.exclude), fallback: found.fallback[0] });
     if (Object.keys(data.errors).length) choice.reason.data_errors = data.errors;
     mkdirSync(dir, { recursive: true });
-    const round = spec.loopOf[name] ? { round: run.roundOf(run.fold(dir), name) } : {}; // a later round's model lands on its own card
-    run.withRunLock(dir, () => appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: Date.now(), type: 'pick', node: name, index: Number(indexArg), ...round, ...choice }) + '\n'));
+    // a later round's model lands on its own card; read the round under the lock, so a round change can't slip in between
+    run.withRunLock(dir, () => { const round = spec.loopOf[name] ? { round: run.roundOf(run.fold(dir), name) } : {};
+      appendFileSync(join(dir, 'run.jsonl'), JSON.stringify({ t: Date.now(), type: 'pick', node: name, index: Number(indexArg), ...round, ...choice }) + '\n'); });
     run.refreshIndex(dir); // the run index shows the model while the child works
     out(choice); return;
   }

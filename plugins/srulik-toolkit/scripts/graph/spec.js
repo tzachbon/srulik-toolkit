@@ -132,7 +132,9 @@ function check(raw) {
   for (const n of names) visit(n, []);
   const edges = Object.fromEntries(names.map(n => [n, [...deps[n]]]));
   // inside a loop only the until node is an output; the other loop nodes feed it
-  const sinks = names.filter(n => !names.some(m => deps[m].has(n)) && (!loopOf[n] || loops[loopOf[n]].until.node === n));
+  // a consumer inside the same loop doesn't stop the until node from being the loop's output
+  const consumed = n => names.some(m => deps[m].has(n) && (!loopOf[n] || loopOf[m] !== loopOf[n]));
+  const sinks = names.filter(n => !consumed(n) && (!loopOf[n] || loops[loopOf[n]].until.node === n));
   return { name: raw.name, inputs: raw.inputs || {}, limits, writes, loops, loopOf, nodes, edges, order, sinks };
 }
 

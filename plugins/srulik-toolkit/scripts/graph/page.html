@@ -76,7 +76,9 @@ const itemLabel = v => v && typeof v === 'object' && typeof (v.title ?? v.name) 
 const label = i => i.item == null ? (run.admitted[i.node] > 1 ? '#' + i.index : '') : clip(itemLabel(i.item), 120);
 const instancesOf = node => Object.values(run.inst).filter(i => i.node === node).sort((a, b) => a.round - b.round || a.index - b.index);
 function cards(node) {
-  if (node in run.skipped) return [{ node, index: 0, id: node + '#-', state: 'skipped', ghost: true, summary: 'skipped: ' + run.skipped[node] }];
+  // a skip in this round keeps the cards of earlier rounds
+  const round = run.loops[run.loopOf?.[node]]?.round || 1;
+  if (node in run.skipped) return [...instancesOf(node).filter(i => i.round < round), { node, index: 0, round, id: node + '#-', state: 'skipped', ghost: true, summary: 'skipped: ' + run.skipped[node] }];
   if (node in run.blocked) return [{ node, index: 0, id: node + '#-', state: 'blocked', error: 'blocked by ' + run.blocked[node], ghost: true }];
   const list = instancesOf(node);
   if (!list.length && !run.capSkipped[node]) return [{ node, index: 0, id: node + '#-', state: node in run.admitted ? 'done' : 'waiting', ghost: true,
@@ -152,7 +154,7 @@ function edges(board, svg) {
     // a loop node draws from its own round of a sibling; a node outside a loop draws from the loop's last round only
     const fromCards = p => { const cs = cards(p), L = run.loopOf?.[p]; if (!L) return cs;
       const round = run.loopOf[node] === L ? to.round : Math.max(...cs.map(c => c.round || 1)); return cs.filter(c => (c.round || 1) === round); };
-    const from = [...(to.src ? [key(to.src.node, to.src.index, to.round)] : (s.edges[node] || []).flatMap(p => fromCards(p).map(c => c.id))), ...after];
+    const from = [...(to.src ? [key(to.src.node, to.src.index, run.loopOf?.[to.src.node] === run.loopOf?.[node] ? to.round : run.loops[run.loopOf?.[to.src.node]]?.round || 1)] : (s.edges[node] || []).flatMap(p => fromCards(p).map(c => c.id))), ...after];
     for (const f of from) {
       const a = board.querySelector(`[data-id="${CSS.escape(f)}"]`), b = board.querySelector(`[data-id="${CSS.escape(to.id)}"]`); if (!a || !b) continue;
       const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();

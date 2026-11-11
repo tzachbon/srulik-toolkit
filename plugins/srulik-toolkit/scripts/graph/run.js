@@ -241,7 +241,8 @@ function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
   if (!s.started) {
     const inputs = { ...spec.inputs, ...overrides };
     for (const [k, v] of Object.entries(inputs)) if (String(v).startsWith('-')) throw new Error(`input "${k}" must not start with "-"`);
-    emit(dir, s, { type: 'spec', name: spec.name, engine: 2, nodes: spec.order, edges: spec.edges, inputs, cwd, ...(Object.keys(spec.loops).length ? { loops: spec.loops } : {}) });
+    emit(dir, s, { type: 'spec', name: spec.name, engine: 2, nodes: spec.order, edges: spec.edges, inputs, cwd, ...(Object.keys(spec.loops).length ? { loops: spec.loops } : {}),
+      after: Object.fromEntries(spec.order.filter(n => spec.nodes[n].after).map(n => [n, spec.nodes[n].after])) });
   }
   const tasks = []; const offered = new Set();
   for (let changed = true; changed;) {
@@ -252,6 +253,7 @@ function nextUnlocked(spec, dir, overrides = {}, { cwd = process.cwd() } = {}) {
       if (!(name in s.admitted)) {
         if (node.when && !holds(s, node.when)) { emit(dir, s, { type: 'skipped', node: name, reason: 'when false' }); changed = true; continue; }
         admit(spec, dir, s, name);
+        propagate(spec, dir, s); // an admission that failed every item blocks its consumers before they are reached
       }
       const taskType = isAgent(node) ? 'agent' : 'run' in node ? 'run' : 'parent';
       const list = instances(s, name);

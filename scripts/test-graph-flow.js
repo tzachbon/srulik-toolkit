@@ -364,6 +364,47 @@ module.exports = {
     assert.equal(events(run, 'pick').at(-1).round, 2, 'a pick in round 2 records round 2');
   },
 
+  // review fixes: loop sinks, admission failures, the after field, view rounds, and task.yaml stop points
+  C49() {
+    const { check } = mod('spec.js'); const { next, done, status } = mod('run.js');
+    // a loop whose until node feeds another loop node: the until node is still the loop's output
+    const sinkSpec = check({ name: 's', limits: { max_agents: 4 }, loops: { lp: { nodes: ['g', 'tail'], until: 'g.stop == true', max_rounds: 1 } },
+      nodes: { g: { agent: 'g', out: ['stop'] }, tail: { agent: 't', needs: ['g'] } } });
+    assert.deepEqual([...sinkSpec.sinks], ['g']);
+    const sd = temp('graph-'); drive(sinkSpec, sd, t => t.node === 'g' ? { stop: true } : {});
+    assert.equal(status(sinkSpec, sd).state, 'done');
+    // a fan-out whose after lists fail ordering blocks its consumer instead of dispatching it
+    const ad = temp('graph-');
+    const aspec = check({ name: 'a', limits: { max_agents: 6 }, nodes: { p: { agent: 'p', out: ['tasks'] },
+      w: { agent: 'w {item}', for_each: '${p.tasks}', after: 'task_id' }, c: { agent: 'c', needs: ['w'] } } });
+    next(aspec, ad); done(aspec, ad, { node: 'p', output: { tasks: [{ task_id: 'x', after: ['nope'] }] }, model: 'm' });
+    assert.deepEqual(ids(next(aspec, ad)), [], 'nothing is ready');
+    assert.ok(!events(ad, 'dispatch').some(e => e.node === 'c'), 'the consumer never dispatched');
+    assert.equal(events(ad, 'blocked').find(e => e.node === 'c')?.cause, 'w');
+    // the spec event carries each node's after field, so the view draws task_id edges
+    assert.deepEqual(events(ad, 'spec')[0].after, { w: 'task_id' });
+    // the view: a skip in round 2 keeps round 1's card; a fan-out from outside the loop draws from round 1
+    const { PAGE } = mod('view.js');
+    const section = PAGE.split('// ---- state folded from run.jsonl')[1].split('// ---- preferences')[0];
+    const cardsSrc = 'function cards(node) {' + PAGE.split('function cards(node) {')[1].split('\n}\n')[0] + '\n}';
+    const pre = PAGE.split('const itemLabel')[1].split('function cards(node) {')[0];
+    const pg = vm.runInNewContext(section + '\nconst itemLabel' + pre + cardsSrc + '\n;({ run, apply, cards })');
+    pg.apply({ type: 'spec', t: 1, name: 'x', nodes: ['h'], edges: {}, loops: { lp: { nodes: ['h'], max_rounds: 2 } } });
+    pg.apply({ type: 'admit', node: 'h', count: 1, items: [{}], round: 1 });
+    pg.apply({ type: 'result', node: 'h', index: 0, round: 1, output: {} });
+    pg.apply({ type: 'round', loop: 'lp', round: 2 });
+    pg.apply({ type: 'skipped', node: 'h', reason: 'when false' });
+    assert.equal(pg.cards('h').map(c => c.state).join(), 'done,skipped', 'round 1 stays visible beside the round-2 skip');
+    assert.match(PAGE, /to\.src \? \[key\(to\.src\.node, to\.src\.index, run\.loopOf\?\.\[to\.src\.node\] === run\.loopOf\?\.\[node\]/);
+    // task.yaml: approve refuses a plan whose loops ran out, publication needs a passing audit, babysit re-reviews
+    const yaml = readFileSync(TASK_YAML, 'utf8');
+    assert.match(yaml, /Readiness \$\{reresearch\.ready\} and plan review \$\{plan-review\.clean\} must both be true/);
+    assert.match(yaml, /rerun the audit until ok is true; if a gap cannot close, report failed with final true/);
+    assert.match(yaml, /If the checks cannot pass, report this task failed with final true/);
+    assert.match(yaml, /nested graphs\/pr-review\.yaml run before MERGE READY/);
+    assert.match(yaml, /With no Git repository,\n\s+back up each file first/);
+  },
+
   // the bundled task graph walks a task with and without Git hosting
   C48() {
     const { check } = mod('spec.js'); const { status } = mod('run.js');
