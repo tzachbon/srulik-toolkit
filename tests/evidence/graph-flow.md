@@ -62,7 +62,7 @@ Each mutation ran in a pristine copy of the repository, then the copy was discar
 | cap-trim-after | C44 | red |
 | prev-two-part | C42 | red |
 | pick-round | C47 | red |
-| page-round-clears | C47 | MUTATION NOT FOUND |
+| page-round-clears | C47 | red |
 | exec-round | C41 | red |
 | page-round-capskip | C47 | red |
 | task-merge-gate | C48 | red |
