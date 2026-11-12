@@ -44,9 +44,10 @@ function unquote(s) {
 function decide(input) {
   if (input?.tool_name !== "Bash") return null;
   // Heredoc bodies and quoted text are data, not commands, so they are blanked first.
-  const command = unquote(String(input.tool_input?.command ?? "").replace(/<<-?[ \t]*(['"]?)(\w+)\1([^\n]*)\n[\s\S]*?\n[ \t]*\2[ \t]*(?=\n|$)/g, "$3"));
+  const raw = String(input.tool_input?.command ?? "");
+  const command = unquote(raw.replace(/<<-?[ \t]*(['"]?)(\w+)\1([^\n]*)\n[\s\S]*?\n[ \t]*\2[ \t]*(?=\n|$)/g, "$3"));
   // Quoting the scanner cannot read: no notice rather than a wrong one.
-  if (/\$'|`/.test(command) || !runsMcporter.test(command)) return null;
+  if (/\$'|`/.test(raw) || !runsMcporter.test(command)) return null;
   const cmd = login(input.error ?? JSON.stringify(input.tool_response ?? ""));
   if (!cmd) return null;
   return {
