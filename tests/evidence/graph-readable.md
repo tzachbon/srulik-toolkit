@@ -22,6 +22,7 @@ Plugin version: 1.27.0. Base: 064fb0f. Issue: #95.
   - graph review round 2, security reviewer: the fence opener's `(?!.*`)` lookahead backtracked quadratically, taking 2.3 s on 50,000 backticks plus a later backtick. It is now a plain string check.
   - short JSON strings that start a Markdown block, such as `# Important`, now render as that block (CodeRabbit follow-up)
   - graph review round 2, perf reviewer: many `[` sharing one `]` re-ran the failing URL match for every bracket, taking 1.2 s on 1 MB. Each `]` now caches its URL result (25 ms). The reviewer's other finding was the fence-opener lookahead, already fixed.
+  - descending runs of unmatched backticks searched the rest of the text once per run length, taking about 9.7 s on 322 KB (review r4556130507). Backtick runs are now indexed once (8 ms), and code spans close only on a run of the same length.
 - **Real browser.** I ran `graph-readable/browser-check.mjs` (exits 1 on any failed check) (Playwright, headless Chromium) against `node scripts/graph.js view` serving a fixture run. The fixture has one node: a JSON output whose `notes` holds Markdown, plus a `notes.md` attachment. All 14 checks passed:
   - rows and values
   - heading, list with code and bold, table

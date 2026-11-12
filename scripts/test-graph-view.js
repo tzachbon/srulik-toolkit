@@ -179,6 +179,7 @@ module.exports = {
       'an escaped pipe from the run index stays inside its cell');
     assert.equal(tree(markdown('````\n```js\nx\n```\n````\nafter')), 'div(pre(```js\nx\n```),p(after))', 'a fence closes only on a matching marker at least as long, with nothing after it');
     assert.match(tree(readable({ notes: '**Important** see `x`' })), /dd\(span\(strong\(Important\), see ,code\(x\)\)\)/, 'a short JSON string still renders inline Markdown');
+    assert.equal(tree(markdown('``a`b`` and ```c```')), 'div(p(code(a`b), and ,code(c)))', 'a code span closes only on a backtick run of the same length');
     assert.match(tree(readable({ notes: '# Important' })), /dd\(div\(h4\(Important\)\)\)/, 'a short JSON string that starts a Markdown block renders as that block');
     assert.match(tree(readable({ id: '#42', n: '-1' })), /dd\(span\(#42\)\).*dd\(span\(-1\)\)/, 'short values that only look like markers stay plain');
     for (const [md, want] of [['----', 'div(hr())'], ['- - - -', 'div(hr())'], ['| flag | desc |\n| --all | run all |', 'div(p(| flag | desc |),p(| --all | run all |))'],
@@ -190,7 +191,8 @@ module.exports = {
     assert.equal(big.kids.length, 201, 'a long list renders its first 200 entries and a note; Raw keeps the rest');
     assert.match(tree(big.kids[200]), /4800 more/);
     for (const [name, md] of [['a heading of many #', '# ' + '#'.repeat(40000) + 'a'], ['a long indented line after a table row', '| head |\n' + ' '.repeat(40000) + 'x'], ['a long backtick run with a later backtick', '`'.repeat(30000) + 'a'.repeat(30000) + '`'],
-      ['many brackets sharing one failing link', ('['.repeat(499) + 'a](http://' + 'a'.repeat(2040) + ' ').repeat(100)]]) {
+      ['many brackets sharing one failing link', ('['.repeat(499) + 'a](http://' + 'a'.repeat(2040) + ' ').repeat(100)],
+      ['descending unmatched backtick runs', 'x ' + Array.from({ length: 800 }, (_, i) => '`'.repeat(800 - i) + 'x').join(' ')]]) {
       const t = Date.now(); markdown(md); assert.ok(Date.now() - t < 250, `${name} stays linear`);
     }
     assert.equal(tree(markdown('| a | b |\n| :-- | --: |\n| 1 | 2 |')), 'div(div(table(tr(th(a),th(b)),tr(td(1),td(2)))))', 'aligned separators still make a table');
