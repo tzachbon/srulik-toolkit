@@ -32,7 +32,9 @@ function launcher(platform = process.platform, nodeDir = path.dirname(process.ex
   if (cli && fs.existsSync(cli)) return [process.execPath, [cli]];
   if (platform !== "win32") return ["npx", ["-y", "mcporter@0.17.0"]];
   // npm's npx-cli.js sits beside node, or beside the npx shim on PATH.
-  const dirs = [nodeDir, path.dirname(which("npx", platform) || "")];
+  // Only a found shim's folder: path.dirname("") is ".", the project itself.
+  const npxShim = which("npx", platform);
+  const dirs = npxShim ? [nodeDir, path.dirname(npxShim)] : [nodeDir];
   const npx = dirs.map((d) => path.join(d, "node_modules", "npm", "bin", "npx-cli.js")).find((f) => fs.existsSync(f));
   if (!npx) throw new Error("mcporter not found: install it (npm install -g mcporter@0.17.0); npx-cli.js was not found beside node or npx");
   return [process.execPath, [npx, "-y", "mcporter@0.17.0"]];
@@ -45,7 +47,8 @@ function mcporter(args, { timeout = 30_000 } = {}) {
 // The first PATH entry for `name` (with .cmd/.exe on Windows), or undefined.
 function which(name, platform = process.platform) {
   const exts = platform === "win32" ? ["", ".cmd", ".exe"] : [""];
-  for (const dir of (process.env.PATH || "").split(path.delimiter).filter(Boolean)) {
+  // Absolute entries only: a relative one (".") would search the project.
+  for (const dir of (process.env.PATH || "").split(path.delimiter).filter((d) => path.isAbsolute(d))) {
     for (const ext of exts) {
       const file = path.join(dir, name + ext);
       try {

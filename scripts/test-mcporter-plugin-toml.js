@@ -43,6 +43,23 @@ assert.equal(launcher("win32", nodeDir)[1][0], path.join(nodeDir, "node_modules"
 // No npx-cli.js anywhere: a clear error, never a bare "npx" for execFile.
 process.env.PATH = path.join(shim, "none");
 assert.throws(() => launcher("win32", noNode), /npx-cli\.js/);
+// ...even when the working directory holds a node_modules/npm/bin/npx-cli.js.
+{
+  const cwd = process.cwd();
+  const planted = path.join(shim, "planted");
+  fs.mkdirSync(path.join(planted, "node_modules", "npm", "bin"), { recursive: true });
+  fs.writeFileSync(path.join(planted, "node_modules", "npm", "bin", "npx-cli.js"), "");
+  process.chdir(planted);
+  try {
+    assert.throws(() => launcher("win32", noNode), /npx-cli\.js/);
+    // A relative PATH entry does not find a planted shim either.
+    fs.writeFileSync(path.join(planted, "npx.cmd"), "@echo off\n");
+    process.env.PATH = ".";
+    assert.throws(() => launcher("win32", noNode), /npx-cli\.js/);
+  } finally {
+    process.chdir(cwd);
+  }
+}
 // CLAUDE_CONFIG_DIR moves both Claude Code's settings and its .claude.json.
 process.env.CLAUDE_CONFIG_DIR = path.join(shim, "cc");
 assert.equal(claudeDir(), path.join(shim, "cc"));
