@@ -36,7 +36,7 @@ assert.equal(decide({ tool_name: "Bash", tool_input: { command: "cat notes.txt" 
 for (const command of ["node .mcporter/scripts/s.mjs", "MCPORTER_OAUTH_NO_BROWSER=1 mcporter call secure.x", "set -e\n./.mcporter/scripts/s.sh", "npx -y mcporter@0.17.0 call secure.x", "cd app && bash .mcporter/scripts/s.sh"]) {
   assert.match(decide({ tool_name: "Bash", tool_input: { command }, error: failure })?.systemMessage ?? "", /`mcporter auth secure`/, command);
 }
-for (const command of ["cat .mcporter/notes.txt", "grep mcporter log.txt", "echo mcporter call x", "cat .mcporter/scripts/s.sh"]) {
+for (const command of [`echo "note; mcporter call secure.x" >&2; exit 1`, "echo 'x; mcporter call s.x'", "cat .mcporter/notes.txt", "grep mcporter log.txt", "echo mcporter call x", "cat .mcporter/scripts/s.sh"]) {
   assert.equal(decide({ tool_name: "Bash", tool_input: { command }, error: failure }), null, command);
 }
 // The hint also runs on resumed sessions, so they get the env setting too.

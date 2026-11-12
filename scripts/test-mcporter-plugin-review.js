@@ -53,6 +53,16 @@ assert.equal(blocked("mcp__cx_srv__delete_item"), "");
 const { codexEnabled } = require(path.join(plugin, "scripts", "codex-toml.js"));
 assert.deepEqual(codexEnabled('[mcp_servers.ml]\ncommand = "x"\nargs = ["""\nenabled = false\n"""]\n'), ["ml"]);
 assert.deepEqual(codexEnabled("[mcp_servers.ml]\nenabled = false\n"), []);
+// Inline-table definitions count as native (on), whatever their contents.
+assert.deepEqual(codexEnabled('[mcp_servers]\ninline = { command = "x", enabled = false }\n"q.d" = { command = "y" }\n').sort(), ["inline", "q.d"]);
+assert.deepEqual(codexEnabled('mcp_servers.top = { command = "x" }\n[other]\nnot_me = { a = 1 }\n'), ["top"]);
+assert.deepEqual(codexEnabled('mcp_servers = { a = { command = "x" } }\n'), ["a"]);
+// End to end: an inline definition keeps the native name out of the hint and redirects.
+fs.writeFileSync(homeCfg, JSON.stringify({ mcpServers: { inline: { command: "home" }, keep: { command: "k" } } }));
+fs.writeFileSync(path.join(c, ".codex", "config.toml"), '[mcp_servers]\ninline = { command = "native" }\n');
+fs.rmSync(path.join(data, path.basename(require(path.join(plugin, "scripts", "mcporter-common.js")).discoveryCache(c))), { force: true });
+assert.doesNotMatch(hint(), /\binline\b/);
+assert.equal(blocked("mcp__inline__delete_item"), "");
 fs.rmSync(path.join(c, ".codex"), { recursive: true });
 
 // User-scope native copies count too: ~/.claude.json's top-level servers not
