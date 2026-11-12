@@ -17,9 +17,11 @@ const runsMcporter = /(?:^|[;&|(\n]|\bdo|\bthen)\s*(?:\w+=\S*\s+)*(?:(?:npx\s+(?
 
 function decide(input) {
   if (input?.tool_name !== "Bash") return null;
-  // Quoted text is an argument, not a command, so it is blanked first.
-  // ponytail: no full shell parser; escaped quotes or heredocs may slip through, and only the server name is ever copied.
-  const command = String(input.tool_input?.command ?? "").replace(/'[^']*'|"(?:[^"\\]|\\.)*"/g, "''");
+  // Heredoc bodies and quoted text are data, not commands, so they are blanked first.
+  // ponytail: no full shell parser; escaped quotes may slip through, and only the server name is ever copied.
+  const command = String(input.tool_input?.command ?? "")
+    .replace(/<<-?[ \t]*(['"]?)(\w+)\1([^\n]*)\n[\s\S]*?\n[ \t]*\2[ \t]*(?=\n|$)/g, "$3")
+    .replace(/'[^']*'|"(?:[^"\\]|\\.)*"/g, "''");
   if (!runsMcporter.test(command)) return null;
   const cmd = login(input.error ?? JSON.stringify(input.tool_response ?? ""));
   if (!cmd) return null;
