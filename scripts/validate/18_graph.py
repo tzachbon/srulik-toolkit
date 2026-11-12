@@ -2,6 +2,7 @@
 # behavioral contract test (scripts/test-graph.js) against local fakes.
 graph_skill = (skill_root / "agent-swarm" / "SKILL.md").read_text(encoding="utf-8")
 graph_spec_ref = (skill_root / "agent-swarm" / "references" / "graph-spec.md").read_text(encoding="utf-8")
+graph_spec_ref += (skill_root / "agent-swarm" / "references" / "live-view.md").read_text(encoding="utf-8")  # split out for size
 graph_t3_ref = (skill_root / "agent-swarm" / "references" / "t3-code.md").read_text(encoding="utf-8")
 graph_notice = (root / "NOTICE.md").read_text(encoding="utf-8")
 graph_standards = (root / "CODING_STANDARDS.md").read_text(encoding="utf-8")
@@ -27,7 +28,7 @@ for graph_phrase in ["| ui-ux | arena.webdev", "30-day half-life", "whole popula
 for graph_phrase in ["delegate_task", "orchestrator_capabilities", "schedule_task", "sudo -n aa-models usage", "preview_open"]:
     if graph_phrase not in graph_t3_ref:
         raise SystemExit(f"agent-swarm T3 reference must map: {graph_phrase}")
-for graph_phrase in ["outlives the turn", "at most one view server", "--port 47812", "Never use `0.0.0.0` or a public address", "pass the printed page URL as `url` when `--host` is set", "never change or restart the T3 server"]:
+for graph_phrase in ["outlives the turn", "at most one view server", "--port 47812", "Never use `0.0.0.0` or a public address", "pass the printed page URL as `url` when it is not loopback", "listens on the machine's Tailscale address", "never change or restart the T3 server"]:
     if graph_phrase not in graph_t3_ref:
         raise SystemExit(f"agent-swarm T3 reference must keep the live page open: {graph_phrase}")
 e2e_skill = (skill_root / "execute-task-end-to-end" / "SKILL.md").read_text(encoding="utf-8")

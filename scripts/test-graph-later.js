@@ -137,9 +137,17 @@ module.exports = {
     const ok = spawnSync(process.execPath, ['-e', `process.argv=[process.argv[0], ${JSON.stringify(CLI)}, 'view', ${JSON.stringify(temp('view-'))}, '--host', '0:0:0:0:0:0:0:1'];
       const log=console.log; console.log=(...a)=>{ log(...a); process.exit(0); }; require(${JSON.stringify(CLI)});`], { encoding: 'utf8', env: process.env, timeout: 5000 });
     assert.match(ok.stdout, /^http:\/\/\[::1\]:\d+\/$/m, 'the CLI accepts and prints a canonical IPv6 loopback');
-    // pr-review graph round 4: without --host, the CLI serves on loopback
+    // without --host, the CLI serves on this machine's Tailscale address, so the link works across the owner's network
+    const { defaultHost } = mod('view.js');
+    const v4 = (address, family = 'IPv4') => [{ address, family }];
+    assert.equal(defaultHost({ lo: v4('127.0.0.1'), eth0: v4('187.124.113.123'), tailscale0: v4('100.90.182.51') }), '100.90.182.51', 'Linux tailscale0');
+    assert.equal(defaultHost({ utun4: [...v4('fd7a:115c:a1e0::1', 'IPv6'), ...v4('100.101.2.3')] }), '100.101.2.3', 'macOS utun, IPv4 only');
+    assert.equal(defaultHost({ Tailscale: v4('100.64.0.9') }), '100.64.0.9', 'Windows Tailscale adapter');
+    assert.equal(defaultHost({ eth0: v4('100.90.182.51') }), '127.0.0.1', 'a CGNAT address off a Tailscale interface is not used');
+    assert.equal(defaultHost({ tailscale0: v4('100.128.0.1') }), '127.0.0.1', 'outside 100.64/10 is not used');
+    assert.equal(defaultHost({ lo: v4('127.0.0.1') }), '127.0.0.1', 'no Tailscale falls back to loopback');
     const plain = spawnSync(process.execPath, ['-e', `process.argv=[process.argv[0], ${JSON.stringify(CLI)}, 'view', ${JSON.stringify(temp('view-'))}];
       const log=console.log; console.log=(...a)=>{ log(...a); process.exit(0); }; require(${JSON.stringify(CLI)});`], { encoding: 'utf8', env: process.env, timeout: 5000 });
-    assert.match(plain.stdout, /^http:\/\/127\.0\.0\.1:\d+\/$/m, 'the CLI defaults to loopback');
+    assert.match(plain.stdout, new RegExp(`^http://${defaultHost().replace(/\./g, '\\.')}:\\d+/$`, 'm'), 'the CLI defaults to the Tailscale address');
   },
 };
