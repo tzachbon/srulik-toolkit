@@ -2,7 +2,9 @@ import { chromium } from 'playwright';
 const url = process.argv[2], shots = process.argv[3];
 const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
 const errors = []; p.on('console', m => m.type() === 'error' && errors.push(m.text())); p.on('pageerror', e => errors.push(e.message));
-const ok = (name, v, info = '') => console.log(`${v ? 'PASS' : 'FAIL'} ${name} ${info}`);
+let failed = 0;
+const ok = (name, v, info = '') => { if (!v) failed++; console.log(`${v ? 'PASS' : 'FAIL'} ${name} ${info}`); };
+try {
 await p.goto(url); await p.click('[data-id="reresearch#0"]'); await p.waitForSelector('#pb dl.jobj');
 const pb = p.locator('#pb');
 ok('a rows', (await pb.locator('dl.jobj > dt').allInnerTexts()).join(',') === 'ready,questions,notes');
@@ -33,4 +35,5 @@ await p.setViewportSize({ width: 390, height: 844 }); await p.click('#close'); a
 ok('phone no horizontal overflow', await p.locator('#pb').evaluate(e => e.scrollWidth <= e.clientWidth + 1));
 await p.locator('#panel').screenshot({ path: `${shots}/panel-phone.png` });
 ok('6 console errors', errors.length === 0, errors.join(' | '));
-await b.close();
+} finally { await b.close(); }
+if (failed) process.exitCode = 1;

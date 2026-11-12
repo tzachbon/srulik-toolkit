@@ -177,6 +177,8 @@ module.exports = {
       'Markdown renders headings, tables and fences as text nodes; only http(s) links become links');
     assert.equal(tree(markdown('| a | b |\n|---|---|\n| x \\| y | 2 |')), 'div(div(table(tr(th(a),th(b)),tr(td(x | y),td(2)))))',
       'an escaped pipe from the run index stays inside its cell');
+    assert.equal(tree(markdown('````\n```js\nx\n```\n````\nafter')), 'div(pre(```js\nx\n```),p(after))', 'a fence closes only on a matching marker at least as long, with nothing after it');
+    assert.match(tree(readable({ notes: '**Important** see `x`' })), /dd\(span\(strong\(Important\), see ,code\(x\)\)\)/, 'a short JSON string still renders inline Markdown');
     assert.match(tree(readable('{"id":9007199254740993}')), /pre\(\{"id":9007199254740993\}\)/, 'Raw keeps the original text, not a lossy re-serialization');
   },
 };

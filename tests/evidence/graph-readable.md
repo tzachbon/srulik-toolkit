@@ -13,7 +13,9 @@ Plugin version: 1.27.0. Base: 064fb0f. Issue: #95.
   - widening the link pattern to accept `javascript:`
   - splitting table cells on escaped `\|` (review r4555798450)
   - rebuilding Raw from parsed JSON instead of the original text (review r4555798466)
-- **Real browser.** I ran `graph-readable/browser-check.mjs` (Playwright, headless Chromium) against `node scripts/graph.js view` serving a fixture run. The fixture has one node: a JSON output whose `notes` holds Markdown, plus a `notes.md` attachment. All 14 checks passed:
+  - closing a fence on any line that starts with three backticks (review r4555813914)
+  - showing short JSON strings as plain text instead of inline Markdown (review r4555813921)
+- **Real browser.** I ran `graph-readable/browser-check.mjs` (exits 1 on any failed check) (Playwright, headless Chromium) against `node scripts/graph.js view` serving a fixture run. The fixture has one node: a JSON output whose `notes` holds Markdown, plus a `notes.md` attachment. All 14 checks passed:
   - rows and values
   - heading, list with code and bold, table
   - the http link, and the `javascript:` link left as text

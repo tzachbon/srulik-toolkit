@@ -18,13 +18,14 @@ function inline(text) {
 function markdown(src) {
   const root = el('div', 'md'); const lines = String(src).replace(/\r\n?/g, '\n').split('\n'); let i = 0;
   const item = /^\s*(?:[-*+]|(\d+)[.)])\s+(.*)$/, cells = l => l.trim().replace(/^\|/, '').replace(/(?<!\\)\|$/, '').split(/(?<!\\)\|/).map(c => c.trim().replace(/\\\|/g, '|'));
-  const starts = l => /^\s*(```|#{1,6}\s|>|\|)/.test(l) || item.test(l) || /^\s*([-*_])\s*\1\s*\1[\s\1]*$/.test(l);
+  const starts = l => /^\s*(```|~~~|#{1,6}\s|>|\|)/.test(l) || item.test(l) || /^\s*([-*_])\s*\1\s*\1[\s\1]*$/.test(l);
   while (i < lines.length) {
     const l = lines[i];
     if (!l.trim()) { i++; continue; }
     let m;
-    if ((m = /^\s*```\s*(\S*)/.exec(l))) { const body = []; i++; while (i < lines.length && !/^\s*```/.test(lines[i])) body.push(lines[i++]); i++;
-      const text = body.join('\n'); if (/^json$/i.test(m[1])) { try { root.append(value(JSON.parse(text))); continue; } catch {} } root.append(el('pre', null, text)); continue; }
+    if ((m = /^\s*(`{3,}|~{3,})\s*(\S*)/.exec(l))) { const body = [], close = new RegExp(`^\\s*${m[1][0]}{${m[1].length},}\\s*$`); i++;
+      while (i < lines.length && !close.test(lines[i])) body.push(lines[i++]); i++;
+      const text = body.join('\n'); if (/^json$/i.test(m[2])) { try { root.append(value(JSON.parse(text))); continue; } catch {} } root.append(el('pre', null, text)); continue; }
     if ((m = /^\s*(#{1,6})\s+(.*)$/.exec(l))) { const h = el('h' + Math.min(m[1].length + 3, 6), 'mdh'); h.append(inline(m[2].replace(/\s*#+\s*$/, ''))); root.append(h); i++; continue; }
     if (/^\s*([-*_])\s*\1\s*\1[\s\1]*$/.test(l)) { root.append(el('hr')); i++; continue; }
     if (/^\s*>/.test(l)) { const q = []; while (i < lines.length && /^\s*>/.test(lines[i])) q.push(lines[i++].replace(/^\s*>\s?/, ''));
@@ -45,7 +46,7 @@ function markdown(src) {
 // JSON: objects become labelled rows, lists become bullets or numbered cards, and long or multi-line strings render as Markdown.
 function value(v) {
   if (v === null || typeof v !== 'object') {
-    if (typeof v === 'string') return v.includes('\n') || v.length > 120 ? markdown(v) : el('span', 'jv', v === '' ? '(empty)' : v);
+    if (typeof v === 'string') { if (v.includes('\n') || v.length > 120) return markdown(v); const s = el('span', 'jv'); s.append(v === '' ? '(empty)' : inline(v)); return s; }
     return el('span', 'jv j-' + (v === null ? 'null' : typeof v), String(v));
   }
   if (Array.isArray(v)) {
