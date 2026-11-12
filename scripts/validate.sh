@@ -9,6 +9,7 @@ python3 "$repo_root/scripts/validate/run.py" "$repo_root"
 if command -v claude >/dev/null 2>&1; then
   claude plugin validate --strict "$repo_root"
   claude plugin validate --strict "$plugin_root"
+  claude plugin validate --strict "$repo_root/plugins/mcporter-plugin"
 fi
 
 if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" && "${RUNNER_OS:-}" == "Linux" ]]; then

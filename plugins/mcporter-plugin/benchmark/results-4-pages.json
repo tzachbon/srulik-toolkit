@@ -1,0 +1,161 @@
+{
+  "date": "2026-11-11",
+  "model": "sonnet",
+  "pages": 4,
+  "claudeVersion": "2.1.322 (Claude Code)",
+  "expected": 625,
+  "summary": {
+    "native": {
+      "runs": 3,
+      "correct": 3,
+      "turns": 5,
+      "durationMs": 7348,
+      "inputTokens": 20301,
+      "cacheWriteTokens": 16384,
+      "cacheReadTokens": 3911,
+      "outputTokens": 333,
+      "costUsd": 0.0517204
+    },
+    "mcporter": {
+      "runs": 3,
+      "correct": 3,
+      "turns": 3,
+      "durationMs": 12978,
+      "inputTokens": 18336,
+      "cacheWriteTokens": 4979,
+      "cacheReadTokens": 13349,
+      "outputTokens": 220,
+      "costUsd": 0.0225484
+    },
+    "saved-script": {
+      "runs": 3,
+      "correct": 3,
+      "turns": 3,
+      "durationMs": 10140,
+      "inputTokens": 17145,
+      "cacheWriteTokens": 4629,
+      "cacheReadTokens": 12512,
+      "outputTokens": 218,
+      "costUsd": 0.0214967
+    }
+  },
+  "results": [
+    {
+      "arm": "native",
+      "correct": true,
+      "answer": "625",
+      "turns": 5,
+      "wallMs": 7715,
+      "durationMs": 6908,
+      "inputTokens": 20301,
+      "cacheWriteTokens": 16384,
+      "cacheReadTokens": 3911,
+      "outputTokens": 328,
+      "costUsd": 0.0516621
+    },
+    {
+      "arm": "mcporter",
+      "correct": true,
+      "answer": "625",
+      "turns": 3,
+      "wallMs": 13584,
+      "durationMs": 12978,
+      "inputTokens": 24204,
+      "cacheWriteTokens": 7912,
+      "cacheReadTokens": 16284,
+      "outputTokens": 190,
+      "costUsd": 0.029854399999999996
+    },
+    {
+      "arm": "saved-script",
+      "correct": true,
+      "answer": "625",
+      "turns": 3,
+      "wallMs": 10919,
+      "durationMs": 9958,
+      "inputTokens": 17145,
+      "cacheWriteTokens": 4645,
+      "cacheReadTokens": 12490,
+      "outputTokens": 170,
+      "costUsd": 0.021063500000000002
+    },
+    {
+      "arm": "native",
+      "correct": true,
+      "answer": "625",
+      "turns": 5,
+      "wallMs": 9573,
+      "durationMs": 8617,
+      "inputTokens": 20301,
+      "cacheWriteTokens": 16384,
+      "cacheReadTokens": 3911,
+      "outputTokens": 336,
+      "costUsd": 0.0517571
+    },
+    {
+      "arm": "mcporter",
+      "correct": true,
+      "answer": "625",
+      "turns": 3,
+      "wallMs": 15547,
+      "durationMs": 14763,
+      "inputTokens": 18334,
+      "cacheWriteTokens": 4977,
+      "cacheReadTokens": 13349,
+      "outputTokens": 220,
+      "costUsd": 0.0225234
+    },
+    {
+      "arm": "saved-script",
+      "correct": true,
+      "answer": "625",
+      "turns": 3,
+      "wallMs": 10858,
+      "durationMs": 10140,
+      "inputTokens": 17145,
+      "cacheWriteTokens": 4625,
+      "cacheReadTokens": 12512,
+      "outputTokens": 218,
+      "costUsd": 0.0214967
+    },
+    {
+      "arm": "native",
+      "correct": true,
+      "answer": "625",
+      "turns": 5,
+      "wallMs": 8274,
+      "durationMs": 7348,
+      "inputTokens": 20297,
+      "cacheWriteTokens": 16382,
+      "cacheReadTokens": 3909,
+      "outputTokens": 333,
+      "costUsd": 0.0517204
+    },
+    {
+      "arm": "mcporter",
+      "correct": true,
+      "answer": "625",
+      "turns": 3,
+      "wallMs": 13191,
+      "durationMs": 12550,
+      "inputTokens": 18336,
+      "cacheWriteTokens": 4979,
+      "cacheReadTokens": 13349,
+      "outputTokens": 222,
+      "costUsd": 0.0225484
+    },
+    {
+      "arm": "saved-script",
+      "correct": true,
+      "answer": "625",
+      "turns": 3,
+      "wallMs": 13109,
+      "durationMs": 12322,
+      "inputTokens": 17149,
+      "cacheWriteTokens": 4629,
+      "cacheReadTokens": 12512,
+      "outputTokens": 222,
+      "costUsd": 0.0215467
+    }
+  ]
+}

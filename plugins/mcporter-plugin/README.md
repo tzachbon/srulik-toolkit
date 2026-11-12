@@ -1,0 +1,51 @@
+# mcporter plugin
+
+`mcporter-plugin` ships in the Srulik Toolkit marketplace, installed separately. It has
+agents call MCP servers through the [mcporter](https://github.com/openclaw/mcporter)
+CLI and saved scripts instead of one native tool call per turn.
+
+Needs Node 24 or newer and the mcporter CLI on `PATH`; setup refuses to
+disable anything without it:
+
+```bash
+npm install -g mcporter@0.17.0
+claude plugin marketplace add tzachbon/srulik-toolkit
+claude plugin install mcporter-plugin@srulik-toolkit
+```
+
+## How it works
+
+![How it works](assets/how-it-works.svg)
+
+- `/mcporter-setup` moves the MCP servers configured in Claude Code, Codex,
+  Cursor and other editors into the mcporter home config, checks each one
+  answers, and disables (never deletes) the Claude Code and Codex copies, with
+  owner-only backups and an undo receipt. Copies in other editors are listed for you to
+  disable by hand.
+- A startup hint lists the servers from `mcporter config list`, and a hook adds
+  the matching `mcporter call` command to any native MCP call for those servers.
+- When a server needs a login, a hook shows you the `mcporter auth <name>`
+  command and tells the agent to wait, instead of retrying. On a remote machine,
+  see [Logging in over SSH](#logging-in-over-ssh).
+- The `mcporter` skill says when to write a script, where to save it
+  (`.mcporter/scripts/`), and how to check it with recorded fixtures.
+
+## Logging in over SSH
+
+mcporter's login sends the browser back to `localhost` on the machine running
+it, which your own browser cannot reach. Pin the callback port, forward it,
+then log in:
+
+1. Set `"oauthRedirectUrl": "http://localhost:47610/callback"` on the server in
+   `~/.mcporter/mcporter.json`.
+2. On your computer: `ssh -L 47610:localhost:47610 <host>`.
+3. In that SSH session: `mcporter auth <name> --no-browser`, then open the
+   printed URL in your browser.
+
+## Benchmark
+
+![Benchmark](assets/benchmark.svg)
+
+On a 20-call task, the agent used 74-76% fewer input tokens through mcporter,
+and a saved script cut the time in half. Method and full results:
+[benchmark](benchmark/README.md).
