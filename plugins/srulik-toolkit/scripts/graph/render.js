@@ -3,7 +3,7 @@
 // ponytail: a Markdown subset (headings, paragraphs, flat lists, quotes, fences, tables, rules, code, bold, italic, http links); nested lists render flat.
 // One left-to-right pass. Each closer search resumes from its cached position, so unmatched markers cost linear time overall.
 function inline(text) {
-  const f = document.createDocumentFragment(), next = {}, url = /https?:\/\/[^)\s]{1,2048}(?=\))/y; let last = 0, i = 0, j, m;
+  const f = document.createDocumentFragment(), next = {}, hrefs = {}, url = /https?:\/\/[^)\s]{1,2048}(?=\))/y; let last = 0, i = 0, j, m;
   const find = (s, from) => { let p = next[s]; if (p === undefined || (p !== -1 && p < from)) p = next[s] = text.indexOf(s, from); return p; };
   const emit = (node, end) => { if (i > last) f.append(text.slice(last, i)); f.append(node); i = last = end; };
   while (i < text.length) {
@@ -11,7 +11,7 @@ function inline(text) {
     if (c === '`') { let n = 1; while (text[i + n] === '`') n++; const tick = '`'.repeat(n);
       if ((j = find(tick, i + n)) > i + n) emit(el('code', null, text.slice(i + n, j)), j + n); else i += n; }
     else if (c === '*' && text[i + 1] === '*' && (j = find('**', i + 2)) > i + 2) { const b = el('strong'); b.append(inline(text.slice(i + 2, j))); emit(b, j + 2); }
-    else if (c === '[' && (j = find(']', i + 1)) > i + 1 && j - i <= 500 && text[j + 1] === '(' && ((url.lastIndex = j + 2), (m = url.exec(text)))) {
+    else if (c === '[' && (j = find(']', i + 1)) > i + 1 && j - i <= 500 && text[j + 1] === '(' && (m = j in hrefs ? hrefs[j] : (hrefs[j] = ((url.lastIndex = j + 2), url.exec(text))))) {
       const a = el('a', null, text.slice(i + 1, j)); a.setAttribute('href', m[0]); a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); emit(a, j + 3 + m[0].length); }
     else if ((c === '*' || c === '_') && !/[\w*]/.test(text[i - 1] || '') && /[^*_\s]/.test(text[i + 1] || '') && (j = find(c, i + 1)) > i + 1
       && /\S/.test(text[j - 1]) && !/[\w*]/.test(text[j + 1] || '')) emit(el('em', null, text.slice(i + 1, j)), j + 1);

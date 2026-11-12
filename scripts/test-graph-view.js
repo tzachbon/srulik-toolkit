@@ -189,7 +189,8 @@ module.exports = {
     const big = readable(JSON.stringify(Array(5000).fill(0))).kids[0];
     assert.equal(big.kids.length, 201, 'a long list renders its first 200 entries and a note; Raw keeps the rest');
     assert.match(tree(big.kids[200]), /4800 more/);
-    for (const [name, md] of [['a heading of many #', '# ' + '#'.repeat(40000) + 'a'], ['a long indented line after a table row', '| head |\n' + ' '.repeat(40000) + 'x'], ['a long backtick run with a later backtick', '`'.repeat(30000) + 'a'.repeat(30000) + '`']]) {
+    for (const [name, md] of [['a heading of many #', '# ' + '#'.repeat(40000) + 'a'], ['a long indented line after a table row', '| head |\n' + ' '.repeat(40000) + 'x'], ['a long backtick run with a later backtick', '`'.repeat(30000) + 'a'.repeat(30000) + '`'],
+      ['many brackets sharing one failing link', ('['.repeat(499) + 'a](http://' + 'a'.repeat(2040) + ' ').repeat(100)]]) {
       const t = Date.now(); markdown(md); assert.ok(Date.now() - t < 250, `${name} stays linear`);
     }
     assert.equal(tree(markdown('| a | b |\n| :-- | --: |\n| 1 | 2 |')), 'div(div(table(tr(th(a),th(b)),tr(td(1),td(2)))))', 'aligned separators still make a table');
