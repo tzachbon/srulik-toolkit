@@ -19,6 +19,8 @@ Plugin version: 1.27.0. Base: 064fb0f. Issue: #95.
   - graph review round 1, perf reviewer: the old regex inline parser took 2.1 s on 50,000 `[`, against a 250 ms bound in C39, and rendering a 5,000-entry list in full
   - graph review round 1, security reviewer: a heading of 40,000 `#` took 3.4 s through a quadratic trailing-`#` regex; 5,500 nested `>` quotes and 5,000-deep JSON overflowed the stack. Quotes now nest at most 20 levels and JSON at most 50, and Raw keeps the full text.
   - quadratic table-separator regex: a table row followed by 40,000 spaces took 1.1 s (review r4556014197). Separators are now checked cell by cell, and a sweep of every block and inline rule at 40,000-character inputs stays under 25 ms.
+  - graph review round 2, security reviewer: the fence opener's `(?!.*`)` lookahead backtracked quadratically, taking 2.3 s on 50,000 backticks plus a later backtick. It is now a plain string check.
+  - short JSON strings that start a Markdown block, such as `# Important`, now render as that block (CodeRabbit follow-up)
 - **Real browser.** I ran `graph-readable/browser-check.mjs` (exits 1 on any failed check) (Playwright, headless Chromium) against `node scripts/graph.js view` serving a fixture run. The fixture has one node: a JSON output whose `notes` holds Markdown, plus a `notes.md` attachment. All 14 checks passed:
   - rows and values
   - heading, list with code and bold, table

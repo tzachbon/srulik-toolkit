@@ -29,7 +29,7 @@ function markdown(src, depth = 0) {
     const l = lines[i];
     if (!l.trim()) { i++; continue; }
     let m;
-    if ((m = /^\s*(?:(`{3,})(?!.*`)|(~{3,}))\s*(\S*)/.exec(l))) { const mark = m[1] || m[2], body = [], close = new RegExp(`^\\s*${mark[0]}{${mark.length},}\\s*$`); i++;
+    if ((m = /^\s*(?:(`{3,})|(~{3,}))\s*(\S*)/.exec(l)) && !(m[1] && l.slice(m[0].length - m[3].length).includes('`'))) { const mark = m[1] || m[2], body = [], close = new RegExp(`^\\s*${mark[0]}{${mark.length},}\\s*$`); i++;
       while (i < lines.length && !close.test(lines[i])) body.push(lines[i++]); i++;
       const text = body.join('\n'); if (/^json$/i.test(m[3])) { try { root.append(value(JSON.parse(text))); continue; } catch {} } root.append(el('pre', null, text)); continue; }
     if ((m = /^\s*(#{1,6})\s+(.*)$/.exec(l))) { const h = el('h' + Math.min(m[1].length + 3, 6), 'mdh'); h.append(inline(m[2].trimEnd().replace(/(?:^|\s)#+$/, '').trimEnd())); root.append(h); i++; continue; }
