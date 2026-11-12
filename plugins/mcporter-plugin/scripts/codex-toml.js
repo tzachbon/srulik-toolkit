@@ -55,7 +55,8 @@ const codexDropped = (s) => {
 const codexEnabled = (text) =>
   [...text.matchAll(/^[ \t]*\[[ \t]*mcp_servers[ \t]*\.[ \t]*(?:"([^"]+)"|'([^']+)'|([\w-]+))[ \t]*\]/gm)]
     .map((m) => m[1] ?? m[2] ?? m[3])
-    .filter((n) => !/^[ \t]*["']?enabled["']?[ \t]*=[ \t]*false\b/m.test(codexTable(text, n)?.body ?? ""));
+    // A multi-line string could fake the switch, so in such a file every server counts as on.
+    .filter((n) => /"""|'''/.test(text) || !/^[ \t]*["']?enabled["']?[ \t]*=[ \t]*false\b/m.test(codexTable(text, n)?.body ?? ""));
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 module.exports = { disableCodex, codexDropped, codexEnabled };

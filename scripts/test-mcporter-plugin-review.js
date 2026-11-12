@@ -49,6 +49,10 @@ assert.doesNotMatch(cx, /cx\.srv/);
 assert.match(cx, /\boff\b/);
 assert.match(cx, /\bkeep\b/);
 assert.equal(blocked("mcp__cx_srv__delete_item"), "");
+// A multi-line string that only looks like `enabled = false` does not switch it off.
+const { codexEnabled } = require(path.join(plugin, "scripts", "codex-toml.js"));
+assert.deepEqual(codexEnabled('[mcp_servers.ml]\ncommand = "x"\nargs = ["""\nenabled = false\n"""]\n'), ["ml"]);
+assert.deepEqual(codexEnabled("[mcp_servers.ml]\nenabled = false\n"), []);
 fs.rmSync(path.join(c, ".codex"), { recursive: true });
 
 // User-scope native copies count too: ~/.claude.json's top-level servers not
