@@ -20,7 +20,7 @@ function inline(text) {
   if (last < text.length) f.append(text.slice(last));
   return f;
 }
-function markdown(src) {
+function markdown(src, depth = 0) {
   const root = el('div', 'md'); const lines = String(src).replace(/\r\n?/g, '\n').split('\n'); let i = 0;
   const item = /^\s*(?:[-*+]|(\d+)[.)])\s+(.*)$/, cells = l => l.trim().replace(/^\|/, '').replace(/(?<!\\)\|$/, '').split(/(?<!\\)\|/).map(c => c.trim().replace(/\\\|/g, '|'));
   const starts = l => /^\s*(```|~~~|#{1,6}\s|>|\|)/.test(l) || item.test(l) || /^\s*([-*_])(?:\s*\1){2,}\s*$/.test(l);
@@ -31,10 +31,10 @@ function markdown(src) {
     if ((m = /^\s*(?:(`{3,})(?!.*`)|(~{3,}))\s*(\S*)/.exec(l))) { const mark = m[1] || m[2], body = [], close = new RegExp(`^\\s*${mark[0]}{${mark.length},}\\s*$`); i++;
       while (i < lines.length && !close.test(lines[i])) body.push(lines[i++]); i++;
       const text = body.join('\n'); if (/^json$/i.test(m[3])) { try { root.append(value(JSON.parse(text))); continue; } catch {} } root.append(el('pre', null, text)); continue; }
-    if ((m = /^\s*(#{1,6})\s+(.*)$/.exec(l))) { const h = el('h' + Math.min(m[1].length + 3, 6), 'mdh'); h.append(inline(m[2].replace(/\s*#+\s*$/, ''))); root.append(h); i++; continue; }
+    if ((m = /^\s*(#{1,6})\s+(.*)$/.exec(l))) { const h = el('h' + Math.min(m[1].length + 3, 6), 'mdh'); h.append(inline(m[2].trimEnd().replace(/(?:^|\s)#+$/, '').trimEnd())); root.append(h); i++; continue; }
     if (/^\s*([-*_])(?:\s*\1){2,}\s*$/.test(l)) { root.append(el('hr')); i++; continue; }
-    if (/^\s*>/.test(l)) { const q = []; while (i < lines.length && /^\s*>/.test(lines[i])) q.push(lines[i++].replace(/^\s*>\s?/, ''));
-      const b = el('blockquote'); b.append(markdown(q.join('\n'))); root.append(b); continue; }
+    if (/^\s*>/.test(l) && depth < 20) { const q = []; while (i < lines.length && /^\s*>/.test(lines[i])) q.push(lines[i++].replace(/^\s*>\s?/, ''));
+      const b = el('blockquote'); b.append(markdown(q.join('\n'), depth + 1)); root.append(b); continue; }
     if (/^\s*\|/.test(l) && /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/.test(lines[i + 1] || '')) { const t = el('table'), head = el('tr'); cells(l).forEach(c => { const th = el('th'); th.append(inline(c)); head.append(th); });
       t.append(head); i += 2; while (i < lines.length && /^\s*\|/.test(lines[i])) { const tr = el('tr'); cells(lines[i++]).forEach(c => { const td = el('td'); td.append(inline(c)); tr.append(td); }); t.append(tr); }
       const w = el('div', 'tw'); w.append(t); root.append(w); continue; }
@@ -51,7 +51,8 @@ function markdown(src) {
 // ponytail: each list or object shows its first MAX entries; Raw always has everything. Add paging if long lists become common.
 const MAX = 200, more = n => `… ${n - MAX} more in Raw`;
 // JSON: objects become labelled rows, lists become bullets or numbered cards, and long or multi-line strings render as Markdown.
-function value(v) {
+function value(v, depth = 0) {
+  if (depth > 50) return el('span', 'jv j-null', 'nested too deep, see Raw');
   if (v === null || typeof v !== 'object') {
     if (typeof v === 'string') { if (v.includes('\n') || v.length > 120) return markdown(v); const s = el('span', 'jv'); s.append(v === '' ? '(empty)' : inline(v)); return s; }
     return el('span', 'jv j-' + (v === null ? 'null' : typeof v), String(v));
@@ -59,12 +60,12 @@ function value(v) {
   if (Array.isArray(v)) {
     if (!v.length) return el('span', 'jv j-null', 'none');
     const flat = v.every(x => x === null || typeof x !== 'object'), list = el(flat ? 'ul' : 'div', flat ? null : 'jlist');
-    v.slice(0, MAX).forEach((x, n) => { const li = el(flat ? 'li' : 'div', flat ? null : 'jcard'); if (!flat) li.append(el('span', 'jn', '#' + (n + 1))); li.append(value(x)); list.append(li); });
+    v.slice(0, MAX).forEach((x, n) => { const li = el(flat ? 'li' : 'div', flat ? null : 'jcard'); if (!flat) li.append(el('span', 'jn', '#' + (n + 1))); li.append(value(x, depth + 1)); list.append(li); });
     if (v.length > MAX) list.append(el(flat ? 'li' : 'div', 'j-null', more(v.length)));
     return list;
   }
   const keys = Object.keys(v); if (!keys.length) return el('span', 'jv j-null', 'none');
-  const dl = el('dl', 'jobj'); for (const k of keys.slice(0, MAX)) { const dd = el('dd'); dd.append(value(v[k])); dl.append(el('dt', null, k.replace(/_/g, ' ')), dd); }
+  const dl = el('dl', 'jobj'); for (const k of keys.slice(0, MAX)) { const dd = el('dd'); dd.append(value(v[k], depth + 1)); dl.append(el('dt', null, k.replace(/_/g, ' ')), dd); }
   if (keys.length > MAX) dl.append(el('dt', null, '…'), el('dd', 'j-null', more(keys.length)));
   return dl;
 }
