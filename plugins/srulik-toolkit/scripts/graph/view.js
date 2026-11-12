@@ -8,7 +8,8 @@ const { isIP } = require('node:net');
 const { networkInterfaces } = require('node:os');
 
 // The page is plain HTML beside this file; it writes every log value with textContent.
-const PAGE = readFileSync(join(__dirname, 'page.html'), 'utf8').replace('/*CSS*/', () => readFileSync(join(__dirname, 'page.css'), 'utf8'));
+const PAGE = readFileSync(join(__dirname, 'page.html'), 'utf8').replace('/*CSS*/', () => readFileSync(join(__dirname, 'page.css'), 'utf8'))
+  .replace('/*RENDER*/', () => readFileSync(join(__dirname, 'render.js'), 'utf8'));
 
 // A request's Host must name the one address the server listens on (plus `localhost` for a loopback server),
 // so DNS rebinding can't reach it.

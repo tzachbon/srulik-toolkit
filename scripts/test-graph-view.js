@@ -159,5 +159,21 @@ module.exports = {
     assert.match(PAGE, /getText\(`nodes\/\$\{i\.node\}-/, 'attachments are fetched from /nodes');
     assert.match(PAGE, /getText\('nodes\/index\.md'\)/, 'the run index is fetched from /nodes');
     assert.match(PAGE, /case 'result':[^\n]*\n[^\n]*error: undefined|case 'result':[^\n]*error: undefined/, 'a successful retry clears the earlier attempt\'s error');
+
+    // the readable output: run the page's renderer against a minimal DOM and read back the text tree
+    const node = tag => ({ tag, kids: [], attrs: {}, set textContent(t) { this.kids = [String(t)]; }, append(...k) { for (const c of k) this.kids.push(...(c && c.frag ? c.kids : [c])); },
+      setAttribute(k, v) { this.attrs[k] = v; } });
+    const document = { createElement: node, createDocumentFragment: () => Object.assign(node('#'), { frag: true }) };
+    const el = (tag, cls, text) => { const e = node(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+    const src = readFileSync(join(__dirname, '..', 'plugins', 'srulik-toolkit', 'scripts', 'graph', 'render.js'), 'utf8');
+    assert.ok(PAGE.includes(src), 'the page inlines the renderer');
+    const { readable, markdown } = require('node:vm').runInNewContext(`${src}; ({ readable, markdown })`, { document, el });
+    const tree = n => typeof n === 'string' ? n : n.tag + (n.attrs.href ? `[${n.attrs.href}]` : '') + '(' + n.kids.map(tree).join(',') + ')';
+    assert.equal(tree(readable('{"ready":true,"questions":[],"notes":"PASS\\n\\n- **one** `x`"}')),
+      '#(dl(dt(ready),dd(span(true)),dt(questions),dd(span(none)),dt(notes),dd(div(p(PASS),ul(li(strong(one), ,code(x)))))),details(summary(Raw),pre({\n  "ready": true,\n  "questions": [],\n  "notes": "PASS\\n\\n- **one** `x`"\n})))',
+      'JSON becomes labelled rows, and a multi-line string inside it renders as Markdown');
+    assert.equal(tree(markdown('# T\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\n<b>x</b>\n```\n[l](javascript:alert(1)) [ok](https://e.x)')),
+      'div(h4(T),div(table(tr(th(a),th(b)),tr(td(1),td(2)))),pre(<b>x</b>),p([l](javascript:alert(1)) ,a[https://e.x](ok)))',
+      'Markdown renders headings, tables and fences as text nodes; only http(s) links become links');
   },
 };

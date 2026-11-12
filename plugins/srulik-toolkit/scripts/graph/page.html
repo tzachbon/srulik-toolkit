@@ -182,6 +182,8 @@ function closePanel() { if (!open && !panel.classList.contains('open')) return; 
 $('close').onclick = closePanel;
 addEventListener('keydown', e => { if (e.key === 'Escape' && panel.classList.contains('open')) closePanel(); });
 const getText = path => fetch(path).then(r => r.ok ? r.text() : Promise.reject(new Error(`could not load ${path}: ${r.status}`)));
+
+/*RENDER*/
 let filled = null;
 function fillPanel(id) {
   if (id === 'index') return;
@@ -210,17 +212,17 @@ function fillPanel(id) {
     for (const name of i.attachments) {
       const d = el('details'); const body = el('pre', null, 'Loading…'); d.append(el('summary', null, '📎 ' + name), body);
       d.addEventListener('toggle', () => { if (d.open && !d.dataset.loaded) { d.dataset.loaded = '1';
-        getText(`nodes/${i.node}-${i.index}${i.round > 1 ? '.r' + i.round : ''}/${encodeURIComponent(name)}`).then(t => { body.textContent = t; }, e => { body.textContent = e.message; }); } });
+        getText(`nodes/${i.node}-${i.index}${i.round > 1 ? '.r' + i.round : ''}/${encodeURIComponent(name)}`).then(t => { body.replaceWith(readable(t)); }, e => { body.textContent = e.message; }); } });
       pb.append(d);
     }
   }
-  if (i.output !== undefined) { pb.append(el('h4', null, 'Output')); pb.append(el('pre', null, typeof (i.output.text ?? i.output.body) === 'string' ? (i.output.text ?? i.output.body) : JSON.stringify(i.output, null, 2))); }
+  if (i.output !== undefined) { pb.append(el('h4', null, 'Output')); pb.append(readable(typeof (i.output.text ?? i.output.body) === 'string' ? (i.output.text ?? i.output.body) : i.output)); }
   else if (!i.error) pb.append(el('p', null, i.state === 'running' ? 'Still running. The output appears here when it finishes.' : 'No output yet.'));
 }
 $('index').onclick = e => {
   open = 'index'; opener = '#index'; filled = null; $('ph').textContent = 'Run index';
-  const pre = el('pre', null, 'Loading…'); $('pb').replaceChildren(el('p', null, 'Every agent task gets this file, so a subagent can see what the others did.'), pre);
-  getText('nodes/index.md').then(t => { pre.textContent = t; }, err => { pre.textContent = err.message; });
+  const pre = el('p', null, 'Loading…'); $('pb').replaceChildren(el('p', null, 'Every agent task gets this file, so a subagent can see what the others did.'), pre);
+  getText('nodes/index.md').then(t => { pre.replaceWith(readable(t)); }, err => { pre.textContent = err.message; });
   panel.classList.add('open'); $('ph').focus();
 };
 
