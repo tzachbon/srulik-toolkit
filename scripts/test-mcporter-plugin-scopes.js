@@ -81,3 +81,12 @@ assert.deepEqual(reordered.migrated.map((m) => m.name), ["projmcp"]);
 execFileSync("sh", ["-c", `${reordered.undo} --force`], { env, cwd: proj });
 if (keepK) fs.writeFileSync(cfgK, keepK);
 else fs.rmSync(cfgK);
+
+// A config file with no servers is not unreadable: mcporter 0.17 prints
+// "No entries found." (plain text, even with --json) for it.
+const emptyCfg = path.join(home, ".claude", "settings.json");
+const emptySaved = fs.existsSync(emptyCfg) ? fs.readFileSync(emptyCfg) : null;
+fs.writeFileSync(emptyCfg, "{}");
+assert.deepEqual(JSON.parse(run("scripts/setup.js", ["inventory"])).unreadable, []);
+if (emptySaved) fs.writeFileSync(emptyCfg, emptySaved);
+else fs.rmSync(emptyCfg);

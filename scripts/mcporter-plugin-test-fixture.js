@@ -42,7 +42,8 @@ const local=()=>{if(process.env.FAKE_LOCAL_THROW&&!raw.includes("--config"))proc
 const lst=()=>process.env.FAKE_LOCAL_EMPTY&&!raw.includes("--config")?[]:dedup([...(raw.includes("--config")?[]:layer(projCfg)),...Object.entries(read().mcpServers).map(([name,d])=>({name,source:{kind:"local",path:cfg},...(d.cwd&&{cwd:d.cwd})}))]);
 // Like mcporter 0.17, the default claude-code paths skip a project .mcp.json.
 if(a[0]==="config"&&a[1]==="import"&&file&&/broken-editor/.test(fs.readFileSync(file,"utf8"))){console.error("bad config");process.exit(1);}
-if(a[0]==="config"&&a[1]==="import")console.log(JSON.stringify({entries:dedup(imports.filter(e=>e.kind===a[2]&&(file?e.path===file:!e.path.endsWith(".mcp.json")))).map(e=>({name:e.name,entry:{command:"run-"+e.name,...(e.differ&&{args:[e.path]})},source:e.path}))}));
+// Like mcporter 0.17, an import with no entries prints plain text, even with --json.
+if(a[0]==="config"&&a[1]==="import"){const es=dedup(imports.filter(e=>e.kind===a[2]&&(file?e.path===file:!e.path.endsWith(".mcp.json")))).map(e=>({name:e.name,entry:{command:"run-"+e.name,...(e.differ&&{args:[e.path]})},source:e.path}));console.log(es.length?JSON.stringify({entries:es}):"No entries found.");}
 else if(a[0]==="config"&&a[1]==="list"){const src=opt("--source");console.log(JSON.stringify({servers:src==="import"?first:src==="local"?local():[...local(),...first]}));}
 else if(a[0]==="config"&&a[1]==="remove"){const c=read();delete c.mcpServers[a[2]];write(c);}
 else if(a[0]==="list"){console.log(JSON.stringify({status:a[1]==="broken"?"offline":a[1]==="oauth"?"auth":"ok"}));}
@@ -80,7 +81,10 @@ const env = {
   HOME: home,
   CODEX_HOME: path.join(home, ".codex"),
   XDG_CONFIG_HOME: path.join(home, ".config"),
-  PLUGIN_DATA: path.join(tmp, "data with 'space"),
+  MCPORTER_PLUGIN_DATA: path.join(tmp, "data with 'space"),
+  // Inherited from another plugin's session: setup and the hooks must ignore them.
+  PLUGIN_DATA: path.join(tmp, "foreign-data"),
+  CLAUDE_PLUGIN_DATA: path.join(tmp, "foreign-data"),
   MCPORTER_BIN: fake,
   // setup apply requires a `mcporter` command on PATH (daily calls use it).
   PATH: [bin, process.env.PATH].join(path.delimiter),

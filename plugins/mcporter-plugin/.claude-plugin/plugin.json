@@ -1,6 +1,6 @@
 {
   "name": "mcporter-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Use MCP servers through the mcporter CLI and saved scripts instead of native MCP tools: a setup agent that moves your servers into mcporter, a session hint, and a hook that points native MCP calls at mcporter.",
   "author": {
     "name": "Zach Bonfil",

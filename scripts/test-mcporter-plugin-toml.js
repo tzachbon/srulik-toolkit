@@ -76,7 +76,7 @@ fs.rmSync(shim, { recursive: true, force: true });
   fs.writeFileSync(a, "A");
   fs.writeFileSync(b, "B");
   const out = execFileSync(process.execPath, ["-e", `
-    process.env.PLUGIN_DATA = ${JSON.stringify(path.join(d, "data"))};
+    process.env.MCPORTER_PLUGIN_DATA = ${JSON.stringify(path.join(d, "data"))};
     const m = require(${JSON.stringify(path.join(plugin, "scripts", "setup.js"))});
     const r = { backups: [] };
     m.backup(${JSON.stringify(a)}, "s", r); m.backup(${JSON.stringify(b)}, "s", r);
