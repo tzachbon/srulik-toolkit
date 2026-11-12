@@ -51,6 +51,31 @@ assert.match(cx, /\bkeep\b/);
 assert.equal(blocked("mcp__cx_srv__delete_item"), "");
 fs.rmSync(path.join(c, ".codex"), { recursive: true });
 
+// User-scope native copies count too: ~/.claude.json's top-level servers not
+// denied in ~/.claude/settings.json, and enabled $CODEX_HOME servers.
+{
+  const settingsFile = path.join(home, ".claude", "settings.json");
+  const codexUser = path.join(home, ".codex", "config.toml");
+  const before = { s: fs.existsSync(settingsFile) ? fs.readFileSync(settingsFile) : null, x: fs.readFileSync(codexUser) };
+  fs.writeFileSync(homeCfg, JSON.stringify({ mcpServers: { "us.er": { command: "home" }, cxu: { command: "home" }, keep: { command: "k" } } }));
+  fs.writeFileSync(claudeJsonFile, JSON.stringify({ mcpServers: { us_er: { command: "mine" } } }));
+  fs.appendFileSync(codexUser, '\n[mcp_servers.cxu]\ncommand = "mine"\n');
+  fs.rmSync(path.join(data, path.basename(require(path.join(plugin, "scripts", "mcporter-common.js")).discoveryCache(c))), { force: true });
+  const u = hint();
+  assert.doesNotMatch(u, /us\.er|\bcxu\b/);
+  assert.match(u, /\bkeep\b/);
+  assert.equal(blocked("mcp__us_er__delete_item"), "");
+  // Denied (as setup does) and switched off: offered again.
+  fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
+  fs.writeFileSync(settingsFile, JSON.stringify({ deniedMcpServers: [{ serverName: "us_er" }] }));
+  fs.appendFileSync(codexUser, "enabled = false\n");
+  assert.match(hint(), /us\.er.*\bcxu\b|\bcxu\b.*us\.er/);
+  if (before.s) fs.writeFileSync(settingsFile, before.s);
+  else fs.rmSync(settingsFile);
+  fs.writeFileSync(codexUser, before.x);
+  fs.writeFileSync(claudeJsonFile, saved.cj);
+}
+
 if (saved.cfg) fs.writeFileSync(homeCfg, saved.cfg);
 else fs.rmSync(homeCfg);
 

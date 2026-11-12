@@ -4,7 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { codexEnabled } = require("../scripts/codex-toml");
-const { claudeJson, discoveryCache, serverCache, listServers, writeJson, conflicted, toolKey } = require("../scripts/mcporter-common");
+const { claudeDir, claudeJson, home, discoveryCache, serverCache, listServers, writeJson, conflicted, toolKey } = require("../scripts/mcporter-common");
 
 const ttl = Number(process.env.MCPORTER_HINT_TTL_MS) || 3_600_000;
 
@@ -44,21 +44,26 @@ const read = (f) => {
 // still wins. Written for the redirect hook to read.
 function servers() {
   const here = path.resolve(process.cwd());
-  // Native copies this project still loads: its .mcp.json servers, its
-  // Claude Code local-scope servers (its block in ~/.claude.json), and the
-  // enabled servers in its .codex/config.toml.
+  // Native copies this session still loads: this project's .mcp.json servers
+  // and Claude Code local-scope block (in ~/.claude.json), user-scope
+  // ~/.claude.json servers not denied in ~/.claude/settings.json, and the
+  // enabled servers in this project's and the user's Codex config.toml.
   const off = read(path.join(here, ".claude", "settings.local.json")).disabledMcpjsonServers || [];
-  const local = read(claudeJson()).projects?.[here] || {};
+  const cj = read(claudeJson());
+  const local = cj.projects?.[here] || {};
+  const denied = (read(path.join(claudeDir(), "settings.json")).deniedMcpServers || []).map((d) => d?.serverName);
+  const codex = [path.join(here, ".codex"), process.env.CODEX_HOME || path.join(home(), ".codex"), path.join(home(), ".codex")].flatMap((d) => {
+    try {
+      return codexEnabled(fs.readFileSync(path.join(d, "config.toml"), "utf8"));
+    } catch {
+      return [];
+    }
+  });
   const native = [
     ...Object.keys(read(path.join(here, ".mcp.json")).mcpServers || {}).filter((n) => !off.includes(n)),
     ...Object.keys(local.mcpServers || {}).filter((n) => !(local.disabledMcpServers || []).includes(n)),
-    ...(() => {
-      try {
-        return codexEnabled(fs.readFileSync(path.join(here, ".codex", "config.toml"), "utf8"));
-      } catch {
-        return [];
-      }
-    })(),
+    ...Object.keys(cj.mcpServers || {}).filter((n) => !denied.includes(n)),
+    ...codex,
   ];
   const found = discover();
   // A server bound to another project's folder belongs to that project. Its
