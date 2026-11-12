@@ -55,7 +55,7 @@ const MAX = 200, more = n => `… ${n - MAX} more in Raw`;
 function value(v, depth = 0) {
   if (depth > 50) return el('span', 'jv j-null', 'nested too deep, see Raw');
   if (v === null || typeof v !== 'object') {
-    if (typeof v === 'string') { if (v.includes('\n') || v.length > 120) return markdown(v); const s = el('span', 'jv'); s.append(v === '' ? '(empty)' : inline(v)); return s; }
+    if (typeof v === 'string') { if (v.includes('\n') || v.length > 120 || /^\s*(?:#{1,6}\s|>|[-*+]\s|\d+[.)]\s|```|~~~)/.test(v)) return markdown(v); const s = el('span', 'jv'); s.append(v === '' ? '(empty)' : inline(v)); return s; }
     return el('span', 'jv j-' + (v === null ? 'null' : typeof v), String(v));
   }
   if (Array.isArray(v)) {
