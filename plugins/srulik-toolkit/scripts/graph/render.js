@@ -23,6 +23,7 @@ function inline(text) {
 function markdown(src, depth = 0) {
   const root = el('div', 'md'); const lines = String(src).replace(/\r\n?/g, '\n').split('\n'); let i = 0;
   const item = /^\s*(?:[-*+]|(\d+)[.)])\s+(.*)$/, cells = l => l.trim().replace(/^\|/, '').replace(/(?<!\\)\|$/, '').split(/(?<!\\)\|/).map(c => c.trim().replace(/\\\|/g, '|'));
+  const sep = l => /^\s*\|/.test(l) && cells(l).every(c => /^:?-+:?$/.test(c));
   const starts = l => /^\s*(```|~~~|#{1,6}\s|>|\|)/.test(l) || item.test(l) || /^\s*([-*_])(?:\s*\1){2,}\s*$/.test(l);
   while (i < lines.length) {
     const l = lines[i];
@@ -35,7 +36,7 @@ function markdown(src, depth = 0) {
     if (/^\s*([-*_])(?:\s*\1){2,}\s*$/.test(l)) { root.append(el('hr')); i++; continue; }
     if (/^\s*>/.test(l) && depth < 20) { const q = []; while (i < lines.length && /^\s*>/.test(lines[i])) q.push(lines[i++].replace(/^\s*>\s?/, ''));
       const b = el('blockquote'); b.append(markdown(q.join('\n'), depth + 1)); root.append(b); continue; }
-    if (/^\s*\|/.test(l) && /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/.test(lines[i + 1] || '')) { const t = el('table'), head = el('tr'); cells(l).forEach(c => { const th = el('th'); th.append(inline(c)); head.append(th); });
+    if (/^\s*\|/.test(l) && sep(lines[i + 1] || '')) { const t = el('table'), head = el('tr'); cells(l).forEach(c => { const th = el('th'); th.append(inline(c)); head.append(th); });
       t.append(head); i += 2; while (i < lines.length && /^\s*\|/.test(lines[i])) { const tr = el('tr'); cells(lines[i++]).forEach(c => { const td = el('td'); td.append(inline(c)); tr.append(td); }); t.append(tr); }
       const w = el('div', 'tw'); w.append(t); root.append(w); continue; }
     if ((m = item.exec(l))) { const list = el(m[1] ? 'ol' : 'ul'); if (m[1] && m[1] !== '1') list.setAttribute('start', m[1]);

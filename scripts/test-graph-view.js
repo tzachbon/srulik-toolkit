@@ -187,7 +187,10 @@ module.exports = {
     const big = readable(JSON.stringify(Array(5000).fill(0))).kids[0];
     assert.equal(big.kids.length, 201, 'a long list renders its first 200 entries and a note; Raw keeps the rest');
     assert.match(tree(big.kids[200]), /4800 more/);
-    { const t = Date.now(); markdown('# ' + '#'.repeat(40000) + 'a'); assert.ok(Date.now() - t < 250, 'a heading of many # stays linear'); }
+    for (const [name, md] of [['a heading of many #', '# ' + '#'.repeat(40000) + 'a'], ['a long indented line after a table row', '| head |\n' + ' '.repeat(40000) + 'x']]) {
+      const t = Date.now(); markdown(md); assert.ok(Date.now() - t < 250, `${name} stays linear`);
+    }
+    assert.equal(tree(markdown('| a | b |\n| :-- | --: |\n| 1 | 2 |')), 'div(div(table(tr(th(a),th(b)),tr(td(1),td(2)))))', 'aligned separators still make a table');
     assert.match(tree(markdown('>'.repeat(5500) + ' deep')), /deep/, 'deeply nested quotes render instead of overflowing the stack');
     assert.match(tree(readable('['.repeat(5000) + '1' + ']'.repeat(5000))), /nested too deep/, 'deeply nested JSON stops at a depth limit; Raw keeps the text');
     assert.match(tree(readable('{"id":9007199254740993}')), /pre\(\{"id":9007199254740993\}\)/, 'Raw keeps the original text, not a lossy re-serialization');
