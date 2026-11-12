@@ -28,7 +28,20 @@ process.env.PATH = shim;
 assert.deepEqual(launcher("win32"), [process.execPath, [path.join(shim, "node_modules", "mcporter", "dist", "cli.js")]]);
 // Without any install, Windows never asks execFile to start the npx.cmd shim.
 process.env.PATH = path.join(shim, "none");
-assert.notEqual(launcher("win32")[0], "npx.cmd");
+// Without any install, Windows never asks execFile to start an npx shim: it
+// runs npm's npx-cli.js under node, found beside node or next to npx on PATH.
+const npmDir = path.join(shim, "npmdir");
+fs.mkdirSync(path.join(npmDir, "node_modules", "npm", "bin"), { recursive: true });
+fs.writeFileSync(path.join(npmDir, "npx.cmd"), "@echo off\n");
+fs.writeFileSync(path.join(npmDir, "node_modules", "npm", "bin", "npx-cli.js"), "");
+process.env.PATH = npmDir;
+const besideNode = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npx-cli.js");
+const viaPath = launcher("win32");
+assert.equal(viaPath[0], process.execPath);
+assert.equal(viaPath[1][0], fs.existsSync(besideNode) ? besideNode : path.join(npmDir, "node_modules", "npm", "bin", "npx-cli.js"));
+// No npx-cli.js anywhere: a clear error, never a bare "npx" for execFile.
+process.env.PATH = path.join(shim, "none");
+if (!fs.existsSync(besideNode)) assert.throws(() => launcher("win32"), /npx-cli\.js/);
 // CLAUDE_CONFIG_DIR moves both Claude Code's settings and its .claude.json.
 process.env.CLAUDE_CONFIG_DIR = path.join(shim, "cc");
 assert.equal(claudeDir(), path.join(shim, "cc"));

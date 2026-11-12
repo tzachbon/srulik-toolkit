@@ -88,6 +88,18 @@ for (const key of ["enabled_tools", "disabled_tools"]) {
   assert.match(r.failed[0]?.reason ?? "", new RegExp(key));
   assert.deepEqual(r.disabled.codex, []);
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(data, "conflicts.json"), "utf8")), ["projonly"]);
+  // An apply that stopped before its final save leaves entries without an
+  // after-state: undo cannot tell whether they changed, so it refuses them unless forced.
+  if (key === "enabled_tools") {
+    const saved = fs.readFileSync(r.receipt);
+    fs.writeFileSync(r.receipt, JSON.stringify({ ...r, backups: JSON.parse(saved).backups.map(({ after, ...b }) => b) }));
+    const changed = fs.readFileSync(projectCodex);
+    fs.writeFileSync(projectCodex, "# edited later\n");
+    assert.throws(() => execFileSync("sh", ["-c", r.undo], { env, cwd: proj, stdio: "pipe" }), (err) => /not verified/.test(err.stderr));
+    assert.equal(fs.readFileSync(projectCodex, "utf8"), "# edited later\n");
+    fs.writeFileSync(projectCodex, changed);
+    fs.writeFileSync(r.receipt, saved);
+  }
   execFileSync("sh", ["-c", r.undo], { env, cwd: proj });
 }
 fs.writeFileSync(projectCodex, projectBefore);

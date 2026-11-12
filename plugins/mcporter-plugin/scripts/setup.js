@@ -332,7 +332,13 @@ function clearHintCaches() {
 function undo(file, force) {
   const receipt = JSON.parse(fs.readFileSync(file, "utf8"));
   // A later apply or edit would be lost by restoring the older snapshot.
+  // An entry without an after-state is from an apply that stopped part-way, so
+  // whether it changed since is unknown: refused too.
+  const unverified = receipt.backups.filter((b) => !("after" in b)).map((b) => b.file);
   const changed = receipt.backups.filter((b) => "after" in b && hash(b.file) !== b.after).map((b) => b.file);
+  if (unverified.length && !force) {
+    throw new Error(`not verified (the apply stopped part-way): ${unverified.join(", ")}. Check them, then rerun with --force to restore. Nothing was changed.`);
+  }
   if (changed.length && !force) {
     throw new Error(`changed since this apply: ${changed.join(", ")}. Undo newer receipts first, or rerun with --force to restore anyway. Nothing was changed.`);
   }

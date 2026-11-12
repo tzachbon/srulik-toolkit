@@ -30,9 +30,12 @@ function launcher(platform = process.platform) {
   if (found && platform !== "win32") return [found, []];
   const cli = found && path.join(path.dirname(found), "node_modules", "mcporter", "dist", "cli.js");
   if (cli && fs.existsSync(cli)) return [process.execPath, [cli]];
-  const npx = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npx-cli.js");
-  if (platform === "win32" && fs.existsSync(npx)) return [process.execPath, [npx, "-y", "mcporter@0.17.0"]];
-  return ["npx", ["-y", "mcporter@0.17.0"]];
+  if (platform !== "win32") return ["npx", ["-y", "mcporter@0.17.0"]];
+  // npm's npx-cli.js sits beside node, or beside the npx shim on PATH.
+  const dirs = [path.dirname(process.execPath), path.dirname(which("npx", platform) || "")];
+  const npx = dirs.map((d) => path.join(d, "node_modules", "npm", "bin", "npx-cli.js")).find((f) => fs.existsSync(f));
+  if (!npx) throw new Error("mcporter not found: install it (npm install -g mcporter@0.17.0); npx-cli.js was not found beside node or npx");
+  return [process.execPath, [npx, "-y", "mcporter@0.17.0"]];
 }
 function mcporter(args, { timeout = 30_000 } = {}) {
   const [cmd, pre] = launcher();

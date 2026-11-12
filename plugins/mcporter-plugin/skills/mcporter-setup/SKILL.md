@@ -55,7 +55,8 @@ user approves step 3 before anything is written.
      every file owner-only under the plugin data dir (never beside a project
      file) before writing, and saves the receipt with its `undo` command after
      each backup. Undo refuses when a file changed after that apply, such as
-     by a later apply; undo the newer receipt first, or pass `--force`;
+     by a later apply, or after an apply that stopped part-way; undo the newer
+     receipt first, or check the files and pass `--force`;
    - records conflicting names, so the session hint and the redirect hook
      leave those servers to the native tools.
 6. **Report** the receipt: migrated, authRequired, conflicts, failed (native copy left enabled), manual
