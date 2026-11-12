@@ -39,6 +39,18 @@ assert.match(bound, /\bkeep\b/);
 assert.doesNotMatch(bound, /my[._]srv/);
 assert.equal(blocked("mcp__my_srv__delete_item"), "");
 
+// A project's enabled .codex/config.toml server is native too, by tool key.
+fs.writeFileSync(homeCfg, JSON.stringify({ mcpServers: { "cx.srv": { command: "home" }, off: { command: "o" }, keep: { command: "k" } } }));
+fs.mkdirSync(path.join(c, ".codex"), { recursive: true });
+fs.writeFileSync(path.join(c, ".codex", "config.toml"), '[mcp_servers.cx_srv]\ncommand = "mine"\n\n[mcp_servers."off"]\ncommand = "o"\nenabled = false\n');
+fs.rmSync(path.join(data, path.basename(require(path.join(plugin, "scripts", "mcporter-common.js")).discoveryCache(c))), { force: true });
+const cx = hint();
+assert.doesNotMatch(cx, /cx\.srv/);
+assert.match(cx, /\boff\b/);
+assert.match(cx, /\bkeep\b/);
+assert.equal(blocked("mcp__cx_srv__delete_item"), "");
+fs.rmSync(path.join(c, ".codex"), { recursive: true });
+
 if (saved.cfg) fs.writeFileSync(homeCfg, saved.cfg);
 else fs.rmSync(homeCfg);
 

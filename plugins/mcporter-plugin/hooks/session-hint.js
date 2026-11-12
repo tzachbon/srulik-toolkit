@@ -3,6 +3,7 @@
 // project still loads natively, and lists saved scripts.
 const fs = require("node:fs");
 const path = require("node:path");
+const { codexEnabled } = require("../scripts/codex-toml");
 const { claudeJson, discoveryCache, serverCache, listServers, writeJson, conflicted, toolKey } = require("../scripts/mcporter-common");
 
 const ttl = Number(process.env.MCPORTER_HINT_TTL_MS) || 3_600_000;
@@ -41,17 +42,23 @@ const read = (f) => {
 // The servers this project should reach through mcporter, rechecked against
 // its native config on every start, so a native copy added within the TTL
 // still wins. Written for the redirect hook to read.
-// ponytail: a project's .codex config is not checked here. Upgrade: compare
-// against setup's per-project import.
 function servers() {
   const here = path.resolve(process.cwd());
-  // Native copies this project still loads: its .mcp.json servers, and its
-  // Claude Code local-scope servers (its block in ~/.claude.json).
+  // Native copies this project still loads: its .mcp.json servers, its
+  // Claude Code local-scope servers (its block in ~/.claude.json), and the
+  // enabled servers in its .codex/config.toml.
   const off = read(path.join(here, ".claude", "settings.local.json")).disabledMcpjsonServers || [];
   const local = read(claudeJson()).projects?.[here] || {};
   const native = [
     ...Object.keys(read(path.join(here, ".mcp.json")).mcpServers || {}).filter((n) => !off.includes(n)),
     ...Object.keys(local.mcpServers || {}).filter((n) => !(local.disabledMcpServers || []).includes(n)),
+    ...(() => {
+      try {
+        return codexEnabled(fs.readFileSync(path.join(here, ".codex", "config.toml"), "utf8"));
+      } catch {
+        return [];
+      }
+    })(),
   ];
   const found = discover();
   // A server bound to another project's folder belongs to that project. Its

@@ -50,6 +50,12 @@ const codexDropped = (s) => {
     return "cwd";
   }
 };
+// Names of the [mcp_servers.<name>] tables not switched off with `enabled = false`.
+// ponytail: inline-table definitions are not seen. Upgrade: a real TOML parser.
+const codexEnabled = (text) =>
+  [...text.matchAll(/^[ \t]*\[[ \t]*mcp_servers[ \t]*\.[ \t]*(?:"([^"]+)"|'([^']+)'|([\w-]+))[ \t]*\]/gm)]
+    .map((m) => m[1] ?? m[2] ?? m[3])
+    .filter((n) => !/^[ \t]*["']?enabled["']?[ \t]*=[ \t]*false\b/m.test(codexTable(text, n)?.body ?? ""));
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-module.exports = { disableCodex, codexDropped };
+module.exports = { disableCodex, codexDropped, codexEnabled };
