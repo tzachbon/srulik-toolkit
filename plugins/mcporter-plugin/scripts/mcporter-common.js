@@ -24,7 +24,7 @@ const claudeJson = () => path.join(process.env.CLAUDE_CONFIG_DIR || home(), ".cl
 // global install and fall back to npx. Windows npm installs are .cmd shims,
 // which execFile cannot start without a shell, so there the package's CLI (or
 // npm's npx-cli.js) runs under node directly and no argument passes a shell.
-function launcher(platform = process.platform) {
+function launcher(platform = process.platform, nodeDir = path.dirname(process.execPath)) {
   if (process.env.MCPORTER_BIN) return [process.execPath, [process.env.MCPORTER_BIN]];
   const found = which("mcporter", platform);
   if (found && platform !== "win32") return [found, []];
@@ -32,7 +32,7 @@ function launcher(platform = process.platform) {
   if (cli && fs.existsSync(cli)) return [process.execPath, [cli]];
   if (platform !== "win32") return ["npx", ["-y", "mcporter@0.17.0"]];
   // npm's npx-cli.js sits beside node, or beside the npx shim on PATH.
-  const dirs = [path.dirname(process.execPath), path.dirname(which("npx", platform) || "")];
+  const dirs = [nodeDir, path.dirname(which("npx", platform) || "")];
   const npx = dirs.map((d) => path.join(d, "node_modules", "npm", "bin", "npx-cli.js")).find((f) => fs.existsSync(f));
   if (!npx) throw new Error("mcporter not found: install it (npm install -g mcporter@0.17.0); npx-cli.js was not found beside node or npx");
   return [process.execPath, [npx, "-y", "mcporter@0.17.0"]];
