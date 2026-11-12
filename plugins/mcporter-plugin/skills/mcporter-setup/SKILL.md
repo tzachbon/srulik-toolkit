@@ -52,7 +52,8 @@ user approves step 3 before anything is written.
      [Claude Code](references/claude-code.md), [Codex](references/codex.md).
      Copies in any other editor go to `manual`;
    - checks every JSON file it edits parses before writing anything, backs up
-     every file owner-only under the plugin data dir (never beside a project
+     every file owner-only under the plugin data dir, `~/.mcporter/plugin` (set
+     `MCPORTER_PLUGIN_DATA` to move it; never beside a project
      file) before writing, and saves the receipt with its `undo` command after
      each backup. Undo refuses when a file changed after that apply, such as
      by a later apply, or after an apply that stopped part-way; undo the newer

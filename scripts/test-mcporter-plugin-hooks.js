@@ -98,3 +98,13 @@ assert.match(JSON.parse(piped).hookSpecificOutput.additionalContext, /'id:a'/);
 
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log("mcporter-plugin tests passed");
+
+// One data dir for setup and the hooks: a PLUGIN_DATA or CLAUDE_PLUGIN_DATA
+// inherited from another plugin's session is never used.
+assert.ok(!fs.existsSync(path.join(tmp, "foreign-data")));
+{
+  const common = path.join(plugin, "scripts", "mcporter-common.js");
+  const probe = (extra) => execFileSync(process.execPath, ["-e", `console.log(require(${JSON.stringify(common)}).dataRoot())`], { env: { ...env, MCPORTER_PLUGIN_DATA: "", ...extra }, encoding: "utf8" }).trim();
+  assert.equal(probe({}), path.join(env.HOME, ".mcporter", "plugin"));
+  assert.equal(probe({ MCPORTER_PLUGIN_DATA: path.join(tmp, "own") }), path.join(tmp, "own"));
+}

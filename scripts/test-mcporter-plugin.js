@@ -13,13 +13,15 @@ assert.ok(!fs.existsSync(path.join(home, ".config", "mcporter", "mcporter.json")
 assert.equal(fs.readFileSync(path.join(home, ".codex", "config.toml"), "utf8"), codexBefore);
 // Without an installed mcporter, apply refuses before anything is read or written.
 const { MCPORTER_BIN: _bin, ...noBin } = env;
+// An empty PATH folder: a global mcporter beside node must not count.
+const noPath = fs.mkdtempSync(path.join(tmp, "path-"));
 assert.throws(
-  () => execFileSync(process.execPath, [path.join(plugin, "scripts", "setup.js"), "apply", "--servers", "inv"], { env: { ...noBin, PATH: path.dirname(process.execPath) }, stdio: "pipe", cwd: proj }),
+  () => execFileSync(process.execPath, [path.join(plugin, "scripts", "setup.js"), "apply", "--servers", "inv"], { env: { ...noBin, PATH: noPath }, stdio: "pipe", cwd: proj }),
   (err) => err.status === 1 && /mcporter is not installed/.test(err.stderr),
 );
 // MCPORTER_BIN alone is not enough: daily calls use the bare `mcporter`.
 assert.throws(
-  () => execFileSync(process.execPath, [path.join(plugin, "scripts", "setup.js"), "apply", "--servers", "inv"], { env: { ...env, PATH: path.dirname(process.execPath) }, stdio: "pipe", cwd: proj }),
+  () => execFileSync(process.execPath, [path.join(plugin, "scripts", "setup.js"), "apply", "--servers", "inv"], { env: { ...env, PATH: noPath }, stdio: "pipe", cwd: proj }),
   (err) => err.status === 1 && /mcporter is not installed/.test(err.stderr),
 );
 assert.ok(!fs.existsSync(path.join(home, ".config", "mcporter", "mcporter.json")));

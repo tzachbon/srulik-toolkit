@@ -6,8 +6,10 @@ const os = require("node:os");
 const path = require("node:path");
 
 const home = () => process.env.HOME || os.homedir();
-const dataRoot = () =>
-  process.env.PLUGIN_DATA || process.env.CLAUDE_PLUGIN_DATA || path.join(home(), ".mcporter", "plugin");
+// One fixed folder for setup and the hooks. PLUGIN_DATA and CLAUDE_PLUGIN_DATA
+// are not read: the hooks get this plugin's, but an agent's shell running
+// setup.js can inherit another plugin's, and the hooks would miss what setup wrote.
+const dataRoot = () => process.env.MCPORTER_PLUGIN_DATA || path.join(home(), ".mcporter", "plugin");
 // Discovery depends on the project (its config/mcporter.json and editor
 // files), so the cache is per working directory.
 // servers-*: the names the hint offered (the redirect hook reads them);
@@ -82,7 +84,10 @@ const importFrom = (kind, file) => {
   try {
     const args = ["config", "import", kind, "--json", ...(file ? ["--path", file] : [])];
     // entry: mcporter's normalized definition, copied as-is by setup apply.
-    return JSON.parse(mcporter(args)).entries.map((e) => ({ name: e.name, kind, path: e.source, entry: e.entry }));
+    const out = mcporter(args);
+    // mcporter 0.17 prints this plain text, even with --json, for a file with no servers.
+    if (out.trim() === "No entries found.") return [];
+    return JSON.parse(out).entries.map((e) => ({ name: e.name, kind, path: e.source, entry: e.entry }));
   } catch (err) {
     if (file) importErrors.push({ kind, path: file, error: String(err.stderr || err.message).split("\n")[0] });
     return [];
