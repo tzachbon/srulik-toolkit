@@ -17,7 +17,7 @@ function inline(text) {
 }
 function markdown(src) {
   const root = el('div', 'md'); const lines = String(src).replace(/\r\n?/g, '\n').split('\n'); let i = 0;
-  const item = /^\s*(?:[-*+]|(\d+)[.)])\s+(.*)$/, cells = l => l.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+  const item = /^\s*(?:[-*+]|(\d+)[.)])\s+(.*)$/, cells = l => l.trim().replace(/^\|/, '').replace(/(?<!\\)\|$/, '').split(/(?<!\\)\|/).map(c => c.trim().replace(/\\\|/g, '|'));
   const starts = l => /^\s*(```|#{1,6}\s|>|\|)/.test(l) || item.test(l) || /^\s*([-*_])\s*\1\s*\1[\s\1]*$/.test(l);
   while (i < lines.length) {
     const l = lines[i];
@@ -60,8 +60,9 @@ function value(v) {
 }
 // The readable view plus a collapsed raw copy, so nothing the agent wrote is hidden.
 function readable(v) {
+  const text = typeof v === 'string' ? v : JSON.stringify(v, null, 2);
   if (typeof v === 'string') { try { const j = JSON.parse(v); if (j && typeof j === 'object') v = j; } catch {} }
   const f = document.createDocumentFragment(); f.append(typeof v === 'string' ? markdown(v) : value(v));
-  const raw = el('details', 'raw'); raw.append(el('summary', null, 'Raw'), el('pre', null, typeof v === 'string' ? v : JSON.stringify(v, null, 2))); f.append(raw);
+  const raw = el('details', 'raw'); raw.append(el('summary', null, 'Raw'), el('pre', null, text)); f.append(raw);
   return f;
 }

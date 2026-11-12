@@ -9,7 +9,10 @@ Plugin version: 1.27.0. Base: 064fb0f. Issue: #95.
   - Markdown headings, tables and fences become text nodes.
   - Only `http(s)` links become anchors.
   - The served page inlines `render.js`.
-- **Red proof.** Widening the link pattern to accept `javascript:` makes C39 fail. Restoring it passes.
+- **Red proof.** Each of these makes C39 fail, and restoring the code passes:
+  - widening the link pattern to accept `javascript:`
+  - splitting table cells on escaped `\|` (review r4555798450)
+  - rebuilding Raw from parsed JSON instead of the original text (review r4555798466)
 - **Real browser.** I ran `graph-readable/browser-check.mjs` (Playwright, headless Chromium) against `node scripts/graph.js view` serving a fixture run. The fixture has one node: a JSON output whose `notes` holds Markdown, plus a `notes.md` attachment. All 14 checks passed:
   - rows and values
   - heading, list with code and bold, table

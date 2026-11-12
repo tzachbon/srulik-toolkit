@@ -170,10 +170,13 @@ module.exports = {
     const { readable, markdown } = require('node:vm').runInNewContext(`${src}; ({ readable, markdown })`, { document, el });
     const tree = n => typeof n === 'string' ? n : n.tag + (n.attrs.href ? `[${n.attrs.href}]` : '') + '(' + n.kids.map(tree).join(',') + ')';
     assert.equal(tree(readable('{"ready":true,"questions":[],"notes":"PASS\\n\\n- **one** `x`"}')),
-      '#(dl(dt(ready),dd(span(true)),dt(questions),dd(span(none)),dt(notes),dd(div(p(PASS),ul(li(strong(one), ,code(x)))))),details(summary(Raw),pre({\n  "ready": true,\n  "questions": [],\n  "notes": "PASS\\n\\n- **one** `x`"\n})))',
+      '#(dl(dt(ready),dd(span(true)),dt(questions),dd(span(none)),dt(notes),dd(div(p(PASS),ul(li(strong(one), ,code(x)))))),details(summary(Raw),pre({"ready":true,"questions":[],"notes":"PASS\\n\\n- **one** `x`"})))',
       'JSON becomes labelled rows, and a multi-line string inside it renders as Markdown');
     assert.equal(tree(markdown('# T\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\n<b>x</b>\n```\n[l](javascript:alert(1)) [ok](https://e.x)')),
       'div(h4(T),div(table(tr(th(a),th(b)),tr(td(1),td(2)))),pre(<b>x</b>),p([l](javascript:alert(1)) ,a[https://e.x](ok)))',
       'Markdown renders headings, tables and fences as text nodes; only http(s) links become links');
+    assert.equal(tree(markdown('| a | b |\n|---|---|\n| x \\| y | 2 |')), 'div(div(table(tr(th(a),th(b)),tr(td(x | y),td(2)))))',
+      'an escaped pipe from the run index stays inside its cell');
+    assert.match(tree(readable('{"id":9007199254740993}')), /pre\(\{"id":9007199254740993\}\)/, 'Raw keeps the original text, not a lossy re-serialization');
   },
 };
