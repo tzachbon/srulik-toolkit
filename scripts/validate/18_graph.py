@@ -2,7 +2,13 @@
 # behavioral contract test (scripts/test-graph.js) against local fakes.
 graph_skill = (skill_root / "agent-swarm" / "SKILL.md").read_text(encoding="utf-8")
 graph_spec_ref = (skill_root / "agent-swarm" / "references" / "graph-spec.md").read_text(encoding="utf-8")
-graph_spec_ref += (skill_root / "agent-swarm" / "references" / "live-view.md").read_text(encoding="utf-8")  # split out for size
+live_view_ref = (skill_root / "agent-swarm" / "references" / "live-view.md").read_text(encoding="utf-8")
+if "[Live view](live-view.md)" not in graph_spec_ref:
+    raise SystemExit("graph-spec reference must link live-view.md")
+for graph_phrase in ["Tailscale IPv4", "`127.0.0.1` when there is none", "`fd7a:115c:a1e0::/48`"]:
+    if graph_phrase not in live_view_ref:
+        raise SystemExit(f"live-view reference must document: {graph_phrase}")
+graph_spec_ref += live_view_ref  # split out for size
 graph_t3_ref = (skill_root / "agent-swarm" / "references" / "t3-code.md").read_text(encoding="utf-8")
 graph_notice = (root / "NOTICE.md").read_text(encoding="utf-8")
 graph_standards = (root / "CODING_STANDARDS.md").read_text(encoding="utf-8")

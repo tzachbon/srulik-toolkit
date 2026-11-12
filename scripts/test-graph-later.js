@@ -142,6 +142,8 @@ module.exports = {
     const v4 = (address, family = 'IPv4') => [{ address, family }];
     assert.equal(defaultHost({ lo: v4('127.0.0.1'), eth0: v4('187.124.113.123'), tailscale0: v4('100.90.182.51') }), '100.90.182.51', 'Linux tailscale0');
     assert.equal(defaultHost({ utun4: [...v4('fd7a:115c:a1e0::1', 'IPv6'), ...v4('100.101.2.3')] }), '100.101.2.3', 'macOS utun, IPv4 only');
+    // pr-review: Cloudflare WARP also uses a utun with a 100.96/12 address, so a utun counts only with Tailscale's fd7a:115c:a1e0::/48 beside it
+    assert.equal(defaultHost({ utun2: v4('100.96.0.5'), utun4: [...v4('fd7a:115c:a1e0::1', 'IPv6'), ...v4('100.101.2.3')] }), '100.101.2.3', 'another VPN on utun is skipped');
     assert.equal(defaultHost({ Tailscale: v4('100.64.0.9') }), '100.64.0.9', 'Windows Tailscale adapter');
     assert.equal(defaultHost({ eth0: v4('100.90.182.51') }), '127.0.0.1', 'a CGNAT address off a Tailscale interface is not used');
     assert.equal(defaultHost({ tailscale0: v4('100.128.0.1') }), '127.0.0.1', 'outside 100.64/10 is not used');

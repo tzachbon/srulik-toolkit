@@ -33,12 +33,14 @@ function privateHost(host) {
   return false;
 }
 
-// The default address: this machine's Tailscale IPv4 (100.64.0.0/10 on a tailscale or utun interface), so the
-// printed link opens from the owner's other devices; loopback when there is none.
+// The default address: this machine's Tailscale IPv4 (100.64.0.0/10), so the printed link opens from the owner's
+// other devices; loopback when there is none. macOS names every VPN utunN, so a utun counts only beside Tailscale's
+// fd7a:115c:a1e0::/48 address (Cloudflare WARP also uses 100.64/10 there).
 function defaultHost(interfaces = networkInterfaces()) {
-  for (const [name, addrs] of Object.entries(interfaces)) {
-    if (!/tailscale|^utun/i.test(name)) continue;
-    const hit = (addrs ?? []).find(a => a.family === 'IPv4' && /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(a.address));
+  for (const [name, addrs = []] of Object.entries(interfaces)) {
+    const tailscale = /tailscale/i.test(name) || (/^utun/.test(name) && addrs.some(a => /^fd7a:115c:a1e0:/i.test(a.address)));
+    if (!tailscale) continue;
+    const hit = addrs.find(a => a.family === 'IPv4' && /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(a.address));
     if (hit) return hit.address;
   }
   return '127.0.0.1';
