@@ -222,8 +222,9 @@ every command and write in the run executes there; pass `--cwd` to choose
 another.
 
 1. `check` the spec. Fix every reported error before any child starts.
-2. Start `view` on a new run directory and open the printed local page for the
-   owner. Run it on one fixed port and leave it running after the run ends; before starting it, stop the earlier
+2. Start `view` on a new run directory and give the owner the printed page URL,
+   which other devices on the owner's Tailscale network can open
+   (on a machine without Tailscale it is a loopback link). Run it on one fixed port and leave it running after the run ends; before starting it, stop the earlier
    `view` on that port, so a machine runs only one.
 3. Loop: `next` returns ready tasks. Run each `run` task with `exec`. For each
    agent task, `pick` a model from the runnable models and current quota,

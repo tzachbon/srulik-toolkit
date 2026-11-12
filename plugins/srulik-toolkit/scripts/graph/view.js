@@ -1,10 +1,11 @@
 // Live run view: a local page, a Server-Sent Events stream of <run-dir>/run.jsonl, and read-only <run-dir>/nodes/ files.
-// Loopback by default, or one named address; Host-checked, no CORS; the page writes every log value with textContent.
+// This machine's Tailscale address by default (else loopback), or one named address; Host-checked, no CORS; the page writes every log value with textContent.
 'use strict';
 const http = require('node:http');
 const { openSync, readSync, closeSync, statSync, existsSync, watch, realpathSync, readFileSync } = require('node:fs');
 const { join, sep } = require('node:path');
 const { isIP } = require('node:net');
+const { networkInterfaces } = require('node:os');
 
 // The page is plain HTML beside this file; it writes every log value with textContent.
 const PAGE = readFileSync(join(__dirname, 'page.html'), 'utf8').replace('/*CSS*/', () => readFileSync(join(__dirname, 'page.css'), 'utf8'));
@@ -30,6 +31,19 @@ function privateHost(host) {
   // fc00::/7 is the first 16-bit group 0xfc00-0xfdff; a short group like `fc` is 0x00fc, so compare the number.
   if (isIP(host) === 6) return host === '::1' || (parseInt(host, 16) & 0xfe00) === 0xfc00;
   return false;
+}
+
+// The default address: this machine's Tailscale IPv4 (100.64.0.0/10), so the printed link opens from the owner's
+// other devices; loopback when there is none. macOS names every VPN utunN, so a utun counts only beside Tailscale's
+// fd7a:115c:a1e0::/48 address (Cloudflare WARP also uses 100.64/10 there).
+function defaultHost(interfaces = networkInterfaces()) {
+  for (const [name, addrs = []] of Object.entries(interfaces)) {
+    const tailscale = /tailscale/i.test(name) || (/^utun/.test(name) && addrs.some(a => /^fd7a:115c:a1e0:/i.test(a.address)));
+    if (!tailscale) continue;
+    const hit = addrs.find(a => a.family === 'IPv4' && /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(a.address));
+    if (hit) return hit.address;
+  }
+  return '127.0.0.1';
 }
 
 // The run index, an output file, or one attachment. The pattern admits no '%', '..' or leading dot, and the real
@@ -84,4 +98,4 @@ function serve(dir, port = 0, address = '127.0.0.1') {
   return new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, host, () => resolve(server)); });
 }
 
-module.exports = { serve, allowedHost, privateHost, canonicalHost, PAGE };
+module.exports = { serve, allowedHost, privateHost, canonicalHost, defaultHost, PAGE };
