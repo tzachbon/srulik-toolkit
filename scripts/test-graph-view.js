@@ -159,5 +159,45 @@ module.exports = {
     assert.match(PAGE, /getText\(`nodes\/\$\{i\.node\}-/, 'attachments are fetched from /nodes');
     assert.match(PAGE, /getText\('nodes\/index\.md'\)/, 'the run index is fetched from /nodes');
     assert.match(PAGE, /case 'result':[^\n]*\n[^\n]*error: undefined|case 'result':[^\n]*error: undefined/, 'a successful retry clears the earlier attempt\'s error');
+
+    // the readable output: run the page's renderer against a minimal DOM and read back the text tree
+    const node = tag => ({ tag, kids: [], attrs: {}, set textContent(t) { this.kids = [String(t)]; }, append(...k) { for (const c of k) this.kids.push(...(c && c.frag ? c.kids : [c])); },
+      setAttribute(k, v) { this.attrs[k] = v; } });
+    const document = { createElement: node, createDocumentFragment: () => Object.assign(node('#'), { frag: true }) };
+    const el = (tag, cls, text) => { const e = node(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+    const src = readFileSync(join(__dirname, '..', 'plugins', 'srulik-toolkit', 'scripts', 'graph', 'render.js'), 'utf8');
+    assert.ok(PAGE.includes(src), 'the page inlines the renderer');
+    const { readable, markdown } = require('node:vm').runInNewContext(`${src}; ({ readable, markdown })`, { document, el });
+    const tree = n => typeof n === 'string' ? n : n.tag + (n.attrs.href ? `[${n.attrs.href}]` : '') + '(' + n.kids.map(tree).join(',') + ')';
+    assert.equal(tree(readable('{"ready":true,"questions":[],"notes":"PASS\\n\\n- **one** `x`"}')),
+      '#(dl(dt(ready),dd(span(true)),dt(questions),dd(span(none)),dt(notes),dd(div(p(PASS),ul(li(strong(one), ,code(x)))))),details(summary(Raw),pre({"ready":true,"questions":[],"notes":"PASS\\n\\n- **one** `x`"})))',
+      'JSON becomes labelled rows, and a multi-line string inside it renders as Markdown');
+    assert.equal(tree(markdown('# T\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```\n<b>x</b>\n```\n[l](javascript:alert(1)) [ok](https://e.x)')),
+      'div(h4(T),div(table(tr(th(a),th(b)),tr(td(1),td(2)))),pre(<b>x</b>),p([l](javascript:alert(1)) ,a[https://e.x](ok)))',
+      'Markdown renders headings, tables and fences as text nodes; only http(s) links become links');
+    assert.equal(tree(markdown('| a | b |\n|---|---|\n| x \\| y | 2 |')), 'div(div(table(tr(th(a),th(b)),tr(td(x | y),td(2)))))',
+      'an escaped pipe from the run index stays inside its cell');
+    assert.equal(tree(markdown('````\n```js\nx\n```\n````\nafter')), 'div(pre(```js\nx\n```),p(after))', 'a fence closes only on a matching marker at least as long, with nothing after it');
+    assert.match(tree(readable({ notes: '**Important** see `x`' })), /dd\(span\(strong\(Important\), see ,code\(x\)\)\)/, 'a short JSON string still renders inline Markdown');
+    assert.equal(tree(markdown('``a`b`` and ```c```')), 'div(p(code(a`b), and ,code(c)))', 'a code span closes only on a backtick run of the same length');
+    assert.match(tree(readable({ notes: '# Important' })), /dd\(div\(h4\(Important\)\)\)/, 'a short JSON string that starts a Markdown block renders as that block');
+    assert.match(tree(readable({ id: '#42', n: '-1' })), /dd\(span\(#42\)\).*dd\(span\(-1\)\)/, 'short values that only look like markers stay plain');
+    for (const [md, want] of [['----', 'div(hr())'], ['- - - -', 'div(hr())'], ['| flag | desc |\n| --all | run all |', 'div(p(| flag | desc |),p(| --all | run all |))'],
+      ['```foo```\nnext', 'div(p(code(foo),br(),next))']]) assert.equal(tree(markdown(md)), want, `review r1: ${JSON.stringify(md)}`);
+    for (const bad of ['['.repeat(50000), '**a'.repeat(5000), '*a'.repeat(30000), '`'.repeat(50000), '_a'.repeat(30000)]) {
+      const t = Date.now(); markdown(bad); assert.ok(Date.now() - t < 250, `inline parsing stays linear on ${JSON.stringify(bad.slice(0, 6))}…`);
+    }
+    const big = readable(JSON.stringify(Array(5000).fill(0))).kids[0];
+    assert.equal(big.kids.length, 201, 'a long list renders its first 200 entries and a note; Raw keeps the rest');
+    assert.match(tree(big.kids[200]), /4800 more/);
+    for (const [name, md] of [['a heading of many #', '# ' + '#'.repeat(40000) + 'a'], ['a long indented line after a table row', '| head |\n' + ' '.repeat(40000) + 'x'], ['a long backtick run with a later backtick', '`'.repeat(30000) + 'a'.repeat(30000) + '`'],
+      ['many brackets sharing one failing link', ('['.repeat(499) + 'a](http://' + 'a'.repeat(2040) + ' ').repeat(100)],
+      ['descending unmatched backtick runs', 'x ' + Array.from({ length: 800 }, (_, i) => '`'.repeat(800 - i) + 'x').join(' ')]]) {
+      const t = Date.now(); markdown(md); assert.ok(Date.now() - t < 250, `${name} stays linear`);
+    }
+    assert.equal(tree(markdown('| a | b |\n| :-- | --: |\n| 1 | 2 |')), 'div(div(table(tr(th(a),th(b)),tr(td(1),td(2)))))', 'aligned separators still make a table');
+    assert.match(tree(markdown('>'.repeat(5500) + ' deep')), /deep/, 'deeply nested quotes render instead of overflowing the stack');
+    assert.match(tree(readable('['.repeat(5000) + '1' + ']'.repeat(5000))), /nested too deep/, 'deeply nested JSON stops at a depth limit; Raw keeps the text');
+    assert.match(tree(readable('{"id":9007199254740993}')), /pre\(\{"id":9007199254740993\}\)/, 'Raw keeps the original text, not a lossy re-serialization');
   },
 };
