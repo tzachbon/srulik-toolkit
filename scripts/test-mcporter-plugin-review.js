@@ -57,6 +57,14 @@ assert.deepEqual(codexEnabled("[mcp_servers.ml]\nenabled = false\n"), []);
 assert.deepEqual(codexEnabled('[mcp_servers]\ninline = { command = "x", enabled = false }\n"q.d" = { command = "y" }\n').sort(), ["inline", "q.d"]);
 assert.deepEqual(codexEnabled('mcp_servers.top = { command = "x" }\n[other]\nnot_me = { a = 1 }\n'), ["top"]);
 assert.deepEqual(codexEnabled('mcp_servers = { a = { command = "x" } }\n'), ["a"]);
+// A quoted root key is the same table.
+assert.deepEqual(codexEnabled('["mcp_servers".inv]\ncommand = "x"\n'), ["inv"]);
+assert.deepEqual(codexEnabled("['mcp_servers']\ninv = { command = \"x\" }\n"), ["inv"]);
+assert.deepEqual(codexEnabled('"mcp_servers".inv = { command = "x" }\n'), ["inv"]);
+const { disableCodex } = require(path.join(plugin, "scripts", "codex-toml.js"));
+const quotedOff = disableCodex('["mcp_servers".inv]\ncommand = "x"\n', ["inv"]);
+assert.deepEqual(quotedOff.missed, []);
+assert.deepEqual(codexEnabled(quotedOff.text), []);
 // End to end: an inline definition keeps the native name out of the hint and redirects.
 fs.writeFileSync(homeCfg, JSON.stringify({ mcpServers: { inline: { command: "home" }, keep: { command: "k" } } }));
 fs.writeFileSync(path.join(c, ".codex", "config.toml"), '[mcp_servers]\ninline = { command = "native" }\n');

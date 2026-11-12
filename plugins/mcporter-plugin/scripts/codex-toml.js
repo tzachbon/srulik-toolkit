@@ -1,6 +1,9 @@
 // Codex config.toml edits for setup.js. Node.js standard library only.
 const fs = require("node:fs");
 
+// The root key, bare or quoted ("mcp_servers" is the same table).
+const ROOT = String.raw`(?:mcp_servers|"mcp_servers"|'mcp_servers')`;
+
 // Codex: set `enabled = false` inside each [mcp_servers.<name>] table.
 // Returns the new text and the names whose table was not found (for example an
 // inline-table definition); those are reported for manual action, never as disabled.
@@ -26,7 +29,7 @@ function disableCodex(text, names) {
 // The [mcp_servers.<name>] table body, or null.
 function codexTable(text, name) {
   const n = escape(name);
-  const header = new RegExp(`^[ \\t]*\\[[ \\t]*mcp_servers[ \\t]*\\.[ \\t]*(?:"${n}"|'${n}'|${n})[ \\t]*\\][ \\t]*(?:#.*)?$`, "m");
+  const header = new RegExp(`^[ \\t]*\\[[ \\t]*${ROOT}[ \\t]*\\.[ \\t]*(?:"${n}"|'${n}'|${n})[ \\t]*\\][ \\t]*(?:#.*)?$`, "m");
   const match = header.exec(text);
   if (!match) return null;
   const start = match.index + match[0].length;
@@ -59,18 +62,18 @@ const codexDropped = (s) => {
 const KEY = String.raw`(?:"([^"]+)"|'([^']+)'|([\w-]+))`;
 const keyName = (m) => m[1] ?? m[2] ?? m[3];
 function codexEnabled(text) {
-  const tables = [...text.matchAll(new RegExp(String.raw`^[ \t]*\[[ \t]*mcp_servers[ \t]*\.[ \t]*${KEY}[ \t]*\]`, "gm"))]
+  const tables = [...text.matchAll(new RegExp(String.raw`^[ \t]*\[[ \t]*${ROOT}[ \t]*\.[ \t]*${KEY}[ \t]*\]`, "gm"))]
     .map(keyName)
     // A multi-line string could fake the switch, so in such a file every server counts as on.
     .filter((n) => /"""|'''/.test(text) || !/^[ \t]*["']?enabled["']?[ \t]*=[ \t]*false\b/m.test(codexTable(text, n)?.body ?? ""));
   const firstHeader = text.search(/^[ \t]*\[/m);
   const top = firstHeader === -1 ? text : text.slice(0, firstHeader);
-  const section = /^[ \t]*\[[ \t]*mcp_servers[ \t]*\][ \t]*(?:#.*)?$/m.exec(text);
+  const section = new RegExp(String.raw`^[ \t]*\[[ \t]*${ROOT}[ \t]*\][ \t]*(?:#.*)?$`, "m").exec(text);
   const body = section ? text.slice(section.index + section[0].length).split(/^[ \t]*\[/m)[0] : "";
   const inline = [
     ...[...body.matchAll(new RegExp(String.raw`^[ \t]*${KEY}[ \t]*[.=]`, "gm"))].map(keyName),
-    ...[...top.matchAll(new RegExp(String.raw`^[ \t]*mcp_servers[ \t]*\.[ \t]*${KEY}[ \t]*[.=]`, "gm"))].map(keyName),
-    ...[...top.matchAll(/^[ \t]*mcp_servers[ \t]*=[ \t]*\{(.*)$/gm)].flatMap((m) => [...m[1].matchAll(new RegExp(String.raw`(?:^|[{,])[ \t]*${KEY}[ \t]*=[ \t]*\{`, "g"))].map(keyName)),
+    ...[...top.matchAll(new RegExp(String.raw`^[ \t]*${ROOT}[ \t]*\.[ \t]*${KEY}[ \t]*[.=]`, "gm"))].map(keyName),
+    ...[...top.matchAll(new RegExp(String.raw`^[ \t]*${ROOT}[ \t]*=[ \t]*\{(.*)$`, "gm"))].flatMap((m) => [...m[1].matchAll(new RegExp(String.raw`(?:^|[{,])[ \t]*${KEY}[ \t]*=[ \t]*\{`, "g"))].map(keyName)),
   ];
   return [...new Set([...tables, ...inline])];
 }
