@@ -10,9 +10,14 @@ const login = (text) => {
   return name && `mcporter auth ${name}`;
 };
 
+// At a command start (after env assignments): mcporter itself, npx mcporter,
+// or a saved script run directly or through an interpreter. `cat .mcporter/x`
+// or `echo mcporter` do not count.
+const runsMcporter = /(?:^|[;&|(\n]|\bdo|\bthen)\s*(?:\w+=\S*\s+)*(?:(?:npx\s+(?:-y\s+)?)?mcporter(?:@\S+)?\s|(?:(?:node|bash|sh|bun|tsx|deno\s+run)\s+)?\S*\.mcporter\/scripts\/)/;
+
 function decide(input) {
   if (input?.tool_name !== "Bash") return null;
-  if (!/\bmcporter\b/.test(input.tool_input?.command ?? "")) return null;
+  if (!runsMcporter.test(input.tool_input?.command ?? "")) return null;
   const cmd = login(input.error ?? JSON.stringify(input.tool_response ?? ""));
   if (!cmd) return null;
   return {
