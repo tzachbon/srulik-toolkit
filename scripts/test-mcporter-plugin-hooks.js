@@ -96,9 +96,6 @@ fs.rmSync(path.join(tmp, "data with 'space", "conflicts.json"));
 const piped = run("hooks/redirect-mcp.js", [], JSON.stringify({ tool_name: "mcp__inv__get_item", tool_input: { id: "a" }, cwd: other }));
 assert.match(JSON.parse(piped).hookSpecificOutput.additionalContext, /'id:a'/);
 
-fs.rmSync(tmp, { recursive: true, force: true });
-console.log("mcporter-plugin tests passed");
-
 // One data dir for setup and the hooks: a PLUGIN_DATA or CLAUDE_PLUGIN_DATA
 // inherited from another plugin's session is never used.
 assert.ok(!fs.existsSync(path.join(tmp, "foreign-data")));
@@ -108,3 +105,11 @@ assert.ok(!fs.existsSync(path.join(tmp, "foreign-data")));
   assert.equal(probe({}), path.join(env.HOME, ".mcporter", "plugin"));
   assert.equal(probe({ MCPORTER_PLUGIN_DATA: path.join(tmp, "own") }), path.join(tmp, "own"));
 }
+// A relative override would resolve against each process's own cwd, so it is ignored.
+{
+  const common = path.join(plugin, "scripts", "mcporter-common.js");
+  const rel = execFileSync(process.execPath, ["-e", `console.log(require(${JSON.stringify(common)}).dataRoot())`], { env: { ...env, MCPORTER_PLUGIN_DATA: "rel-data" }, encoding: "utf8", cwd: plugin }).trim();
+  assert.equal(rel, path.join(env.HOME, ".mcporter", "plugin"));
+}
+fs.rmSync(tmp, { recursive: true, force: true });
+console.log("mcporter-plugin tests passed");

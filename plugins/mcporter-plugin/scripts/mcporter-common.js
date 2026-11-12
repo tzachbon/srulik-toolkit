@@ -9,7 +9,11 @@ const home = () => process.env.HOME || os.homedir();
 // One fixed folder for setup and the hooks. PLUGIN_DATA and CLAUDE_PLUGIN_DATA
 // are not read: the hooks get this plugin's, but an agent's shell running
 // setup.js can inherit another plugin's, and the hooks would miss what setup wrote.
-const dataRoot = () => process.env.MCPORTER_PLUGIN_DATA || path.join(home(), ".mcporter", "plugin");
+// A relative MCPORTER_PLUGIN_DATA is ignored: each process would resolve it from its own cwd.
+const dataRoot = () => {
+  const own = process.env.MCPORTER_PLUGIN_DATA;
+  return own && path.isAbsolute(own) ? own : path.join(home(), ".mcporter", "plugin");
+};
 // Discovery depends on the project (its config/mcporter.json and editor
 // files), so the cache is per working directory.
 // servers-*: the names the hint offered (the redirect hook reads them);
