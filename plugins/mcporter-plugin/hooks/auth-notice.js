@@ -18,7 +18,7 @@ const runsMcporter = /(?:^|[;&|(\n]|\bdo|\bthen)\s*(?:\w+=\S*\s+)*(?:(?:npx\s+(?
 // Shell quoting, as bash reads it: a backslash escapes the next character
 // outside single quotes; inside single quotes nothing is special. Quoted and
 // escaped characters become "_", so only unquoted text can start a command.
-// ponytail: $'…' and backticks are read as plain text. Upgrade: a shell parser.
+// $'…' and backticks are not read, so decide() gives no notice for them.
 function unquote(s) {
   let out = "";
   let q = null;
@@ -45,7 +45,8 @@ function decide(input) {
   if (input?.tool_name !== "Bash") return null;
   // Heredoc bodies and quoted text are data, not commands, so they are blanked first.
   const command = unquote(String(input.tool_input?.command ?? "").replace(/<<-?[ \t]*(['"]?)(\w+)\1([^\n]*)\n[\s\S]*?\n[ \t]*\2[ \t]*(?=\n|$)/g, "$3"));
-  if (!runsMcporter.test(command)) return null;
+  // Quoting the scanner cannot read: no notice rather than a wrong one.
+  if (/\$'|`/.test(command) || !runsMcporter.test(command)) return null;
   const cmd = login(input.error ?? JSON.stringify(input.tool_response ?? ""));
   if (!cmd) return null;
   return {
