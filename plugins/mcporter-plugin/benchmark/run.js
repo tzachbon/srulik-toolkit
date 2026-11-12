@@ -32,7 +32,7 @@ const task =
 
 const server = { command: process.execPath, args: [path.join(here, "fake-inventory-server.js")], env: { INVENTORY_PAGES: String(pages) } };
 // Node scripts import "mcporter"; ESM resolves it from node_modules only.
-const nodeModules = process.env.MCPORTER_NODE_MODULES || execFileSync("npm", ["root", "-g"], { encoding: "utf8" }).trim();
+const nodeModules = process.env.MCPORTER_NODE_MODULES ? path.resolve(process.env.MCPORTER_NODE_MODULES) : execFileSync("npm", ["root", "-g"], { encoding: "utf8" }).trim();
 const examples = path.join(here, "..", "skills", "mcporter", "examples", ".mcporter", "scripts");
 
 // A fresh project per run, so a script one run writes never reaches another.
@@ -81,14 +81,14 @@ function once(name) {
     .filter((e) => e.type === "assistant")
     .flatMap((e) => e.message?.content || [])
     .filter((c) => c.type === "tool_use")
-    .map((c) => (c.name === "Bash" ? `Bash: ${String(c.input?.command).slice(0, 160)}` : c.name));
+    .map((c) => (c.name === "Bash" ? `Bash: ${c.input?.command}` : c.name));
   const u = r.usage || {};
   return {
     arm: name,
     correct: String(r.result).trim() === String(expected),
     // The arm's own path: native tools only; mcporter from Bash; the saved script.
     followed: followed(name, calls),
-    calls,
+    calls: calls.map((c) => c.slice(0, 166)),
     answer: String(r.result).slice(0, 200),
     turns: r.num_turns,
     wallMs: Date.now() - started,

@@ -2,10 +2,17 @@
 // user (the harness login prompt does not cover servers moved to mcporter) and
 // tell the agent to stop retrying. Claude Code: PostToolUseFailure (`error`);
 // Codex: PostToolUse, which also runs after a failed command (`tool_response`).
-const login = (text) => String(text).match(/run '(mcporter auth [^']+)'/i)?.[1];
+// Only a plain server name is copied, so other output cannot put a shell
+// command into the notice; and only a command that runs mcporter (directly or
+// through a saved script) counts.
+const login = (text) => {
+  const name = String(text).match(/run 'mcporter auth ([\w.-]+)'/i)?.[1];
+  return name && `mcporter auth ${name}`;
+};
 
 function decide(input) {
   if (input?.tool_name !== "Bash") return null;
+  if (!/\bmcporter\b/.test(input.tool_input?.command ?? "")) return null;
   const cmd = login(input.error ?? JSON.stringify(input.tool_response ?? ""));
   if (!cmd) return null;
   return {

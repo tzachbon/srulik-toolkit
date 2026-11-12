@@ -80,3 +80,5 @@ const { followed } = require(path.join(plugin, "benchmark", "followed.js"));
 assert.equal(followed("mcporter", ["Bash: mcporter  call inventory.list_items page:1"]), true);
 assert.equal(followed("mcporter", ["Bash: mcporter\tcall\tinventory.list_items"]), true);
 assert.equal(followed("mcporter", ["Bash: echo mcporter call inventory.list_items"]), false);
+assert.equal(followed("mcporter", ["Bash: set -e\nmcporter call inventory.list_items page:1"]), true);
+assert.equal(followed("saved-script", ["Bash: set -e\nnode .mcporter/scripts/inventory-gold-stock.mjs"]), true);
