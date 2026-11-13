@@ -133,6 +133,7 @@ if not node:
 def stop_check(payload, disabled=False):
     env = os.environ.copy()
     env.pop("SRULIK_TOOLKIT_BLOCKED_STOP", None)
+    env.pop("SRULIK_TOOLKIT_DEFERRED_STOP", None)
     if disabled:
         env["SRULIK_TOOLKIT_BLOCKED_STOP"] = "0"
     result = subprocess.run(

@@ -40,8 +40,8 @@ by default; the user asks for more when they want it.
 - **Done:** up to five short bullets, in order. Name each decision and who made it.
 - **Now:** what is in progress or blocked, and anything waiting on the user.
 - **Waiting on:** who must act and why, only when the work cannot continue
-  without the user. Omit it otherwise; the agent continues unblocked work
-  instead of listing it.
+  without the user. Omit it otherwise and name remaining unblocked work under
+  **Now**; the recap itself stays read-only.
 
 Say what each thing does, not what it is called; when a technical term is
 needed, explain it in a few words the first time. Use one concrete analogy when
