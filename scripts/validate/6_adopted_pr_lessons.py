@@ -123,7 +123,7 @@ for token in [
     "- **General:** the user gives no topic", "organized around the goal",
     "- **Focused:** the user adds a topic", "Leave out the rest",
     "Be concise by default",
-    "- **Goal:**", "- **Done:**", "- **Now:**", "- **Next:**",
+    "- **Goal:**", "- **Done:**", "- **Now:**", "- **Waiting on:**",
     "## Write it like I'm five", "Write the whole recap in plain words",
     "explain around them", "## Show it", "The visual is the heart of the recap; place it right after **Goal**", "in the style of `show-me`",
     "hand off to `retro`",

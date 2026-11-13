@@ -29,6 +29,11 @@ environment before launch to disable only this hook. Codex users must review
 and trust the new `Stop` hook through `/hooks` after updating the plugin.
 Cursor does not run this hook yet.
 
+The same hook also catches deferred work. When a main agent ends with a
+`Next:` or `Next steps` list and no `WAITING`, `Waiting on:` or blocked verdict,
+it gets one more turn to do the unblocked steps instead of listing them. Set
+`SRULIK_TOOLKIT_DEFERRED_STOP=0` to disable only this check.
+
 ## Example prompts
 
 
