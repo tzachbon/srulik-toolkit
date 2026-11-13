@@ -19,7 +19,7 @@ fs.writeFileSync(path.join(home, ".claude.json"), "{}");
 //   name only, even across one editor's files; `--path <file>` reads one file;
 // - `config list --source import` keeps only the first definition of each name;
 // - the home config is $XDG_CONFIG_HOME/mcporter or ~/.mcporter; --persist/--config override it;
-// - `list <name> --json` answers ok except for "broken".
+// - `list <name> --json` answers ok except for "broken" (offline) and "oauth" (auth).
 const fake = path.join(tmp, "fake-mcporter.js");
 fs.writeFileSync(
   fake,
@@ -46,7 +46,9 @@ if(a[0]==="config"&&a[1]==="import"&&file&&/broken-editor/.test(fs.readFileSync(
 if(a[0]==="config"&&a[1]==="import"){const es=dedup(imports.filter(e=>e.kind===a[2]&&(file?e.path===file:!e.path.endsWith(".mcp.json")))).map(e=>({name:e.name,entry:{command:"run-"+e.name,...(e.differ&&{args:[e.path]})},source:e.path}));console.log(es.length?JSON.stringify({entries:es}):"No entries found.");}
 else if(a[0]==="config"&&a[1]==="list"){const src=opt("--source");console.log(JSON.stringify({servers:src==="import"?first:src==="local"?local():[...local(),...first]}));}
 else if(a[0]==="config"&&a[1]==="remove"){const c=read();delete c.mcpServers[a[2]];write(c);}
-else if(a[0]==="list"){console.log(JSON.stringify({status:a[1]==="broken"?"offline":a[1]==="oauth"?"auth":"ok"}));}
+// Like mcporter 0.17, a server that needs a login exits 1 but still prints its status;
+// a server with many tools prints more than execFileSync's default 1 MB buffer.
+else if(a[0]==="list"){const st=a[1]==="broken"?"offline":a[1]==="oauth"?"auth":"ok";console.log(JSON.stringify({status:st,tools:a[1]==="linear"?["x".repeat(2e6)]:[]}));if(st!=="ok")process.exitCode=1;}
 else process.exit(9);`,
 );
 // An installed-looking `mcporter` on PATH; MCPORTER_BIN still runs the fake.
