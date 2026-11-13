@@ -226,7 +226,12 @@ function apply(names, dryRun) {
     try {
       status = JSON.parse(mcporter(["--config", mcporterHome, "list", name, "--json"], { timeout: 60_000 })).status;
     } catch (err) {
-      status = `error: ${String(err.stderr || err.message).split("\n")[0]}`;
+      // mcporter 0.17 exits 1 for a server that is not "ok" but still prints its status.
+      try {
+        status = JSON.parse(err.stdout).status;
+      } catch {
+        status = `error: ${String(err.stderr || err.message).split("\n")[0]}`;
+      }
     }
     // A project config/mcporter.json defining the same name wins over the home
     // config, so ordinary calls would not reach the copy just checked.

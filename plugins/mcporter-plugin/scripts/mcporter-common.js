@@ -47,7 +47,8 @@ function launcher(platform = process.platform, nodeDir = path.dirname(process.ex
 }
 function mcporter(args, { timeout = 30_000 } = {}) {
   const [cmd, pre] = launcher();
-  return execFileSync(cmd, [...pre, ...args], { encoding: "utf8", timeout, stdio: ["ignore", "pipe", "pipe"] });
+  // A server with many tools lists more than the default 1 MB.
+  return execFileSync(cmd, [...pre, ...args], { encoding: "utf8", timeout, maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] });
 }
 
 // The first PATH entry for `name` (with .cmd/.exe on Windows), or undefined.
