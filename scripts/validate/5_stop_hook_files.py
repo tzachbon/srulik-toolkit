@@ -29,6 +29,27 @@ if stop_check(blocked_input, disabled=True):
     raise SystemExit("Stop hook opt-out must be silent")
 if stop_check(stop_input) or stop_check(blocked_input | {"hook_event_name": "SubagentStop"}) or stop_check("{"):
     raise SystemExit("Stop hook must fail open on missing, unrelated, or malformed input")
+deferred = "Baseline captured.\n\n**Next:**\n1. Idle draw-count baseline.\n2. Judge calibration."
+for message in [deferred, "Done with wave 1.\n## Next steps\n- run the judges", "Next: run the full suite."]:
+    output = json.loads(stop_check(stop_input | {"last_assistant_message": message}))
+    if output.get("decision") != "block" or "not a stopping point" not in output.get("reason", ""):
+        raise SystemExit(f"Stop hook did not push back on deferred work: {message!r}")
+for message in [
+    deferred + "\nWaiting on: owner approval for the Depot run.",
+    "WAITING: checks pending.\nNext: merge once green.",
+    "Blocked: missing permission.\nNext: retry after access.",
+    "Example:\n```text\nNext: something\n```\nThe task is complete.",
+    "The next release ships Friday.",
+]:
+    output = stop_check(stop_input | {"last_assistant_message": message})
+    if output and "not a stopping point" in output:
+        raise SystemExit(f"Deferred-work check fired on a waiting or unrelated message: {message!r}")
+deferred_input = stop_input | {"last_assistant_message": deferred}
+if stop_check(deferred_input | {"stop_hook_active": True}):
+    raise SystemExit("Deferred-work check must allow the second stop")
+env_off = os.environ.copy(); env_off["SRULIK_TOOLKIT_DEFERRED_STOP"] = "0"
+if subprocess.run([node, str(plugin / "hooks" / "blocked-stop.js")], input=json.dumps(deferred_input), env=env_off, capture_output=True, text=True, timeout=30, check=True).stdout.strip():
+    raise SystemExit("Deferred-work opt-out must be silent")
 print("Blocked Stop hook passed")
 
 requests = {}

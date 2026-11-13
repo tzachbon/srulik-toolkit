@@ -39,7 +39,9 @@ by default; the user asks for more when they want it.
 - **Goal:** one line.
 - **Done:** up to five short bullets, in order. Name each decision and who made it.
 - **Now:** what is in progress or blocked, and anything waiting on the user.
-- **Next:** the one action that resumes the work.
+- **Waiting on:** who must act and why, only when the work cannot continue
+  without the user. Omit it otherwise; the agent continues unblocked work
+  instead of listing it.
 
 Say what each thing does, not what it is called; when a technical term is
 needed, explain it in a few words the first time. Use one concrete analogy when
