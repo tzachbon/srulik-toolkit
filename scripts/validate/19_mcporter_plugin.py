@@ -1,7 +1,7 @@
 # mcporter-plugin: manifests, catalog entries, hook wiring, skill contracts, and
 # the behavior test (scripts/test-mcporter-plugin.js) against a fake mcporter.
 mcp_plugin = root / "plugins" / "mcporter-plugin"
-mcp_version = "0.1.2"
+mcp_version = "0.1.3"
 for harness in ["claude", "codex"]:
     data = json.loads((mcp_plugin / f".{harness}-plugin" / "plugin.json").read_text(encoding="utf-8"))
     if data.get("name") != "mcporter-plugin" or data.get("version") != mcp_version or data.get("license") != "MIT":
