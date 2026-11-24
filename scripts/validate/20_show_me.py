@@ -34,7 +34,7 @@ for token in [
     "both at the end of `<body>` after every `<pre class=\"mermaid\">`",
     'work under `securityLevel: "antiscript"` in `flowchart` and `classDiagram`',
     "including `timeline`, `gitGraph` and `stateDiagram-v2`, do not reliably support `click`",
-    "as Mermaid entity codes `#lt;` `#gt;` `#quot;` `#59;` `#35;`",
+    "as Mermaid entity codes `#lt;` `#gt;` `#quot;` `#59;` `#35;` `#38;` in a single pass",
     "write `click` directives only from URLs you built yourself",
     "forbids remote resources, draw the diagram as inline SVG",
     "the host's viewer or the OS opener",

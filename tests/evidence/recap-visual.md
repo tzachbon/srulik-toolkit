@@ -239,6 +239,12 @@ an arrow`); reverting the CommonMark info-string rule lets a line-start
 ```` ```mermaid``` ```` span hide a later ASCII block (`inline span opened a
 fence`). Dropping show-me's end-of-`<body>` script placement fails part 20.
 
+CodeRabbit probe (same build): a label holding raw `&quot]; click A href ...`
+broke out of its label (the HTML parser decodes `&quot` without a semicolon), so
+the diagram failed to parse. The same text with `&` written as `#38;` and `;`
+as `#59;` rendered literally with no link. show-me now adds `&` to the single-pass
+entity map, and the lint also checks `ascii` fences.
+
 Durations come from each run's `duration_ms` in the `--output-format json` result.
 
 SHA-256 at the evaluated head:
