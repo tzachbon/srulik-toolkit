@@ -8,16 +8,16 @@ banned.
 
 ## Contract checks
 
-`scripts/validate/22_visual_output.py` lints fenced blocks for ASCII and Unicode
+`scripts/validate/23_visual_output.py` lints fenced blocks for ASCII and Unicode
 diagram art. The parts `20_show_me.py`, `6_adopted_pr_lessons.py` and
 `5_stop_hook_files.py` pin the new phrases. `1_setup_end_to_end.py` pins
-`1.32.0`.
+`1.33.0` (originally 1.32.0; renumbered after `main` released 1.32.0).
 
 Each check went red, in reverse part order, before the skill edits:
 
-- Part 22, scratch copy with the fixture diagram removed:
+- Part 23 (then numbered 22), scratch copy with the fixture diagram removed:
   `scripts/fixtures/recap-ascii.md must trigger at least one ASCII/Unicode diagram violation`.
-- Part 22, scratch copy with a `text` fence containing `A --> B` appended to
+- Part 23 (then numbered 22), scratch copy with a `text` fence containing `A --> B` appended to
   recap: `banned ASCII/Unicode diagram in plugins/srulik-toolkit/skills/recap/SKILL.md:69: A --> B`.
 - Part 20: `show-me is missing: ## Output by host capability`.
 - Part 6: `recap skill missing contract: 'when an inline-HTML host renders the
@@ -51,7 +51,7 @@ Audit follow-up (`258c4c2`), one change per scratch copy, each exiting 1:
   `NOTICE.md is missing show-me attribution: host-capability output routing, ASCII-diagram ban,`.
 
 Green: `./scripts/validate.sh`, `./scripts/check-version-bump.sh fe657b3`
-(`Plugin version bumped: 1.31.1 -> 1.32.0`) and `git diff --check fe657b3` pass.
+(`Plugin version bumped: 1.32.0 -> 1.33.0 after merging `main`; originally 1.31.1 -> 1.32.0`) and `git diff --check fe657b3` pass.
 
 ## Live T3 Code render check
 
@@ -93,7 +93,7 @@ across the 4 merged PRs and 2 waves.`
 E1-E4 were fixed before the runs:
 
 - E1: a fenced `mermaid` `timeline`, `flowchart LR` or `gitGraph` shows the PRs.
-- E2: the plan's standalone lint, which uses part 22's rules, reports 0 hits.
+- E2: the plan's standalone lint, which uses part 23's rules, reports 0 hits.
 - E3: the recap keeps its shape: **Goal**, then the visual, **Done** with at
   most five items, **Now**, real PR numbers, nothing invented.
 - E4: all four PRs appear in the right waves and order.
