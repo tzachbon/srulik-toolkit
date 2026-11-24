@@ -6,7 +6,7 @@ _VIS_UNI = re.compile(r"[─-╿←-⇿▲▶►▼◀]")
 _VIS_ASCII = re.compile(r"(?<![=<-])-{1,}>|\+-{2,}\+|<-{2,}|\|-{2,}")
 _VIS_TREE = re.compile(r"^[+\- ]?[ \t│]*[├└]── ")
 # A tree spacer line holds only vertical rails, e.g. "│   │".
-_VIS_TREE_SPACER = re.compile(r"^[ \t│]*│[ \t│]*$")
+_VIS_TREE_SPACER = re.compile(r"^[+\- ]?[ \t│]*│[ \t│]*$")
 _VIS_PLAIN = {"", "text", "txt", "plain", "plaintext", "ascii"}
 
 
@@ -16,12 +16,15 @@ def find_ascii_diagrams(text):
     for lineno, line in enumerate(text.splitlines(), 1):
         stripped = line.strip()
         top = stack[-1] if stack else None
-        if top and stripped.startswith(top[0]) and stripped.strip(top[0][0]) == "":
-            stack.pop()
+        # A bare closer closes the outermost fence it matches and every fence nested inside it.
+        closer = next((i for i, f in enumerate(stack) if stripped.startswith(f[0]) and stripped.strip(f[0][0]) == ""), None)
+        if closer is not None:
+            del stack[closer:]
             continue
         # CommonMark: a backtick fence's info string has no backtick, so ```x``` is an inline span.
         opened = re.match(r"^\s*(`{3,}|~{3,})\s*([\w+-]*)[^`]*$", line)
-        if opened and (top is None or top[1] in ("markdown", "md")):
+        nests = top and top[1] in ("markdown", "md") and opened and (opened.group(1)[0] != top[0][0] or len(opened.group(1)) < len(top[0]))
+        if opened and (top is None or nests):
             stack.append((opened.group(1), opened.group(2).lower()))
             continue
         if not top or top[1] == "mermaid" or _VIS_TREE_SPACER.match(line):
@@ -60,6 +63,10 @@ assert find_ascii_diagrams("```ascii\n+---+ --> +---+\n```\n"), "ascii fence ski
 assert not find_ascii_diagrams("```mermaid\nflowchart LR\n  A --> B\n```\n"), "mermaid fence flagged"
 assert find_ascii_diagrams("````markdown\n```text\n+---+ --> +---+\n```\n````\n"), "nested text fence skipped"
 assert not find_ascii_diagrams("````markdown\n```mermaid\nA ──▶ B\n```\n````\n"), "nested mermaid fence flagged"
+assert find_ascii_diagrams("```markdown\n````mermaid\n```\n```text\n+---+ --> +---+\n```\n"), "longer inner opener swallowed outer closer"
+assert not find_ascii_diagrams("````markdown\n```mermaid\nA --> B\n````\nprose ──▶ here\n"), "outer closer left inner fence open"
+assert not find_ascii_diagrams("```markdown\n````text\n+---+ --> +---+\n````\n"), "longer same-char opener nested"
+assert not find_ascii_diagrams("```diff\n+├── a/\n+│   │\n-│   │\n```\n"), "diff spacer flagged"
 assert find_ascii_diagrams("```mermaid``` blocks render.\n```text\n+---+ --> +---+\n```\n"), "inline span opened a fence"
 
 for md_path in sorted(skill_root.rglob("*.md")):
