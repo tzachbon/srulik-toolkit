@@ -43,6 +43,13 @@ fresh copy, each exiting 1:
 - The old sentence appended to tour:
   `tour still forbids the pinned SRI Mermaid build`.
 
+Audit follow-up (`258c4c2`), one change per scratch copy, each exiting 1:
+
+- One snippet's `securityLevel: "antiscript"` changed to `"loose"`:
+  `show-me must set securityLevel: "antiscript" everywhere`.
+- `host-capability output routing, ASCII-diagram ban,` deleted from NOTICE:
+  `NOTICE.md is missing show-me attribution: host-capability output routing, ASCII-diagram ban,`.
+
 Green: `./scripts/validate.sh`, `./scripts/check-version-bump.sh fe657b3`
 (`Plugin version bumped: 1.31.1 -> 1.32.0`) and `git diff --check fe657b3` pass.
 
@@ -189,6 +196,30 @@ Wave 1 is like building the kitchen and Wave 2 like opening the serving window. 
 
 </details>
 
+### Chronology shapes
+
+Two extra `with_skill` runs, same flags, prompt `/srulik-toolkit:recap Recap ...`:
+
+| Fixture | Diagram chosen | lint hits | Time | Cost |
+| --- | --- | --- | --- | --- |
+| Exported single-thread conversation transcript (login timeout bug, 9 turns) | `timeline` | 0 | 23 s | $0.11 |
+| Linear 5-commit repo, no PRs | `gitGraph` (allowed: branch history) | 0 | 31 s | $0.12 |
+
+## Live T3 Code routing run
+
+A fresh T3 Code child (`claude-sonnet-5-5`) read this branch's recap, show-me
+and tour skills and did three tasks unprompted on routing:
+
+| Task | Observed | Contract |
+| --- | --- | --- |
+| Recap the transcript | `html_preview` then `html_render` of a page with `flowchart LR` and `<details>`; 0 console errors; reply opens `**Goal:** ...` and carries no second diagram | inline-HTML routing, Goal placement |
+| Write a plan file with a diagram | `plan.md` holds one ```` ```mermaid ```` fence, no HTML tags, 0 lint hits, no HTML tool called | chat vs. file scope |
+| Short tour of `scripts/validate/run.py` | chat visual via `html_preview`/`html_render`; tour `.md` keeps a mermaid fence, 0 lint hits | tour defers to show-me, Markdown file |
+
+Both rendered pages load only `mermaid@12.3.0/dist/mermaid.min.js` with the
+pinned `sha384-HHW54r…` integrity and `securityLevel:"antiscript"`; no other
+remote URL appears.
+
 SHA-256 at the evaluated head:
 
 ```text
@@ -202,9 +233,9 @@ ed336637ae3e07c1505c70852d4c7f56c49d051ec8dfc459eb0ea20320917b3d  plugins/srulik
 
 - One synthetic fixture and one sample per side; this is a direction check,
   not a benchmark.
-- The CLI renders Markdown only, so the eval covers the Markdown branch. The
-  HTML branch was checked by the T3 Code render above, not by a model choosing
-  it unprompted.
+- The CLI renders Markdown only, so the paired eval covers the Markdown branch.
+  The HTML branch was covered by one live T3 Code child run, not paired
+  against the old skill.
 - Inline-HTML hosts other than T3 Code are unverified.
 - Human feedback: not collected before review; the owner reviews the PR.
-- `tour` was checked by its contract and mutations only, with no live tour run.
+- `tour` had one short live run, on a small read-only topic.
