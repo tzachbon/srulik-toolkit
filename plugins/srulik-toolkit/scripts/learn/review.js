@@ -66,12 +66,18 @@ function launch(harness, info, state) {
     cwd: info.top || info.dir,
     detached: true,
     stdio: [route.stdin ? "pipe" : "ignore", "ignore", "ignore"],
-    env: { ...process.env, SRULIK_TOOLKIT_LEARN: "0" },
+    env: { ...reviewEnv(), SRULIK_TOOLKIT_LEARN: "0" },
     windowsHide: true,
   });
   child.on("error", () => {});
   if (route.stdin) child.stdin.end(route.stdin);
   child.unref();
+}
+
+// Claude Code refuses to start `claude -p` while CLAUDECODE is set.
+function reviewEnv() {
+  const { CLAUDECODE, ...env } = process.env;
+  return env;
 }
 
 function review(harness, key, top) {
@@ -94,7 +100,7 @@ function review(harness, key, top) {
     writeJson(statePath, state);
     const [command, args] = cli[harness](reviewPrompt(key, files, false));
     // shortcut: no shell, so Windows .cmd shims are not found, use a native binary there.
-    const run = cp.spawnSync(command, args, { cwd: worktree || dir, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8", maxBuffer: 16 * 1024 * 1024, timeout: 20 * 60_000, env: { ...process.env, SRULIK_TOOLKIT_LEARN: "0" }, windowsHide: true });
+    const run = cp.spawnSync(command, args, { cwd: worktree || dir, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8", maxBuffer: 16 * 1024 * 1024, timeout: 20 * 60_000, env: { ...reviewEnv(), SRULIK_TOOLKIT_LEARN: "0" }, windowsHide: true });
     fs.writeFileSync(path.join(dir, "review.log"), `${iso(now())} ${command} exit ${run.status ?? run.error?.code}\n${String(run.stdout || "").slice(-20000)}\n${String(run.stderr || "").slice(-20000)}`, PRIVATE_FILE);
     // A run that wrote no deltas keeps its signals for the next review.
     if (fs.existsSync(files.deltas)) merge(key, files.deltas, worktree);
