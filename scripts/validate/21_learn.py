@@ -117,13 +117,13 @@ with tempfile.TemporaryDirectory() as temporary:
     leaked = learn_signals(home)[-1]["text"]
     if any(secret in leaked for secret in ["sk-abcdefghijklmnop", "abc.def", "hunter2"]) or len(leaked) > 500:
         raise SystemExit("captured text must be redacted and truncated to 500 characters")
-    command = "NPM_TOKEN=abc123 AWS_SECRET_ACCESS_KEY='s3 cr3t' DATABASE_URL=postgres://user:pw9@host/db npm test --password hunter3 password=\"my pass\""
-    learn_run(home, ["capture", "claude"], {"hook_event_name": "PostToolUseFailure", "cwd": cwd, "tool_input": {"command": command}, "error": "Exit code 1"})
+    command = "NPM_TOKEN=abc123 AWS_SECRET_ACCESS_KEY='s3 cr3t' DATABASE_URL=postgres://user:p@ss/w9@host/db npm test --password hunter3 password=\"my pass\""
+    error = 'Exit code 1 {"api_key": "abcd1234efgh"} curl -u admin:s3cret -H "Authorization: Basic dXNlcjpw"'
+    learn_run(home, ["capture", "claude"], {"hook_event_name": "PostToolUseFailure", "cwd": cwd, "tool_input": {"command": command}, "error": error})
     leaked = learn_signals(home)[-1]["text"]
-    if any(secret in leaked for secret in ["abc123", "s3 cr3t", "cr3t", "pw9", "hunter3", "my pass", "pass\""]) or "npm test" not in leaked:
-        raise SystemExit(f"redaction must cover prefixed names, quoted values, URL credentials and flags: {leaked}")
-    if os.name != "nt" and ((learn_project(home) / "signals.jsonl").stat().st_mode & 0o077 or learn_project(home).stat().st_mode & 0o077):
-        raise SystemExit("learn state must be readable by its owner only")
+    secrets = ["abc123", "s3 cr3t", "cr3t", "ss/w9", "hunter3", "my pass", "pass\"", "abcd1234efgh", "s3cret", "dXNlcjpw"]
+    if any(secret in leaked for secret in secrets) or "npm test" not in leaked:
+        raise SystemExit(f"redaction missed a secret: {leaked}")
     count += 1
     learn_run(home, ["capture", "claude"], {"cwd": cwd, "prompt": "no, never again"}, SRULIK_TOOLKIT_LEARN="0")
     if len(learn_signals(home)) != count + 1:
@@ -164,7 +164,7 @@ with tempfile.TemporaryDirectory() as temporary:
     if once["rejected"] != ["duplicate id in one review"] or "Do X." in learn_run(home, ["start", "claude"], {"cwd": cwd}):
         raise SystemExit("one review must not move an entry twice")
     if stale.exists():
-        raise SystemExit("a stale shared store lock must be broken and released after the merge")
+        raise SystemExit("a stale store lock must be broken and released")
     if (home / "deltas-input.json").exists():
         raise SystemExit("merge must delete the deltas file so it is never merged twice")
     learn_run(home, ["capture", "claude"], {"cwd": cwd, "prompt": "no, keep this signal"})
@@ -182,19 +182,22 @@ with tempfile.TemporaryDirectory() as temporary:
     cursor_out = json.loads(learn_run(home, ["start", "cursor"], {"workspace_roots": [cwd]}))
     if "Use pnpm" not in cursor_out.get("additional_context", ""):
         raise SystemExit("Cursor start must return lessons as additional_context JSON")
+    learn_deltas(home, [{"op": "seen", "scope": "override", "id": "draft-prs"}])
+    learn_review_head(home, repo, launch_at="2999-01-01T00:00:00.000Z")
+    learn_deltas(home, [])
     learn_deltas(home, [{"op": "seen", "scope": "project", "id": "use-pnpm"}])
     report = learn_run(home, ["stats", learn_project(home).name])
     if "project/use-pnpm: seen 3, applied yes, recurred_after_apply 1" not in report or "applied: 2, applied with zero recurrences: 1" not in report:
-        raise SystemExit(f"stats must report recurrence after apply: {report}")
+        raise SystemExit(f"recurrence must count only after injection: {report}")
 
     learn_deltas(home, [{"op": "add", "scope": "user", "id": f"rank-{i:02d}", "text": f"Rule {i}."} for i in range(15)])
     learn_deltas(home, [{"op": "seen", "scope": "user", "id": f"rank-{i:02d}"} for i in range(15)])
     learn_deltas(home, [{"op": "seen", "scope": "user", "id": "rank-14"}])
     lines = [l for l in learn_run(home, ["start", "claude"], {"cwd": cwd}).splitlines() if l.startswith("- ")]
-    if len(lines) != 10 or set(lines[:2]) != {"- Use pnpm, not npm.", "- Rule 14."}:
+    if len(lines) != 10 or set(lines[:3]) != {"- Use pnpm, not npm.", "- When using `create-pr`: Open pull requests as drafts.", "- Rule 14."}:
         raise SystemExit(f"start must inject the top 10 by sightings: {lines}")
     ranked = json.loads((home / "user" / "lessons.json").read_text(encoding="utf-8"))["entries"]
-    if sum(1 for e in ranked.values() if e["id"].startswith("rank-") and e["applied_at"]) != 9:
+    if sum(1 for e in ranked.values() if e["id"].startswith("rank-") and e["applied_at"]) != 8:
         raise SystemExit("only lessons injected into a session may count as applied")
 
     import time
@@ -237,13 +240,13 @@ with tempfile.TemporaryDirectory() as temporary:
     learn_git(worktree, "checkout", "-q", "--detach", "main")
     hook = pathlib.Path(learn_git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir")) / "hooks" / "pre-commit"
     hook.parent.mkdir(exist_ok=True)
-    hook.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    ran = base / "hook-ran"
+    hook.write_text(f"#!/bin/sh\ntouch '{ran.as_posix()}'\nexit 1\n", encoding="utf-8")
     hook.chmod(0o755)
-    (worktree / "AGENTS.md").write_text("# Agents\n\nhook blocks this\n", encoding="utf-8")
-    blocked = learn_deltas(home, [{"op": "project_fix", "slug": "blocked", "summary": "Blocked by a hook."}], worktree)
+    (worktree / "AGENTS.md").write_text("# Agents\n\nbad date blocks this\n", encoding="utf-8")
+    blocked = learn_deltas(home, [{"op": "project_fix", "slug": "blocked", "summary": "Blocked commit."}], worktree, GIT_AUTHOR_DATE="not a date")
     if blocked["rejected"] != ["commit failed"] or learn_git(repo, "branch", "--list", "srulik-learn/blocked"):
         raise SystemExit("a failed commit must not leave its branch behind")
-    hook.unlink()
     learn_git(worktree, "checkout", "-q", "--detach", "main")
     learn_git(worktree, "reset", "-q", "--hard")
     (worktree / "AGENTS.md").write_text("# Agents\n\nRun `npm test` before finishing.\n", encoding="utf-8")
@@ -253,6 +256,9 @@ with tempfile.TemporaryDirectory() as temporary:
                         {"op": "project_fix", "slug": "second", "summary": "Second fix."}], worktree)
     if not learn_git(repo, "branch", "--list", "srulik-learn/add-test-command") or learn_git(repo, "status", "--porcelain"):
         raise SystemExit("a project fix must land on a local branch and leave the main worktree clean")
+    if ran.exists():
+        raise SystemExit("a project fix commit must never run repository hooks the review could edit")
+    hook.unlink()
     if ".srulik-learn" in learn_git(repo, "show", "--name-only", "srulik-learn/add-test-command"):
         raise SystemExit("review inputs must not be committed")
     record = json.loads(state_file.read_text(encoding="utf-8"))

@@ -7,11 +7,14 @@ const SECRET_NAME = "(?:password|passwd|token|secret|api[_-]?key|access[_-]?key|
 const VALUE = `("[^"]*"|'[^']*'|\\S+)`;
 function redact(text) {
   return String(text)
-    .replace(/\b([a-z][a-z0-9+.-]*:\/\/)[^\s/@:]+:[^\s/@]+@/gi, "$1[redacted]@")
+    // Greedy to the last @, since a password may itself contain @ or /.
+    .replace(/\b([a-z][a-z0-9+.-]*:\/\/)[^\s/@:]+:\S*@/gi, "$1[redacted]@")
     .replace(/\b(?:sk-|ghp_|gho_|ghs_|github_pat_|xox[abpr]-|AKIA|glpat-)[A-Za-z0-9_-]{8,}/g, "[redacted]")
     .replace(/\bBearer\s+\S+/gi, "Bearer [redacted]")
-    // Whole names such as NPM_TOKEN, and quoted values as one token.
-    .replace(new RegExp(`(\\b[A-Za-z0-9_]*${SECRET_NAME}[A-Za-z0-9_]*)(\\s*[=:]\\s*)${VALUE}`, "gi"), "$1$2[redacted]")
+    .replace(/\b(Authorization\s*:\s*)(?:[A-Za-z]+\s+)?[^\s"']+/gi, "$1[redacted]")
+    .replace(/(\s(?:-u|--user)(?:\s+|=))[^\s:]+:\S+/g, "$1[redacted]")
+    // Whole names such as NPM_TOKEN or a JSON "api_key", and quoted values as one token.
+    .replace(new RegExp(`(\\b[A-Za-z0-9_]*${SECRET_NAME}[A-Za-z0-9_]*)(["']?\\s*[=:]\\s*)${VALUE}`, "gi"), "$1$2[redacted]")
     .replace(new RegExp(`(--?[A-Za-z0-9-]*${SECRET_NAME}[A-Za-z0-9-]*)(\\s+)${VALUE}`, "gi"), "$1$2[redacted]")
     .slice(0, 500);
 }

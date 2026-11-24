@@ -1,6 +1,7 @@
 // Deterministic merge of review deltas into the lesson stores, and recurrence stats.
 const cp = require("node:child_process");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const { DAY, INBOX, PRUNE_DAYS, PRIVATE_FILE, root, now, iso, readJson, writeJson, git, stores, withStores, real } = require("./core");
 
@@ -37,15 +38,17 @@ function commitFix(worktree, delta, info, state, fromCli) {
   if (!git(worktree, ["status", "--porcelain"], 60_000)) return "no changes";
   const branch = `srulik-learn/${delta.slug}`;
   if (git(worktree, ["checkout", "-b", branch]) === null) return "branch exists";
+  // The review could edit files that repository hooks run, so no hook may run outside its sandbox.
+  const noHooks = ["-c", `core.hooksPath=${os.devnull}`];
   git(worktree, ["add", "-A"], 60_000);
-  if (git(worktree, ["commit", "-m", `chore(learn): ${delta.summary}`], 120_000) === null) {
+  if (git(worktree, [...noHooks, "commit", "--no-verify", "-m", `chore(learn): ${delta.summary}`], 120_000) === null) {
     git(worktree, ["checkout", "--detach"]);
     git(worktree, ["branch", "-D", branch]);
     return "commit failed";
   }
   const record = { branch, summary: delta.summary, at: iso(now()) };
   if (process.env.SRULIK_TOOLKIT_LEARN_PRS === "1" && info.top && git(info.top, ["remote"])) {
-    const steps = [["git", ["-C", worktree, "push", "-u", "origin", branch]], ["gh", ["pr", "create", "--draft", "--head", branch, "--title", `Learned: ${delta.summary}`, "--body", "Proposed by the Srulik Toolkit self-learning review from repeated session signals."]]];
+    const steps = [["git", ["-C", worktree, ...noHooks, "push", "--no-verify", "-u", "origin", branch]], ["gh", ["pr", "create", "--draft", "--head", branch, "--title", `Learned: ${delta.summary}`, "--body", "Proposed by the Srulik Toolkit self-learning review from repeated session signals."]]];
     if (process.env.SRULIK_TOOLKIT_LEARN_DRY === "1") record.pr_dry = steps.map(([c, a]) => [c, ...a].join(" "));
     else {
       try {
@@ -124,7 +127,8 @@ function apply(deltas, dir, info, worktree, fromCli, at) {
     } else if (delta.op === "archive") {
       entry.archived = true;
     } else {
-      if (entry.applied_at) entry.recurred_after_apply++;
+      // A batch reviewed before the lesson was injected cannot show it recurring.
+      if (entry.applied_at && state.consumed_through && entry.applied_at <= state.consumed_through) entry.recurred_after_apply++;
       entry.seen++;
       entry.last_seen = at;
       entry.archived = false;
@@ -139,6 +143,7 @@ function apply(deltas, dir, info, worktree, fromCli, at) {
   for (const [scope, file] of Object.entries(files)) writeJson(file, data[scope]);
   try { consume(dir, state.review_offset || 0); } catch {}
   delete state.review_offset;
+  state.consumed_through = state.last_launch?.at || at;
   state.last_merge_at = at;
   state.rejected = [...(state.rejected || []), ...rejected.map((r) => ({ at, ...r }))].slice(-20);
   writeJson(statePath, state);

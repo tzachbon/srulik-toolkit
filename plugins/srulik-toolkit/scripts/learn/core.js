@@ -62,10 +62,11 @@ function withStores(waitMs, fn) {
   fs.mkdirSync(root(), PRIVATE_DIR);
   const until = Date.now() + waitMs;
   for (;;) {
-    try { fs.mkdirSync(file); break; } catch {
+    try { fs.mkdirSync(file, 0o700); break; } catch (error) {
+      if (error.code !== "EEXIST") return false;
       try {
         if (Date.now() - fs.statSync(file).mtimeMs > 10 * 60_000) { fs.rmSync(file, { recursive: true, force: true }); continue; }
-      } catch { continue; }
+      } catch {}
       if (Date.now() >= until) return false;
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
     }
@@ -91,13 +92,13 @@ function markApplied(projectDir, entries) {
 function lock(dir) {
   const file = path.join(dir, "review.lock");
   try {
-    fs.mkdirSync(file);
+    fs.mkdirSync(file, 0o700);
     return true;
   } catch {
     try {
       if (now() - fs.statSync(file).mtimeMs < LOCK_STALE) return false;
       fs.rmSync(file, { recursive: true, force: true });
-      fs.mkdirSync(file);
+      fs.mkdirSync(file, 0o700);
       return true;
     } catch { return false; }
   }
