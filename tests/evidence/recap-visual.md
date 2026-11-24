@@ -245,6 +245,19 @@ the diagram failed to parse. The same text with `&` written as `#38;` and `;`
 as `#59;` rendered literally with no link. show-me now adds `&` to the single-pass
 entity map, and the lint also checks `ascii` fences.
 
+Review round 2 probes (same build, T3 `html_preview`):
+
+- A label holding raw `%%{init: {'themeCSS': ... url(https://example.invalid/x)}}%%`
+  restyled every node and fetched the URL. Written as `#37;#37;{init...}#37;#37;`,
+  it rendered as literal text with no fetch. show-me now encodes `%` and
+  replaces line breaks in untrusted labels.
+- `antiscript` dropped `target="_blank"` from the `click` link (`target null`).
+  show-me's snippet, extracted verbatim from SKILL.md, now sets
+  `target=_blank rel=noopener noreferrer` after `mermaid.run()`, observed live.
+- `click` and fallback `<a href>` links are limited to agent-built `https://` URLs.
+- The lint now follows fences nested in a `markdown`/`md` fence: a nested
+  `text` block with box art is flagged, and a nested `mermaid` block is not.
+
 Durations come from each run's `duration_ms` in the `--output-format json` result.
 
 SHA-256 at the evaluated head:

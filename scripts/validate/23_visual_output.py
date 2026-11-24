@@ -12,23 +12,23 @@ _VIS_PLAIN = {"", "text", "txt", "plain", "plaintext", "ascii"}
 
 def find_ascii_diagrams(text):
     hits = []
-    fence = None
+    stack = []  # open fences; a markdown/md fence may hold nested fences
     for lineno, line in enumerate(text.splitlines(), 1):
+        stripped = line.strip()
+        top = stack[-1] if stack else None
+        if top and stripped.startswith(top[0]) and stripped.strip(top[0][0]) == "":
+            stack.pop()
+            continue
         # CommonMark: a backtick fence's info string has no backtick, so ```x``` is an inline span.
         opened = re.match(r"^\s*(`{3,}|~{3,})\s*([\w+-]*)[^`]*$", line)
-        if opened and fence is None:
-            fence = (opened.group(1), opened.group(2).lower())
+        if opened and (top is None or top[1] in ("markdown", "md")):
+            stack.append((opened.group(1), opened.group(2).lower()))
             continue
-        if fence and line.strip().startswith(fence[0]) and line.strip().strip(fence[0][0]) == "":
-            fence = None
-            continue
-        if not fence or fence[1] == "mermaid":
-            continue
-        if _VIS_TREE_SPACER.match(line):
+        if not top or top[1] == "mermaid" or _VIS_TREE_SPACER.match(line):
             continue
         tree = _VIS_TREE.match(line)
         line_rest = line[tree.end():] if tree else line
-        if _VIS_UNI.search(line_rest) or (fence[1] in _VIS_PLAIN and _VIS_ASCII.search(line_rest)):
+        if _VIS_UNI.search(line_rest) or (top[1] in _VIS_PLAIN and _VIS_ASCII.search(line_rest)):
             hits.append((lineno, line))
     return hits
 
@@ -58,6 +58,8 @@ assert find_ascii_diagrams("```\n└── PR #103 --> PR #104\n```\n"), "tree p
 assert not find_ascii_diagrams("```\n├── src/\n│   ├── a/\n│   │\n│   └── main.py\n```\n"), "file tree flagged"
 assert find_ascii_diagrams("```ascii\n+---+ --> +---+\n```\n"), "ascii fence skipped"
 assert not find_ascii_diagrams("```mermaid\nflowchart LR\n  A --> B\n```\n"), "mermaid fence flagged"
+assert find_ascii_diagrams("````markdown\n```text\n+---+ --> +---+\n```\n````\n"), "nested text fence skipped"
+assert not find_ascii_diagrams("````markdown\n```mermaid\nA ──▶ B\n```\n````\n"), "nested mermaid fence flagged"
 assert find_ascii_diagrams("```mermaid``` blocks render.\n```text\n+---+ --> +---+\n```\n"), "inline span opened a fence"
 
 for md_path in sorted(skill_root.rglob("*.md")):
