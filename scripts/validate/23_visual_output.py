@@ -3,10 +3,10 @@
 # and every skill Markdown file.
 
 _VIS_UNI = re.compile(r"[─-╿←-⇿▲▶►▼◀]")
-_VIS_ASCII = re.compile(r"(?<![=<-])-{1,}>|\+-{2,}\+|<-{2,}|\|-{2,}")
-_VIS_TREE = re.compile(r"^[+\- ]?[ \t│]*[├└]── ")
+_VIS_ASCII = re.compile(r"(?<![=<-])-{2,}>|\+-{2,}\+|<-{2,}|\|-{2,}")
+_VIS_TREE = re.compile(r"^[+\- ]?[ \t\u00a0│]*[├└]──[ \u00a0]")
 # A tree spacer line holds only vertical rails, e.g. "│   │".
-_VIS_TREE_SPACER = re.compile(r"^[+\- ]?[ \t│]*│[ \t│]*$")
+_VIS_TREE_SPACER = re.compile(r"^[+\- ]?[ \t\u00a0│]*│[ \t\u00a0│]*$")
 _VIS_PLAIN = {"", "text", "txt", "plain", "plaintext", "ascii"}
 
 
@@ -67,6 +67,8 @@ assert find_ascii_diagrams("```markdown\n````mermaid\n```\n```text\n+---+ --> +-
 assert not find_ascii_diagrams("````markdown\n```mermaid\nA --> B\n````\nprose ──▶ here\n"), "outer closer left inner fence open"
 assert not find_ascii_diagrams("```markdown\n````text\n+---+ --> +---+\n````\n"), "longer same-char opener nested"
 assert not find_ascii_diagrams("```diff\n+├── a/\n+│   │\n-│   │\n```\n"), "diff spacer flagged"
+assert not find_ascii_diagrams("```text\nfn parse(s) -> Ast\n```\n"), "pseudocode return arrow flagged"
+assert not find_ascii_diagrams("```text\n.\n├──\u00a0src\n│\u00a0\u00a0 └──\u00a0main.py\n```\n"), "tree output with no-break spaces flagged"
 assert find_ascii_diagrams("```mermaid``` blocks render.\n```text\n+---+ --> +---+\n```\n"), "inline span opened a fence"
 
 for md_path in sorted(skill_root.rglob("*.md")):
