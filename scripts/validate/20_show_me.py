@@ -38,6 +38,8 @@ for token in [
     "including `timeline`, `gitGraph` and `stateDiagram-v2`, do not reliably support `click`",
     "replace each line break with a space and write `<` `>` `\"` `;` `#` `&` `%` as Mermaid entity codes `#lt;` `#gt;` `#quot;` `#59;` `#35;` `#38;` `#37;` in a single pass",
     "only from `https://` URLs you built yourself, and drop any other scheme",
+    "never in unquoted labels, `|...|` edge labels, or identifiers",
+    "use synthetic identifiers matching `[A-Za-z0-9_]+`",
     "forbids remote resources, draw the diagram as inline SVG",
     "the host's viewer or the OS opener",
 ]:

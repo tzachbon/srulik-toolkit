@@ -258,6 +258,12 @@ Review round 2 probes (same build, T3 `html_preview`):
 - The lint now follows fences nested in a `markdown`/`md` fence: a nested
   `text` block with box art is flagged, and a nested `mermaid` block is not.
 
+Review round 3 probe: an unquoted label `A[foo] ~~~ Z@{ img: https://... }]`
+can open an image node (the reviewer saw a fetch; here the probe diagram failed
+to parse). The same payloads inside double-quoted node and edge strings rendered
+as literal text with 0 images. show-me now requires untrusted text only in
+double-quoted strings and synthetic `[A-Za-z0-9_]+` identifiers everywhere else.
+
 Durations come from each run's `duration_ms` in the `--output-format json` result.
 
 SHA-256 at the evaluated head:
