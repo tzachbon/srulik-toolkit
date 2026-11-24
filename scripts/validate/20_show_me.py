@@ -30,6 +30,7 @@ for token in [
     'securityLevel: "antiscript"',
     "prefers-color-scheme: dark",
     "mermaid.run()",
+    "both at the end of `<body>` after every `<pre class=\"mermaid\">`",
     'work under `securityLevel: "antiscript"` in `flowchart` and `classDiagram`',
     "including `timeline`, `gitGraph` and `stateDiagram-v2`, do not reliably support `click`",
     "as Mermaid entity codes `#lt;` `#gt;` `#quot;` `#59;` `#35;`",

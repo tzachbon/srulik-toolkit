@@ -12,16 +12,19 @@ def find_ascii_diagrams(text):
     hits = []
     fence = None
     for lineno, line in enumerate(text.splitlines(), 1):
-        opened = re.match(r"^\s*(`{3,}|~{3,})\s*([\w+-]*)", line)
+        # CommonMark: a backtick fence's info string has no backtick, so ```x``` is an inline span.
+        opened = re.match(r"^\s*(`{3,}|~{3,})\s*([\w+-]*)[^`]*$", line)
         if opened and fence is None:
             fence = (opened.group(1), opened.group(2).lower())
             continue
         if fence and line.strip().startswith(fence[0]) and line.strip().strip(fence[0][0]) == "":
             fence = None
             continue
-        if not fence or fence[1] == "mermaid" or _VIS_TREE.match(line):
+        if not fence or fence[1] == "mermaid":
             continue
-        if _VIS_UNI.search(line) or (fence[1] in _VIS_PLAIN and _VIS_ASCII.search(line)):
+        tree = _VIS_TREE.match(line)
+        line_rest = line[tree.end():] if tree else line
+        if _VIS_UNI.search(line_rest) or (fence[1] in _VIS_PLAIN and _VIS_ASCII.search(line_rest)):
             hits.append((lineno, line))
     return hits
 
@@ -43,6 +46,13 @@ if "```mermaid" not in mermaid_text:
 mermaid_hits = find_ascii_diagrams(mermaid_text)
 if mermaid_hits:
     raise SystemExit(f"scripts/fixtures/recap-mermaid.md must pass visual lint, got: {mermaid_hits}")
+
+# Regression cases from review: tree prefix must not exempt the rest of the line; an inline
+# ```span``` at line start must not open a fence.
+assert find_ascii_diagrams("```\n├── PR #101 ──▶ PR #102\n```\n"), "tree prefix exempted an arrow"
+assert find_ascii_diagrams("```\n└── PR #103 --> PR #104\n```\n"), "tree prefix exempted ASCII arrow"
+assert not find_ascii_diagrams("```\n├── src/\n│   └── main.py\n```\n"), "file tree flagged"
+assert find_ascii_diagrams("```mermaid``` blocks render.\n```text\n+---+ --> +---+\n```\n"), "inline span opened a fence"
 
 for md_path in sorted(skill_root.rglob("*.md")):
     hits = find_ascii_diagrams(md_path.read_text(encoding="utf-8"))

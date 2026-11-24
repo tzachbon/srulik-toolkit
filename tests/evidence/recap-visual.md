@@ -233,6 +233,12 @@ rendered as literal text with no image and no injected link. Only the trusted
 `click B href "https://github.com/"` produced a link. show-me now requires
 Mermaid entity codes for untrusted label text and trusted-only `click` URLs.
 
+Bugs-review fixes (in-process red/green on part 23's function): reverting the
+tree-prefix fix leaves `├── PR #101 ──▶ PR #102` unflagged (`tree prefix exempted
+an arrow`); reverting the CommonMark info-string rule lets a line-start
+```` ```mermaid``` ```` span hide a later ASCII block (`inline span opened a
+fence`). Dropping show-me's end-of-`<body>` script placement fails part 20.
+
 Durations come from each run's `duration_ms` in the `--output-format json` result.
 
 SHA-256 at the evaluated head:
