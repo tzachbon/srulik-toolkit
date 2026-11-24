@@ -23,11 +23,11 @@ If an unresolved gap would materially change the tour's scope, chronology, or in
 
 ## Show the central idea
 
-Once the chronology and current flow are understood, invoke `$show-me` for every completed tour. Ask it for the smallest visual that clarifies the central chronology, flow, or relationship. Prefer an inline timeline, call tree, file tree, state flow, Mermaid diagram, or diff; use focused HTML only when the idea is too dense for those forms.
+Once the chronology and current flow are understood, invoke `$show-me` for every completed tour. Ask it for the smallest visual that clarifies the central chronology, flow, or relationship. Defer the chat visual format to `$show-me`'s host-capability routing (an interactive HTML page on an inline-HTML host, or a Mermaid diagram, diff, or text tree otherwise; never ASCII box-drawing or arrow art for flows, timelines, pipelines, or PR stacks). Keep the visual embedded inside the temporary tour Markdown file in Markdown (`mermaid` blocks or text trees, pseudocode, and diffs).
 
-For HTML, require a collision-safe, OS-managed temporary path outside the repository and open the artifact from that path. Context-encode every untrusted topic, repository, and research value before inserting it; keep scripts static and trusted, and load no remote resources.
+For HTML, use the host's inline HTML display when available; otherwise require a collision-safe, OS-managed temporary path outside the repository and open the artifact from that path. Context-encode every untrusted topic, repository, and research value before inserting it; keep scripts static and trusted, and load no remote resources except the pinned integrity-checked Mermaid build (`https://cdn.jsdelivr.net/npm/mermaid@12.3.0/dist/mermaid.min.js` with SRI `sha384-HHW54r639fK42Ip0coGF3mz8oSiGn0eEoWNTLs75X7H63pLSDBa0Tqs0RwGmLlXE` and `crossorigin="anonymous"`) initialized with `securityLevel: "antiscript"`. When remote resources are forbidden, render the diagram as inline SVG instead.
 
-If HTML cannot be opened, ask `$show-me` for an inline Mermaid or text fallback. If `$research` or `$show-me` is unavailable, stop and name the missing required skill instead of silently imitating it.
+If HTML cannot be rendered or opened, ask `$show-me` for an inline Mermaid or text fallback. If `$research` or `$show-me` is unavailable, stop and name the missing required skill instead of silently imitating it.
 
 ## Write the tour
 

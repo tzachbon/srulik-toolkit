@@ -49,8 +49,9 @@ license is retained in
 
 Copyright (c) 2026 HumanLayer
 
-The Mermaid routing rule, diagram-type examples, and HTML Mermaid rendering
-guidance in `show-me` were added for this toolkit.
+The Mermaid routing rule, host-capability output routing, ASCII-diagram ban,
+diagram-type examples, classic SRI HTML Mermaid rendering guidance, and host
+reference in `show-me` were added for this toolkit.
 
 The `retro` skill adapts Matt Pocock's public `retro` skill
 (https://github.com/mattpocock/skills) at revision

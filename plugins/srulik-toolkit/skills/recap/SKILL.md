@@ -52,12 +52,28 @@ choice. No words like "simply", "just", or "obviously".
 
 ## Show it
 
-The visual is the heart of the recap; place it right after **Goal**. Draw one
-small picture in the style of `show-me` that tells the story at a glance, such
-as a timeline of what happened, a before-and-after `diff`, or a short Mermaid
-flow of how the pieces connect. Let the words fill in what the picture cannot.
-Keep it to the steps and names the reader needs; a crowded diagram is worse
-than none.
+The visual is the heart of the recap; place it right after **Goal** (when an
+inline-HTML host renders the HTML page above the reply, open the reply text
+with **Goal** and do not restate the visual). Draw one small picture in the
+style of `show-me`, following its host-capability routing: an interactive HTML
+page on an inline-HTML host (with clickable PR/issue links and collapsible
+`<details>` groups for secondary detail), or a fenced `mermaid` block
+otherwise.
+
+Pick the diagram type from the recap's shape:
+
+- Session chronology or wave sequence: Mermaid `timeline`, or `flowchart LR`
+  when nodes need clickable links or parallel branches.
+- Multi-PR stack or branch history: Mermaid `gitGraph` (place clickable PR or
+  issue links in a list or collapsible `<details>` block beneath the diagram,
+  because `timeline` and `gitGraph` do not support Mermaid `click` directives).
+- Code or layout change: a focused `diff` or shallow text tree.
+
+Never draw flows, timelines, pipelines, or PR stacks with ASCII box-drawing or
+arrow art (`+---+`, `--->`, `┌─┐`, `──▶`); reserve text trees (`├──`, `└──`)
+for file, component, or call-tree shape. Let the words fill in what the picture
+cannot, and keep it to the steps and names the reader needs; a crowded diagram
+is worse than none.
 
 ## Do not
 
