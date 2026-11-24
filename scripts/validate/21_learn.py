@@ -176,7 +176,7 @@ with tempfile.TemporaryDirectory() as temporary:
         raise SystemExit("Cursor start must return lessons as additional_context JSON")
     learn_run(home, ["capture", "claude"], {"cwd": cwd, "prompt": "no, use pnpm"})
     learn_deltas(home, [{"op": "seen", "scope": "override", "id": "draft-prs", "ts": learn_signals(home)[0]["ts"]}])
-    learn_deltas(home, [{"op": "seen", "scope": "project", "id": "use-pnpm"}])
+    learn_deltas(home, [{"op": "seen", "scope": "project", "id": "use-pnpm", "ts": learn_signals(home)[-1]["ts"]}])
     report = learn_run(home, ["stats", learn_project(home).name])
     if "project/use-pnpm: seen 3, applied yes, recurred_after_apply 1" not in report or "applied: 2, applied with zero recurrences: 1" not in report:
         raise SystemExit(f"recurrence must count only after injection: {report}")

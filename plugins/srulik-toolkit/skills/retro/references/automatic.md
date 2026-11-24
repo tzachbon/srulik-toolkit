@@ -59,8 +59,9 @@ Write one JSON object to the deltas file, then stop:
 - `id`: lowercase kebab case, up to 64 characters, stable for the same lesson.
 - `text`: one imperative sentence, up to 200 characters, with no secrets or
   personal data copied from the signal.
-- `ts` on `seen`: optional, the `ts` of the newest signal that matched the
-  entry, so the merge can tell whether the lesson recurred after it was applied.
+- `ts` on `seen`: the `ts` of the newest signal that matched the entry. The
+  merge counts a recurrence only when that signal came after the lesson was
+  applied.
 - `archive` an entry only when a newer signal contradicts it.
 
 An empty `deltas` array is a valid result. The merge step rejects malformed

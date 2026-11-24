@@ -104,14 +104,13 @@ function batchTimes(dir, offset) {
   for (const line of bytes.subarray(0, offset ?? bytes.length).toString("utf8").split("\n")) {
     try { const ts = JSON.parse(line).ts; if (typeof ts === "string") times.push(ts); } catch {}
   }
-  return times.sort();
+  return times;
 }
 
 function apply(deltas, dir, info, worktree, fromCli, at) {
   const statePath = path.join(dir, "state.json");
   const state = readJson(statePath, {});
-  const times = batchTimes(dir, state.review_offset);
-  const known = new Set(times);
+  const known = new Set(batchTimes(dir, state.review_offset));
   const files = stores(dir);
   const data = Object.fromEntries(Object.entries(files).map(([scope, file]) => [scope, readJson(file, { entries: {} })]));
   const applied = [];
@@ -141,8 +140,7 @@ function apply(deltas, dir, info, worktree, fromCli, at) {
       entry.archived = true;
     } else {
       // Only a signal captured after the lesson was injected shows it recurring.
-      const ts = known.has(delta.ts) ? delta.ts : times.at(-1);
-      if (entry.applied_at && ts && ts > entry.applied_at) entry.recurred_after_apply++;
+      if (entry.applied_at && known.has(delta.ts) && delta.ts > entry.applied_at) entry.recurred_after_apply++;
       entry.seen++;
       entry.last_seen = at;
       entry.archived = false;
