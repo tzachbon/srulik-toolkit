@@ -127,7 +127,7 @@ for (const a of ALTS) {
   el.className = "card" + (a.rec ? " rec" : "")
   el.innerHTML = `<h3>${a.name}${a.rec ? '<span class="badge">Recommended</span>' : ""}</h3><p class="how">${a.how}</p>` +
     Object.entries(a.s).map(([k, v]) => `<div class="bar"><span>${LABELS[k]}</span><div class="meter"><i style="width:${v * 20}%;background:${color(v)}"></i></div></div>`).join("") +
-    `<button type="button" class="toggle" aria-expanded="false">Details</button>` +
+    `<button type="button" class="toggle" aria-expanded="false" aria-label="Details: ${a.name}">Details</button>` +
     `<div class="more"><p><b>Strength:</b> ${a.pro}</p><p><b>Weak point:</b> ${a.con}</p><p><b>Evidence:</b> ${a.ev}</p></div>`
   const toggle = el.querySelector(".toggle")
   el.addEventListener("click", () => toggle.setAttribute("aria-expanded", String(el.classList.toggle("open"))))

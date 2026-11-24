@@ -174,9 +174,8 @@ with tempfile.TemporaryDirectory() as temporary:
     cursor_out = json.loads(learn_run(home, ["start", "cursor"], {"workspace_roots": [cwd]}))
     if "Use pnpm" not in cursor_out.get("additional_context", ""):
         raise SystemExit("Cursor start must return lessons as additional_context JSON")
-    learn_deltas(home, [{"op": "seen", "scope": "override", "id": "draft-prs"}])
-    learn_review_head(home, repo, launch_at="2999-01-01T00:00:00.000Z")
-    learn_deltas(home, [])
+    learn_run(home, ["capture", "claude"], {"cwd": cwd, "prompt": "no, use pnpm"})
+    learn_deltas(home, [{"op": "seen", "scope": "override", "id": "draft-prs", "ts": learn_signals(home)[0]["ts"]}])
     learn_deltas(home, [{"op": "seen", "scope": "project", "id": "use-pnpm"}])
     report = learn_run(home, ["stats", learn_project(home).name])
     if "project/use-pnpm: seen 3, applied yes, recurred_after_apply 1" not in report or "applied: 2, applied with zero recurrences: 1" not in report:

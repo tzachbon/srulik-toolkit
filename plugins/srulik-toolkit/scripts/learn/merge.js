@@ -97,9 +97,21 @@ function consume(dir, offset) {
   } finally { fs.rmSync(aside, { force: true }); }
 }
 
+function batchTimes(dir, offset) {
+  let bytes;
+  try { bytes = fs.readFileSync(path.join(dir, "signals.jsonl")); } catch { return []; }
+  const times = [];
+  for (const line of bytes.subarray(0, offset ?? bytes.length).toString("utf8").split("\n")) {
+    try { const ts = JSON.parse(line).ts; if (typeof ts === "string") times.push(ts); } catch {}
+  }
+  return times.sort();
+}
+
 function apply(deltas, dir, info, worktree, fromCli, at) {
   const statePath = path.join(dir, "state.json");
   const state = readJson(statePath, {});
+  const times = batchTimes(dir, state.review_offset);
+  const known = new Set(times);
   const files = stores(dir);
   const data = Object.fromEntries(Object.entries(files).map(([scope, file]) => [scope, readJson(file, { entries: {} })]));
   const applied = [];
@@ -128,8 +140,9 @@ function apply(deltas, dir, info, worktree, fromCli, at) {
     } else if (delta.op === "archive") {
       entry.archived = true;
     } else {
-      // A batch reviewed before the lesson was injected cannot show it recurring.
-      if (entry.applied_at && state.consumed_through && entry.applied_at <= state.consumed_through) entry.recurred_after_apply++;
+      // Only a signal captured after the lesson was injected shows it recurring.
+      const ts = known.has(delta.ts) ? delta.ts : times.at(-1);
+      if (entry.applied_at && ts && ts > entry.applied_at) entry.recurred_after_apply++;
       entry.seen++;
       entry.last_seen = at;
       entry.archived = false;
@@ -144,7 +157,6 @@ function apply(deltas, dir, info, worktree, fromCli, at) {
   for (const [scope, file] of Object.entries(files)) writeJson(file, data[scope]);
   try { consume(dir, state.review_offset || 0); } catch {}
   delete state.review_offset;
-  state.consumed_through = state.last_launch?.at || at;
   state.last_merge_at = at;
   state.rejected = [...(state.rejected || []), ...rejected.map((r) => ({ at, ...r }))].slice(-20);
   writeJson(statePath, state);

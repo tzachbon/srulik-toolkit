@@ -4,7 +4,7 @@ const path = require("node:path");
 const { MARKER, PRIVATE_DIR, PRIVATE_FILE, off, now, iso, project } = require("./core");
 
 const SECRET_NAME = "(?:password|passwd|token|secret|api[_-]?key|access[_-]?key|private[_-]?key|credentials?)";
-const VALUE = `("[^"]*"|'[^']*'|\\S+)`;
+const VALUE = `("(?:[^"\\\\]|\\\\.)*"|'(?:[^'\\\\]|\\\\.)*'|\\S+)`;
 function redact(text) {
   return String(text)
     // Greedy to the last @, since a password may itself contain @ or /.

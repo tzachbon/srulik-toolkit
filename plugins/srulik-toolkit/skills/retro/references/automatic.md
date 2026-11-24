@@ -48,7 +48,7 @@ Write one JSON object to the deltas file, then stop:
 ```json
 {"deltas": [
   {"op": "add", "scope": "project", "id": "use-pnpm", "text": "Use pnpm, not npm, in this repository."},
-  {"op": "seen", "scope": "user", "id": "no-semicolons-in-replies"},
+  {"op": "seen", "scope": "user", "id": "no-semicolons-in-replies", "ts": "2026-11-23T10:06:00.000Z"},
   {"op": "add", "scope": "override", "skill": "create-pr", "id": "draft-by-default", "text": "Open pull requests as drafts."},
   {"op": "edit", "scope": "project", "id": "run-tests-first", "text": "Run npm test before every commit."},
   {"op": "archive", "scope": "project", "id": "old-build-step"},
@@ -59,6 +59,8 @@ Write one JSON object to the deltas file, then stop:
 - `id`: lowercase kebab case, up to 64 characters, stable for the same lesson.
 - `text`: one imperative sentence, up to 200 characters, with no secrets or
   personal data copied from the signal.
+- `ts` on `seen`: optional, the `ts` of the newest signal that matched the
+  entry, so the merge can tell whether the lesson recurred after it was applied.
 - `archive` an entry only when a newer signal contradicts it.
 
 An empty `deltas` array is a valid result. The merge step rejects malformed
