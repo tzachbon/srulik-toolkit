@@ -225,6 +225,14 @@ produced an `<a>` in `classDiagram` and `flowchart`; `stateDiagram-v2` with
 `click` failed to parse; `gantt` marked the task clickable but rendered no
 link. show-me now limits the claim to `flowchart` and `classDiagram`.
 
+Security-review probe (T3 `html_preview`, same build, `antiscript`): a label
+written `raw &lt;img src=x&gt;` rendered a live `<img>` (1 image in the SVG,
+plus a blocked fetch of `x`). The same payload as `#lt;img ...#gt;`, and a
+label-breakout payload written as `x#quot;]#59; click A href #quot;https://...#quot;`,
+rendered as literal text with no image and no injected link. Only the trusted
+`click B href "https://github.com/"` produced a link. show-me now requires
+Mermaid entity codes for untrusted label text and trusted-only `click` URLs.
+
 Durations come from each run's `duration_ms` in the `--output-format json` result.
 
 SHA-256 at the evaluated head:

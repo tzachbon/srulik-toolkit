@@ -32,7 +32,8 @@ for token in [
     "mermaid.run()",
     'work under `securityLevel: "antiscript"` in `flowchart` and `classDiagram`',
     "including `timeline`, `gitGraph` and `stateDiagram-v2`, do not reliably support `click`",
-    "escape `<` as `&lt;`",
+    "as Mermaid entity codes `#lt;` `#gt;` `#quot;` `#59;` `#35;`",
+    "write `click` directives only from URLs you built yourself",
     "forbids remote resources, draw the diagram as inline SVG",
     "the host's viewer or the OS opener",
 ]:
@@ -63,6 +64,7 @@ for token in [
     "html_preview",
     "html_render",
     "contentHeight",
+    "pass that same absolute `path` to both calls",
     "Never start a local HTTP/viewer server",
     "never use `preview_*` tools",
     "no background color, no outer card",
