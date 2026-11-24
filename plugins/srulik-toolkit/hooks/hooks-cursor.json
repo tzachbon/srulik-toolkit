@@ -5,6 +5,22 @@
       {
         "command": "node ./hooks/check-version.js",
         "timeout": 3
+      },
+      {
+        "command": "node ./scripts/learn.js start cursor",
+        "timeout": 3
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "node ./scripts/learn.js capture cursor",
+        "timeout": 3
+      }
+    ],
+    "postToolUseFailure": [
+      {
+        "command": "node ./scripts/learn.js capture cursor",
+        "timeout": 3
       }
     ]
   }

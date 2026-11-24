@@ -5,10 +5,10 @@ Details behind the [README](../README.md): hooks, invocation, optional tools, up
 ## Startup hint
 
 On a new session, the plugin writes the twenty-six skill names and a short routing
-instruction to model context. Claude Code and Codex use the default
-`hooks/hooks.json` location and run it only for `SessionStart` with the
-`startup` matcher. Cursor runs it from `hooks/hooks-cursor.json` on
-`sessionStart`. It does not run on each prompt or skill invocation.
+instruction to model context. Claude Code uses the default
+`hooks/hooks.json` location and Codex uses `hooks/codex-hooks.json`. Both run it
+only for `SessionStart` with the `startup` matcher. Cursor runs it from
+`hooks/hooks-cursor.json` on `sessionStart`. It does not run on each prompt or skill invocation.
 
 The same hook checks the installed version against this repository at most once
 every 24 hours and suggests an upgrade only when the versions differ. The
@@ -33,6 +33,39 @@ The same hook also catches deferred work. When a main agent ends with a
 `Next:` or `Next steps` list and no `WAITING`, `Waiting on:` or blocked verdict,
 it gets one more turn to do the unblocked steps instead of listing them. Set
 `SRULIK_TOOLKIT_DEFERRED_STOP=0` to disable only this check.
+
+## Self-learning
+
+The plugin learns from sessions without a model call during them, and is on by
+default. Set `SRULIK_TOOLKIT_LEARN=0` in the agent's environment to turn off
+capture, review and injection.
+
+1. **Capture.** Prompt hooks log corrections (prompts that start with "no,",
+   "actually", "don't", "wrong" and similar) and `remember:` notes. Failed-command
+   hooks log failed test, lint, build and type checks. Claude Code uses
+   `UserPromptSubmit` and `PostToolUseFailure`, Codex `UserPromptSubmit` and
+   `PostToolUse` on `Bash`, Cursor `beforeSubmitPrompt` and `postToolUseFailure`.
+   Text is truncated to 500 characters, common secret patterns are redacted, and
+   everything stays under `~/.srulik-toolkit/learn` on that machine.
+2. **Review.** At the next session start, if new signals exist and the project
+   had no review in 24 hours, the hook launches one background review and returns
+   at once. Inside T3 Code it starts a visible thread in a new worktree with
+   `t3 thread start`. Elsewhere it runs `claude -p`, `cursor-agent -p` or
+   `codex exec` in a temporary worktree. The review follows `retro`'s automatic
+   mode and returns small deltas, which `scripts/learn.js` validates and merges.
+3. **Apply.** A lesson takes effect after it is seen twice. Up to 10 lessons and
+   skill overrides, ranked by sightings then recency, are added to each new
+   session's context. Entries unseen for 60 days are archived.
+4. **Project fixes.** A repository change, at most one per review, is committed
+   to a local `srulik-learn/<slug>` branch and listed at the next session start.
+   Set `SRULIK_TOOLKIT_LEARN_PRS=1` to also push it and open a draft pull request
+   with `gh`.
+
+Run `node <plugin>/scripts/learn.js stats` to see each lesson's sightings and
+how often its signal recurred after it was applied. Codex users must trust the
+new hooks through `/hooks` after updating. On Windows the CLI review needs a
+native `claude`, `cursor-agent` or `codex` executable on `PATH`. `.cmd` shims are
+not started.
 
 ## Example prompts
 
@@ -225,6 +258,7 @@ srulik-toolkit/
 │   ├── .codex-plugin/plugin.json
 │   ├── .cursor-plugin/plugin.json
 │   ├── hooks/hooks.json
+│   ├── hooks/codex-hooks.json
 │   ├── hooks/hooks-cursor.json
 │   └── skills/
 └── scripts/validate.sh

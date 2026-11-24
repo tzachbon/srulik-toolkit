@@ -17,6 +17,7 @@
     "scope"
   ],
   "skills": "./skills/",
+  "hooks": "./hooks/codex-hooks.json",
   "interface": {
     "displayName": "Srulik Toolkit",
     "shortDescription": "Plan, review, and build with tighter scope.",

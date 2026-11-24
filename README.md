@@ -98,6 +98,17 @@ $execute-task-end-to-end Add offline support and drive its PR to MERGE READY
 More examples are in the [reference](docs/reference.md#example-prompts); how skills
 hand off to each other is in [docs/workflow.md](docs/workflow.md).
 
+## Self-learning
+
+The plugin logs your corrections and failed checks, reviews them in the
+background at the next session start (at most once a day per project), and adds
+lessons seen twice to later sessions. Skill fixes go to a local override, and
+project fixes to a local `srulik-learn/<slug>` branch. State stays in
+`~/.srulik-toolkit/learn`. Set `SRULIK_TOOLKIT_LEARN=0` to turn it off, or
+`SRULIK_TOOLKIT_LEARN_PRS=1` to open draft pull requests for project fixes.
+`node <plugin>/scripts/learn.js stats` shows whether each lesson's signal stopped
+recurring. Details are in the [reference](docs/reference.md#self-learning).
+
 ## mcporter plugin
 
 [`mcporter-plugin`](plugins/mcporter-plugin/README.md), installed separately, moves

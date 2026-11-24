@@ -1,0 +1,55 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/hooks/check-version.js')\"",
+            "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/scripts/learn.js')\" start codex",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/scripts/learn.js')\" capture codex",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/scripts/learn.js')\" capture codex",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/hooks/blocked-stop.js')\"",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -11,6 +11,9 @@ better. Propose improvements; implement candidates only when the user has
 authorized them. A retrospective alone does not authorize edits, installs,
 new hooks, access changes, or publishing session records.
 
+When a background self-learning run starts this skill with a signals file,
+follow [automatic mode](references/automatic.md) instead of the steps below.
+
 ## Read the session
 
 Use the session the user names, or the current session by default. Start with

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Self-learning options</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --line:#2a2f3a; --text:#e6e8ec; --muted:#9aa3b2; --accent:#6aa9ff; --good:#4cc38a; --warn:#f0b44c; --bad:#ef6b6b; }
+  * { box-sizing:border-box }
+  body { margin:0; font:15px/1.5 system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text) }
+  main { max-width:1150px; margin:0 auto; padding:28px 20px 60px }
+  h1 { font-size:24px; margin:0 0 4px }
+  h2 { font-size:18px; margin:36px 0 12px }
+  p.lead { color:var(--muted); margin:0 0 8px }
+  a { color:var(--accent) }
+  .tabs { display:flex; gap:8px; margin:20px 0 0 }
+  .tab { background:var(--card); border:1px solid var(--line); color:var(--text); padding:8px 14px; border-radius:8px; cursor:pointer }
+  .tab[aria-selected=true] { border-color:var(--accent); color:var(--accent) }
+  .panel[hidden] { display:none }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:14px }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; cursor:pointer }
+  .card.rec { border-color:var(--good) }
+  .card h3 { margin:0 0 6px; font-size:16px }
+  .badge { display:inline-block; font-size:12px; padding:1px 8px; border-radius:99px; border:1px solid var(--good); color:var(--good); margin-left:6px }
+  .card .how { color:var(--muted); margin:0 0 10px }
+  .bar { display:grid; grid-template-columns:130px 1fr; align-items:center; gap:8px; font-size:13px; margin:3px 0 }
+  .meter { height:7px; background:#262b35; border-radius:4px; overflow:hidden }
+  .meter i { display:block; height:100% }
+  .more { display:none; margin-top:10px; font-size:14px; border-top:1px solid var(--line); padding-top:10px }
+  .card.open .more { display:block }
+  .card .toggle { margin-top:8px; background:none; border:1px solid var(--line); border-radius:6px; color:inherit; padding:4px 10px; cursor:pointer; font:inherit }
+  .layout { display:grid; grid-template-columns:1fr 380px; gap:18px; align-items:start }
+  @media (max-width:900px) { .layout { grid-template-columns:1fr } }
+  fieldset { background:var(--card); border:1px solid var(--line); border-radius:12px; margin:0 0 12px; padding:12px 16px }
+  legend { font-weight:600; padding:0 6px }
+  fieldset .hint { color:var(--muted); font-size:13px; margin:0 0 6px }
+  label.opt { display:block; padding:5px 0; cursor:pointer }
+  label.opt small { color:var(--muted) }
+  .side { position:sticky; top:16px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px }
+  .side h3 { margin:0 0 10px; font-size:16px }
+  .stat { display:flex; justify-content:space-between; border-bottom:1px solid var(--line); padding:6px 0; font-size:14px }
+  .stat b { font-variant-numeric:tabular-nums }
+  ul.notes { padding-left:18px; margin:10px 0 }
+  ul.notes li { margin:4px 0; font-size:14px }
+  li.warn { color:var(--warn) } li.bad { color:var(--bad) } li.good { color:var(--good) }
+  .flow { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:8px 0 12px }
+  .step { background:#202530; border:1px solid var(--line); border-radius:8px; padding:4px 10px; font-size:13px }
+  .arrow { color:var(--muted) }
+  button.copy { width:100%; margin-top:10px; padding:9px; border-radius:8px; border:1px solid var(--accent); background:transparent; color:var(--accent); cursor:pointer; font-size:14px }
+  code { background:#202530; padding:1px 5px; border-radius:4px; font-size:13px }
+  table { width:100%; border-collapse:collapse; font-size:14px; background:var(--card); border-radius:12px; overflow:hidden }
+  th, td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top }
+  th { color:var(--muted); font-weight:600 }
+</style>
+</head>
+<body>
+<main>
+  <h1>Self-learning for Srulik Toolkit</h1>
+  <p class="lead">Compare the alternatives, then build your version on the second tab. The numbers update as you choose.</p>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="compare">1. Compare alternatives</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="build">2. Build your version</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="evidence">3. Evidence</button>
+  </div>
+
+  <section class="panel" id="compare">
+    <h2>Six alternatives <small style="color:var(--muted);font-weight:400">(click a card for details)</small></h2>
+    <div class="grid" id="cards"></div>
+  </section>
+
+  <section class="panel" id="build" hidden>
+    <h2>Build your version</h2>
+    <div class="layout">
+      <form id="form"></form>
+      <aside class="side">
+        <h3>Your design</h3>
+        <div class="flow" id="flow"></div>
+        <div class="stat"><span>Model runs per week</span><b id="runs"></b></div>
+        <div class="stat"><span>Harnesses supported</span><b id="harn"></b></div>
+        <div class="stat"><span>Risk of wrong lessons</span><b id="wrong"></b></div>
+        <div class="stat"><span>Risk of file bloat</span><b id="bloat"></b></div>
+        <div class="stat"><span>Time until a lesson applies</span><b id="lag"></b></div>
+        <ul class="notes" id="notes"></ul>
+        <button class="copy" type="button" id="copy">Copy my choices</button>
+      </aside>
+    </div>
+  </section>
+
+  <section class="panel" id="evidence" hidden>
+    <h2>What the research found</h2>
+    <table>
+      <tr><th>Source</th><th>What it does or found</th></tr>
+      <tr><td><a href="https://github.com/BayramAnnakov/claude-reflect">claude-reflect</a></td><td>A prompt hook queues corrections. The user approves each one with <code>/reflect</code>. Lessons sync to CLAUDE.md, AGENTS.md and skill files.</td></tr>
+      <tr><td><a href="https://github.com/taipm/claude-evolve">claude-evolve</a></td><td>Counts repeats instead of appending lines. Promotes a lesson after 2 sightings. Injects lesson text at session start. Stale after 60 days, archived after 120.</td></tr>
+      <tr><td><a href="https://github.com/openai/codex/blob/main/codex-rs/memories/README.md">Codex memories</a></td><td>Runs in the background at the next session start, only on idle sessions. Ranks by usage and prunes unused memories. Off by default.</td></tr>
+      <tr><td><a href="https://forum.cursor.com/t/saved-memories-in-cursor-and-their-viability/128968">Cursor memories</a></td><td>Users report arbitrary capture, memories ignored later, and storage per machine.</td></tr>
+      <tr><td><a href="https://arxiv.org/abs/2510.04618">ACE paper</a></td><td>Rewriting the whole context collapsed it from 18,282 to 122 tokens and dropped accuracy below the baseline. Small itemized edits avoided this.</td></tr>
+      <tr><td><a href="https://jonahdevs.com/posts/agents-md-grew-back/">JonahDevs</a></td><td>AGENTS.md was cut from 755 to 61 lines, then grew back to 341 across six files because agents add lines and nothing prompts deletion.</td></tr>
+    </table>
+  </section>
+</main>
+
+<script>
+const ALTS = [
+  { id:"inmoment", name:"Learn in the moment", how:"The Stop hook notices a correction or a failed check and has the agent write the lesson before it stops.",
+    s:{cost:5, signal:3, harness:5, safety:2}, pro:"No extra model runs. The lesson lands while context is fresh.", con:"Sees one session only, so one-off mistakes become rules.", ev:"Similar to claude-reflect's capture step, without its review." },
+  { id:"inject", name:"Lessons loaded at start", how:"A lessons file per user and per project, injected by the SessionStart hook. A small learn skill adds entries.",
+    s:{cost:5, signal:2, harness:5, safety:4}, pro:"The most reliable way for a lesson to reach the model.", con:"Only as good as what gets written into it.", ev:"claude-evolve rates import and start injection as its most reliable channels." },
+  { id:"weekly", name:"Weekly batch retro", how:"A scheduled job reviews the week's sessions across harnesses and acts only on friction that repeats.",
+    s:{cost:4, signal:5, harness:4, safety:5}, pro:"Sees patterns across many sessions.", con:"Lessons arrive days late. Needs a scheduler on each machine.", ev:"Matches Codex's batched consolidation phase." },
+  { id:"log", name:"Correction log", how:"A prompt hook logs corrections and failed checks without calling a model. Another step reads the log.",
+    s:{cost:5, signal:4, harness:5, safety:5}, pro:"Almost free. Gives every other option clean input.", con:"Changes nothing on its own.", ev:"claude-reflect and claude-evolve both capture with hooks." },
+  { id:"eval", name:"Eval-backed changes", how:"Each real failure becomes a skill-creator eval case. A skill change lands only when it passes.",
+    s:{cost:1, signal:5, harness:3, safety:5}, pro:"Proves a change helps before it ships.", con:"Slow and heavy for small lessons.", ev:"The repo's skill-creator already runs evals." },
+  { id:"sessionend", name:"Session-end agent", how:"A headless review in that harness's own CLI after every session.",
+    s:{cost:2, signal:4, harness:3, safety:3}, pro:"Each session is reviewed while it is recent.", con:"Codex has no session-end hook. Most sessions have nothing to teach.", ev:"Codex chose the next session start instead." },
+  { id:"combo", rec:true, name:"Recommended combination", how:"Log signals without a model, review them at the next session start, act on lessons seen twice, load the top lessons at start, prune after 60 days.",
+    s:{cost:4, signal:5, harness:5, safety:5}, pro:"Combines the steps with the best evidence. Works the same in all three harnesses.", con:"A lesson needs two sightings before anything changes.", ev:"Mirrors claude-evolve and the Codex memory pipeline." },
+]
+const LABELS = { cost:"Low cost", signal:"Signal quality", harness:"All 3 harnesses", safety:"Safe from bad rules" }
+const color = v => v >= 4 ? "var(--good)" : v >= 3 ? "var(--warn)" : "var(--bad)"
+
+const cards = document.getElementById("cards")
+for (const a of ALTS) {
+  const el = document.createElement("div")
+  el.className = "card" + (a.rec ? " rec" : "")
+  el.innerHTML = `<h3>${a.name}${a.rec ? '<span class="badge">Recommended</span>' : ""}</h3><p class="how">${a.how}</p>` +
+    Object.entries(a.s).map(([k, v]) => `<div class="bar"><span>${LABELS[k]}</span><div class="meter"><i style="width:${v * 20}%;background:${color(v)}"></i></div></div>`).join("") +
+    `<button type="button" class="toggle" aria-expanded="false" aria-label="Details: ${a.name}">Details</button>` +
+    `<div class="more"><p><b>Strength:</b> ${a.pro}</p><p><b>Weak point:</b> ${a.con}</p><p><b>Evidence:</b> ${a.ev}</p></div>`
+  const toggle = el.querySelector(".toggle")
+  el.addEventListener("click", () => toggle.setAttribute("aria-expanded", String(el.classList.toggle("open"))))
+  cards.appendChild(el)
+}
+
+const DIMS = [
+  { id:"capture", title:"How are signals captured?", hint:"Signals are your corrections and failed checks.", type:"radio", opts:[
+    ["hooks","Hooks log them, with no model call","Recommended. Near zero cost."],
+    ["model","A model checks every turn","Catches more phrasings, costs a call per turn."],
+    ["none","No capture, the review reads raw transcripts","Simplest, noisier input."] ] },
+  { id:"trigger", title:"When does the review run?", type:"radio", opts:[
+    ["nextstart","At the next session start, only if something was logged","Recommended. Works in all 3 harnesses."],
+    ["end","After every session ends","Codex has no session-end hook."],
+    ["weekly","Once a week, on a schedule","Needs a scheduler on each machine."],
+    ["manual","Only when the user runs retro","No automation."] ] },
+  { id:"threshold", title:"When does a lesson take effect?", type:"radio", opts:[
+    ["1","The first time it appears","Fastest, most wrong lessons."],
+    ["2","After it appears twice","Recommended."],
+    ["3","After it appears three times","Safest, slowest."] ] },
+  { id:"auto", title:"What may change without asking?", type:"check", opts:[
+    ["memory","Memory entries","You chose yes."],
+    ["override","Wording fixes in the local skill override file","You chose yes."],
+    ["steering","Edits to the project's AGENTS.md or CLAUDE.md","Highest bloat risk."] ] },
+  { id:"bigger", title:"Where do bigger fixes go?", type:"radio", opts:[
+    ["pr","A draft PR on the project's repo","You chose this."],
+    ["chat","Shown in chat at the next session start",""],
+    ["drop","Dropped",""] ] },
+  { id:"prune", title:"When are unused lessons removed?", type:"radio", opts:[
+    ["30","After 30 days",""], ["60","After 60 days","Recommended."], ["120","After 120 days",""], ["never","Never","Files only grow."] ] },
+]
+const DEFAULTS = { capture:"hooks", trigger:"nextstart", threshold:"2", auto:["memory","override"], bigger:"pr", prune:"60" }
+
+const form = document.getElementById("form")
+for (const d of DIMS) {
+  const fs = document.createElement("fieldset")
+  fs.innerHTML = `<legend>${d.title}</legend>` + (d.hint ? `<p class="hint">${d.hint}</p>` : "") +
+    d.opts.map(([v, l, n]) => {
+      const on = d.type === "check" ? DEFAULTS[d.id].includes(v) : DEFAULTS[d.id] === v
+      return `<label class="opt"><input type="${d.type === "check" ? "checkbox" : "radio"}" name="${d.id}" value="${v}" ${on ? "checked" : ""}> ${l} ${n ? `<small>${n}</small>` : ""}</label>`
+    }).join("")
+  form.appendChild(fs)
+}
+
+const level = n => n <= 1 ? "Low" : n === 2 ? "Medium" : "High"
+function read() {
+  const f = new FormData(form)
+  return { capture:f.get("capture"), trigger:f.get("trigger"), threshold:f.get("threshold"), auto:f.getAll("auto"), bigger:f.get("bigger"), prune:f.get("prune") }
+}
+function update() {
+  const c = read()
+  const SESSIONS = 20, WITH_SIGNAL = 0.3
+  let runs = { nextstart: Math.round(SESSIONS * WITH_SIGNAL), end: SESSIONS, weekly: 1, manual: 0 }[c.trigger]
+  if (c.capture === "none" && c.trigger === "nextstart") runs = SESSIONS
+  const perTurn = c.capture === "model"
+  document.getElementById("runs").textContent = runs + (perTurn ? " + one per turn" : "")
+
+  document.getElementById("harn").textContent = c.trigger === "end" ? "Claude, Cursor" : c.trigger === "weekly" ? "All 3, with a scheduler" : "Claude, Cursor, Codex"
+
+  let wrong = { "1":3, "2":1, "3":0 }[c.threshold] + (c.capture === "none" ? 1 : 0)
+  document.getElementById("wrong").textContent = level(wrong)
+
+  let bloat = (c.auto.includes("steering") ? 2 : 0) + (c.prune === "never" ? 2 : c.prune === "120" ? 1 : 0) + (c.threshold === "1" ? 1 : 0)
+  document.getElementById("bloat").textContent = level(bloat)
+
+  const lag = { nextstart:"next session", end:"minutes", weekly:"up to a week", manual:"when you run retro" }[c.trigger]
+  document.getElementById("lag").textContent = c.threshold === "1" ? lag : lag + ", after " + c.threshold + " sightings"
+
+  const steps = [
+    { hooks:"Hook logs signal", model:"Model checks turn", none:"Raw transcript" }[c.capture],
+    { nextstart:"Review at next start", end:"Review at session end", weekly:"Weekly review", manual:"Manual retro" }[c.trigger],
+    c.threshold === "1" ? "Act at once" : "Wait for " + c.threshold + " sightings",
+    c.auto.length ? "Auto: " + c.auto.join(", ") : "No auto changes",
+    { pr:"Draft PR", chat:"Show in chat", drop:"Drop" }[c.bigger],
+    c.prune === "never" ? "Keep forever" : "Prune after " + c.prune + "d",
+  ]
+  document.getElementById("flow").innerHTML = steps.map(s => `<span class="step">${s}</span>`).join('<span class="arrow">→</span>')
+
+  const notes = []
+  if (c.trigger === "end") notes.push(["bad", "Codex has no session-end hook. It would need a different trigger."])
+  if (c.trigger === "weekly") notes.push(["warn", "Each machine needs a scheduled job, and the plugin can't install one by itself."])
+  if (c.threshold === "1") notes.push(["warn", "One-off mistakes become permanent rules."])
+  if (c.auto.includes("steering")) notes.push(["bad", "Auto-editing AGENTS.md is how files grew to 700+ lines in practitioner reports."])
+  if (c.prune === "never") notes.push(["bad", "Nothing ever gets deleted. Files only grow."])
+  if (c.auto.includes("memory")) notes.push(["warn", "Codex and Claude already write memory. Toolkit entries may duplicate theirs."])
+  if (perTurn) notes.push(["warn", "A model call on every turn adds cost and latency."])
+  if (c.capture === "none") notes.push(["warn", "Without a log, the review can't skip quiet sessions, so it runs every time."])
+  if (!notes.some(n => n[0] === "bad")) notes.push(["good", "No blocking conflicts."])
+  document.getElementById("notes").innerHTML = notes.map(([k, t]) => `<li class="${k}">${t}</li>`).join("")
+  return c
+}
+form.addEventListener("change", update)
+update()
+
+document.getElementById("copy").addEventListener("click", async e => {
+  const c = read()
+  const text = `capture=${c.capture} trigger=${c.trigger} threshold=${c.threshold} auto=${c.auto.join("+") || "none"} bigger=${c.bigger} prune=${c.prune}`
+  try { await navigator.clipboard.writeText(text); e.target.textContent = "Copied: " + text }
+  catch { e.target.textContent = text }
+})
+
+for (const t of document.querySelectorAll(".tab")) {
+  t.addEventListener("click", () => {
+    for (const o of document.querySelectorAll(".tab")) o.setAttribute("aria-selected", String(o === t))
+    for (const p of document.querySelectorAll(".panel")) p.hidden = p.id !== t.dataset.tab
+  })
+}
+</script>
+</body>
+</html>

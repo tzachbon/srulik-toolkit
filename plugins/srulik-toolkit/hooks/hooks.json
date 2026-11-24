@@ -8,6 +8,34 @@
             "type": "command",
             "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/hooks/check-version.js')\"",
             "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/scripts/learn.js')\" start claude",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/scripts/learn.js')\" capture claude",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + '/scripts/learn.js')\" capture claude",
+            "timeout": 3
           }
         ]
       }

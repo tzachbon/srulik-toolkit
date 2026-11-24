@@ -53,7 +53,7 @@ for manifest in [
     manifests[manifest.relative_to(root).as_posix()] = data
     if "version" in data and data["version"] != version:
         raise SystemExit(f"wrong version: {manifest.relative_to(root)}")
-    if "hooks" in data and manifest != plugin / ".cursor-plugin" / "plugin.json":
+    if "hooks" in data and manifest not in [plugin / ".cursor-plugin" / "plugin.json", plugin / ".codex-plugin" / "plugin.json"]:
         raise SystemExit(f"hooks must use default discovery: {manifest.relative_to(root)}")
 
 claude_catalog = manifests[".claude-plugin/marketplace.json"]
@@ -93,38 +93,32 @@ if cursor_manifest.get("skills") != "./skills/":
     raise SystemExit("wrong Cursor skill discovery path")
 if cursor_manifest.get("hooks") != "./hooks/hooks-cursor.json" or not (plugin / cursor_manifest["hooks"]).is_file():
     raise SystemExit("Cursor manifest must point at an existing hooks/hooks-cursor.json")
+def run_hook(script, mode=None, harness=None):
+    tail = f" {mode} {harness}" if mode else ""
+    return f'node -e "require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + \'/{script}\')"{tail}'
+def command_hook(command):
+    return {"type": "command", "command": command, "timeout": 3}
+# Codex has no PostToolUseFailure, and its PostToolUse also runs after a failed command.
+for name, harness, failure in [("hooks.json", "claude", "PostToolUseFailure"), ("codex-hooks.json", "codex", "PostToolUse")]:
+    expected_hooks = {"hooks": {
+        "SessionStart": [{"matcher": "startup", "hooks": [command_hook(run_hook("hooks/check-version.js")), command_hook(run_hook("scripts/learn.js", "start", harness))]}],
+        "UserPromptSubmit": [{"hooks": [command_hook(run_hook("scripts/learn.js", "capture", harness))]}],
+        failure: [{"matcher": "Bash", "hooks": [command_hook(run_hook("scripts/learn.js", "capture", harness))]}],
+        "Stop": [{"hooks": [command_hook(run_hook("hooks/blocked-stop.js"))]}],
+    }}
+    if json.loads((plugin / "hooks" / name).read_text(encoding="utf-8")) != expected_hooks:
+        raise SystemExit(f"hooks/{name} must run the version checker and learn start at startup, learn capture on prompts and failed Bash, and the recovery check on Stop")
+if manifests["plugins/srulik-toolkit/.codex-plugin/plugin.json"].get("hooks") != "./hooks/codex-hooks.json":
+    raise SystemExit("Codex manifest must point at hooks/codex-hooks.json")
 cursor_hooks = json.loads((plugin / "hooks" / "hooks-cursor.json").read_text(encoding="utf-8"))
-if cursor_hooks != {"version": 1, "hooks": {"sessionStart": [{"command": "node ./hooks/check-version.js", "timeout": 3}]}}:
-    raise SystemExit("Cursor hooks must run the packaged version checker on sessionStart only")
+if cursor_hooks != {"version": 1, "hooks": {
+    "sessionStart": [{"command": "node ./hooks/check-version.js", "timeout": 3}, {"command": "node ./scripts/learn.js start cursor", "timeout": 3}],
+    "beforeSubmitPrompt": [{"command": "node ./scripts/learn.js capture cursor", "timeout": 3}],
+    "postToolUseFailure": [{"command": "node ./scripts/learn.js capture cursor", "timeout": 3}],
+}}:
+    raise SystemExit("Cursor hooks must run the version checker and learn start on sessionStart, and learn capture on prompts and tool failures")
 if not all(token in readme for token in ["### Cursor", "~/.cursor/plugins/local/srulik-toolkit", "instead of symlinking", "hooks/hooks-cursor.json"]):
     raise SystemExit("README must document the Cursor local install and startup hook")
-
-hook_file = plugin / "hooks" / "hooks.json"
-hook_config = json.loads(hook_file.read_text(encoding="utf-8"))
-if set(hook_config) != {"hooks"} or set(hook_config["hooks"]) != {"SessionStart", "Stop"}:
-    raise SystemExit("hook must contain SessionStart and Stop only")
-groups = hook_config["hooks"]["SessionStart"]
-if not isinstance(groups, list) or len(groups) != 1:
-    raise SystemExit("hook must contain one startup matcher")
-group = groups[0]
-if set(group) != {"matcher", "hooks"} or group["matcher"] != "startup" or len(group["hooks"]) != 1:
-    raise SystemExit("hook must run once for startup only")
-hook = group["hooks"][0]
-if set(hook) != {"type", "command", "timeout"} or hook["type"] != "command" or hook["timeout"] != 3:
-    raise SystemExit("hook must contain one three-second command")
-command = hook["command"]
-if command != 'node -e "require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + \'/hooks/check-version.js\')"':
-    raise SystemExit("startup hook must invoke the packaged version checker")
-stop_groups = hook_config["hooks"]["Stop"]
-if not isinstance(stop_groups, list) or len(stop_groups) != 1 or set(stop_groups[0]) != {"hooks"}:
-    raise SystemExit("Stop hook must have one unfiltered group")
-stop_hooks = stop_groups[0]["hooks"]
-if len(stop_hooks) != 1 or stop_hooks[0] != {
-    "type": "command",
-    "command": 'node -e "require((process.env.PLUGIN_ROOT || process.env.CLAUDE_PLUGIN_ROOT) + \'/hooks/blocked-stop.js\')"',
-    "timeout": 3,
-}:
-    raise SystemExit("Stop hook must invoke the packaged recovery check")
 
 node = shutil.which("node")
 if not node:
