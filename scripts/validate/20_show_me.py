@@ -1,3 +1,4 @@
+import re
 # show-me: host-capability routing, Mermaid default, ASCII diagram ban, classic SRI Mermaid,
 # and host-specific T3 Code reference contract.
 show_me = (skill_root / "show-me" / "SKILL.md").read_text(encoding="utf-8")
@@ -36,6 +37,13 @@ for token in [
 ]:
     if token not in show_me:
         raise SystemExit(f"show-me is missing: {token}")
+# Every securityLevel in show-me is antiscript; loose or strict would re-enable or break click links.
+if re.findall(r'securityLevel:\s*"(\w+)"', show_me) != ["antiscript"] * show_me.count("securityLevel:"):
+    raise SystemExit('show-me must set securityLevel: "antiscript" everywhere')
+notice = " ".join((root / "NOTICE.md").read_text(encoding="utf-8").split())
+for token in ["host-capability output routing, ASCII-diagram ban,", "classic SRI HTML Mermaid rendering guidance, and host reference in `show-me`"]:
+    if token not in notice:
+        raise SystemExit(f"NOTICE.md is missing show-me attribution: {token}")
 if "mermaid.esm.min.mjs" in show_me:
     raise SystemExit("show-me must not use the broken ESM Mermaid build (mermaid.esm.min.mjs)")
 # Generic core: no harness tool calls or host names.
