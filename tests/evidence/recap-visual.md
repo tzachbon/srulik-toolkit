@@ -275,8 +275,12 @@ ed336637ae3e07c1505c70852d4c7f56c49d051ec8dfc459eb0ea20320917b3d  plugins/srulik
 9e17439c1acdbb6356db6e9a5bfe7c4fa1d002d3694a606992a06f9af03d2f1f  plugins/srulik-toolkit/skills/show-me/references/t3-code.md
 ```
 
-After the evals, show-me line 197 changed only its `click` support sentence
-(the re-audit probe above); the routing text the runs exercised is unchanged.
+After the evals, review fixes changed only show-me's HTML-page hardening
+(`click` support list, Mermaid label encoding and quoting, script placement,
+`target`/`rel` restore, https-only links, undocumented-host confirmation) and
+the T3 reference's single-file preview rule. The routing, chat-vs-file and
+recap `Show it` text the runs exercised is unchanged; the recap and tour skill
+files are byte-identical to the evaluated head.
 
 ## Limits
 
