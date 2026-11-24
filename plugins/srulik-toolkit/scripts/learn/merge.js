@@ -37,13 +37,14 @@ function commitFix(worktree, delta, info, state, fromCli) {
   if (!state.review_head || git(worktree, ["rev-parse", "HEAD"]) !== state.review_head) return "worktree is not at the review commit";
   if (!git(worktree, ["status", "--porcelain"], 60_000)) return "no changes";
   const branch = `srulik-learn/${delta.slug}`;
-  if (git(worktree, ["checkout", "-b", branch]) === null) return "branch exists";
   // The review could edit files that repository hooks run, so no hook may run outside its sandbox.
-  const noHooks = ["-c", `core.hooksPath=${os.devnull}`];
-  git(worktree, ["add", "-A"], 60_000);
-  if (git(worktree, [...noHooks, "commit", "--no-verify", "-m", `chore(learn): ${delta.summary}`], 120_000) === null) {
-    git(worktree, ["checkout", "--detach"]);
-    git(worktree, ["branch", "-D", branch]);
+  const noHooks = ["-c", `core.hooksPath=${os.devNull}`];
+  const run = (args, timeout) => git(worktree, [...noHooks, ...args], timeout);
+  if (run(["checkout", "-b", branch]) === null) return "branch exists";
+  run(["add", "-A"], 60_000);
+  if (run(["commit", "--no-verify", "-m", `chore(learn): ${delta.summary}`], 120_000) === null) {
+    run(["checkout", "--detach"]);
+    run(["branch", "-D", branch]);
     return "commit failed";
   }
   const record = { branch, summary: delta.summary, at: iso(now()) };

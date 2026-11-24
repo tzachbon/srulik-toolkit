@@ -117,14 +117,6 @@ with tempfile.TemporaryDirectory() as temporary:
     leaked = learn_signals(home)[-1]["text"]
     if any(secret in leaked for secret in ["sk-abcdefghijklmnop", "abc.def", "hunter2"]) or len(leaked) > 500:
         raise SystemExit("captured text must be redacted and truncated to 500 characters")
-    command = "NPM_TOKEN=abc123 AWS_SECRET_ACCESS_KEY='s3 cr3t' DATABASE_URL=postgres://user:p@ss/w9@host/db npm test --password hunter3 password=\"my pass\""
-    error = 'Exit code 1 {"api_key": "abcd1234efgh"} curl -u admin:s3cret -H "Authorization: Basic dXNlcjpw"'
-    learn_run(home, ["capture", "claude"], {"hook_event_name": "PostToolUseFailure", "cwd": cwd, "tool_input": {"command": command}, "error": error})
-    leaked = learn_signals(home)[-1]["text"]
-    secrets = ["abc123", "s3 cr3t", "cr3t", "ss/w9", "hunter3", "my pass", "pass\"", "abcd1234efgh", "s3cret", "dXNlcjpw"]
-    if any(secret in leaked for secret in secrets) or "npm test" not in leaked:
-        raise SystemExit(f"redaction missed a secret: {leaked}")
-    count += 1
     learn_run(home, ["capture", "claude"], {"cwd": cwd, "prompt": "no, never again"}, SRULIK_TOOLKIT_LEARN="0")
     if len(learn_signals(home)) != count + 1:
         raise SystemExit("SRULIK_TOOLKIT_LEARN=0 must stop capture")
@@ -249,6 +241,7 @@ with tempfile.TemporaryDirectory() as temporary:
         raise SystemExit("a failed commit must not leave its branch behind")
     learn_git(worktree, "checkout", "-q", "--detach", "main")
     learn_git(worktree, "reset", "-q", "--hard")
+    shutil.copy2(hook, hook.with_name("post-checkout"))
     (worktree / "AGENTS.md").write_text("# Agents\n\nRun `npm test` before finishing.\n", encoding="utf-8")
     (worktree / ".srulik-learn").mkdir()
     (worktree / ".srulik-learn" / "signals.jsonl").write_text("", encoding="utf-8")
@@ -259,6 +252,7 @@ with tempfile.TemporaryDirectory() as temporary:
     if ran.exists():
         raise SystemExit("a project fix commit must never run repository hooks the review could edit")
     hook.unlink()
+    hook.with_name("post-checkout").unlink()
     if ".srulik-learn" in learn_git(repo, "show", "--name-only", "srulik-learn/add-test-command"):
         raise SystemExit("review inputs must not be committed")
     record = json.loads(state_file.read_text(encoding="utf-8"))
@@ -275,3 +269,6 @@ with tempfile.TemporaryDirectory() as temporary:
     pr = [b for b in json.loads(state_file.read_text(encoding="utf-8"))["branches"] if b["branch"] == "srulik-learn/readme-tests"][0]
     if not any(step.startswith("gh pr create --draft") for step in pr.get("pr_dry", [])):
         raise SystemExit("SRULIK_TOOLKIT_LEARN_PRS=1 must open a draft PR")
+    node_null = r"\\.\nul" if os.name == "nt" else "/dev/null"
+    if not any(f"core.hooksPath={node_null} push --no-verify" in step for step in pr["pr_dry"]):
+        raise SystemExit("the fix branch push must not run repository hooks")

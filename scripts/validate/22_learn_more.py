@@ -23,6 +23,18 @@ with tempfile.TemporaryDirectory() as temporary:
         if shared:
             raise SystemExit(f"learn state must be readable by its owner only: {shared}")
 
+with tempfile.TemporaryDirectory() as temporary:
+    home = pathlib.Path(temporary) / "home"
+    repo = learn_repo(pathlib.Path(temporary))
+    command = "NPM_TOKEN=abc123 AWS_SECRET_ACCESS_KEY='s3 cr3t' DATABASE_URL=postgres://user:p@ss/w9@host/db npm test --password hunter3 password=\"my pass\""
+    error = ('Exit code 1 {"api_key": "abcd1234efgh"} curl -u admin:s3cret -H "Authorization: Basic dXNlcjpw" redis://:topsecret@localhost:6379 '
+             '{"Authorization": "Basic QXV0aDE="} headers: {Authorization: "Basic QXV0aDI="} curl -u "admin:s3 cret2" -uroot:pw3x')
+    learn_run(home, ["capture", "claude"], {"hook_event_name": "PostToolUseFailure", "cwd": str(repo), "tool_input": {"command": command}, "error": error})
+    leaked = learn_signals(home)[-1]["text"]
+    secrets = ["abc123", "s3 cr3t", "cr3t", "ss/w9", "hunter3", "my pass", "pass\"", "abcd1234efgh", "s3cret", "dXNlcjpw", "topsecret", "QXV0aDE", "QXV0aDI", "cret2", "pw3x"]
+    if [s for s in secrets if s in leaked] or "npm test" not in leaked or "localhost:6379" not in leaked:
+        raise SystemExit(f"redaction missed a secret: {leaked}")
+
 if os.name != "nt" and os.geteuid() != 0:
     import time
     with tempfile.TemporaryDirectory() as temporary:
