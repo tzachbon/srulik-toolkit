@@ -201,14 +201,28 @@ tour_contract = [
     "after the initial research",
     "materially change the tour's scope, chronology, or interpretation",
     "invoke `$show-me` for every completed tour",
+    "Defer the chat visual format to `$show-me`'s host-capability routing",
+    "never ASCII box-drawing or arrow art for flows, timelines, pipelines, or PR stacks",
+    "Keep the visual embedded inside the temporary tour Markdown file in Markdown",
     "OS-managed temporary path outside the repository",
     "Context-encode every untrusted topic, repository, and research value",
-    "keep scripts static and trusted, and load no remote resources",
+    "keep scripts static and trusted",
+    "load no remote resources except the pinned integrity-checked Mermaid build",
+    "mermaid@12.3.0/dist/mermaid.min.js",
+    "sha384-HHW54r639fK42Ip0coGF3mz8oSiGn0eEoWNTLs75X7H63pLSDBa0Tqs0RwGmLlXE",
+    'securityLevel: "antiscript"',
+    "When remote resources are forbidden, render the diagram as inline SVG instead",
     "OS-managed temporary Markdown file outside the repository",
     "verified facts, user decisions, inferences, and unresolved gaps",
 ]
-if not all(token in tour for token in tour_contract):
-    raise SystemExit("tour is missing its research, grilling, visualization, or delivery contract")
+for token in tour_contract:
+    if token not in tour:
+        raise SystemExit(f"tour is missing contract phrase: {token}")
+if "and load no remote resources." in tour:
+    raise SystemExit("tour still forbids the pinned SRI Mermaid build")
+for token in ["Bash(", "Claude", "Codex", "Cursor", "T3", "t3_", "html_preview", "html_render"]:
+    if token in tour:
+        raise SystemExit(f"tour core must stay host-neutral: {token}")
 
 for skill_name in expected:
     if f"skills/{skill_name}/SKILL.md" not in readme:

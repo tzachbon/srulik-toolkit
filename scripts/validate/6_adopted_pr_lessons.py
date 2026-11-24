@@ -126,6 +126,13 @@ for token in [
     "- **Goal:**", "- **Done:**", "- **Now:**", "- **Waiting on:**",
     "## Write it like I'm five", "Write the whole recap in plain words",
     "explain around them", "## Show it", "The visual is the heart of the recap; place it right after **Goal**", "in the style of `show-me`",
+    "when an inline-HTML host renders the HTML page above the reply, open the reply text with **Goal**",
+    "following its host-capability routing",
+    "Session chronology or wave sequence: Mermaid `timeline`, or `flowchart LR`",
+    "Multi-PR stack or branch history: Mermaid `gitGraph`",
+    "`timeline` and `gitGraph` do not support Mermaid `click` directives",
+    "Never draw flows, timelines, pipelines, or PR stacks with ASCII box-drawing or arrow art",
+    "reserve text trees (`├──`, `└──`) for file, component, or call-tree shape",
     "hand off to `retro`",
     "If the session is new and has no history, recap the project instead",
 ]:
@@ -137,5 +144,5 @@ if (skill_root / "to-project" / "base-skills" / "recap-project").exists():
     raise SystemExit("recap-project is deprecated; the recap skill replaces it")
 if "7. **Close with `$srulik-toolkit:recap`.**" not in end_to_end or "Run it for `WAITING`, `BLOCKED`, and `STOPPED` handoffs too" not in end_to_end:
     raise SystemExit("end-to-end workflow must close with a recap")
-if re.search(r"t3_[a-z_]+|\bT3\b|Bash\(", recap):
+if re.search(r"t3_[a-z_]+|\bT3\b|Bash\(|Claude|Codex|Cursor|html_render|html_preview", recap):
     raise SystemExit("recap core must stay host-agnostic")
