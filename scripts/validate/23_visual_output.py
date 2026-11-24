@@ -5,6 +5,8 @@
 _VIS_UNI = re.compile(r"[─-╿←-⇿▲▶►▼◀]")
 _VIS_ASCII = re.compile(r"(?<![=<-])-{1,}>|\+-{2,}\+|<-{2,}|\|-{2,}")
 _VIS_TREE = re.compile(r"^[+\- ]?[ \t│]*[├└]── ")
+# A tree spacer line holds only vertical rails, e.g. "│   │".
+_VIS_TREE_SPACER = re.compile(r"^[ \t│]*│[ \t│]*$")
 _VIS_PLAIN = {"", "text", "txt", "plain", "plaintext"}
 
 
@@ -21,6 +23,8 @@ def find_ascii_diagrams(text):
             fence = None
             continue
         if not fence or fence[1] == "mermaid":
+            continue
+        if _VIS_TREE_SPACER.match(line):
             continue
         tree = _VIS_TREE.match(line)
         line_rest = line[tree.end():] if tree else line
@@ -51,7 +55,7 @@ if mermaid_hits:
 # ```span``` at line start must not open a fence.
 assert find_ascii_diagrams("```\n├── PR #101 ──▶ PR #102\n```\n"), "tree prefix exempted an arrow"
 assert find_ascii_diagrams("```\n└── PR #103 --> PR #104\n```\n"), "tree prefix exempted ASCII arrow"
-assert not find_ascii_diagrams("```\n├── src/\n│   └── main.py\n```\n"), "file tree flagged"
+assert not find_ascii_diagrams("```\n├── src/\n│   ├── a/\n│   │\n│   └── main.py\n```\n"), "file tree flagged"
 assert find_ascii_diagrams("```mermaid``` blocks render.\n```text\n+---+ --> +---+\n```\n"), "inline span opened a fence"
 
 for md_path in sorted(skill_root.rglob("*.md")):

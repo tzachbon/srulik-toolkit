@@ -20,7 +20,10 @@ export/
 ├── schema.py      # PR #101
 ├── query.py       # PR #102
 ├── csv_writer.py  # PR #103
-└── cli.py         # PR #104
+├── cli/
+│   │
+│   └── main.py    # PR #104
+└── README.md
 ```
 
 **Done:**

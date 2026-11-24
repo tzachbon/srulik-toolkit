@@ -9,6 +9,7 @@ for token in [
     "Mermaid-fence host",
     "Plain Markdown host",
     "Chat vs. file scope",
+    "say it is untested, and use it only after the user confirms",
     "Visuals written into files",
     "No ASCII diagrams",
     "never draw flows, timelines, pipelines, or PR stacks with ASCII box-drawing or arrow art",
