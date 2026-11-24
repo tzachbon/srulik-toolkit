@@ -30,13 +30,17 @@ for token in [
     'securityLevel: "antiscript"',
     "prefers-color-scheme: dark",
     "mermaid.run()",
-    "`timeline` and `gitGraph` do not support `click`",
+    'work under `securityLevel: "antiscript"` in `flowchart` and `classDiagram`',
+    "including `timeline`, `gitGraph` and `stateDiagram-v2`, do not reliably support `click`",
     "escape `<` as `&lt;`",
     "forbids remote resources, draw the diagram as inline SVG",
     "the host's viewer or the OS opener",
 ]:
     if token not in show_me:
         raise SystemExit(f"show-me is missing: {token}")
+# Live T3 probe: stateDiagram-v2 `click` is a parse error and gantt yields no link.
+if re.search(r"work under `securityLevel: \"antiscript\"` in [^;]*?(`stateDiagram|`gantt)", show_me):
+    raise SystemExit("show-me must not claim Mermaid click links work in stateDiagram or gantt")
 # Every securityLevel in show-me is antiscript; loose or strict would re-enable or break click links.
 if re.findall(r'securityLevel:\s*"(\w+)"', show_me) != ["antiscript"] * show_me.count("securityLevel:"):
     raise SystemExit('show-me must set securityLevel: "antiscript" everywhere')

@@ -194,7 +194,7 @@ function expandSkill(command: string): string {
 </script>
 ```
 
-Mermaid `click` links (`click NodeId href "https://..." _blank`) work under `securityLevel: "antiscript"` in `flowchart`, `classDiagram`, `stateDiagram`, and `gantt` (`antiscript` strips `javascript:` links and blocks script callbacks); `timeline` and `gitGraph` do not support `click`, so place clickable PR or issue links in a link list or collapsible `<details>` block beneath the diagram. When the caller or environment forbids remote resources, draw the diagram as inline SVG instead. Display the page through the host's inline HTML capability (see the [host mapping](references/t3-code.md)); otherwise write it to a collision-safe, OS-managed temporary path outside the repository and open the file for the user with the host's viewer or the OS opener; if neither is available, give its path.
+Mermaid `click` links (`click NodeId href "https://..." _blank`) work under `securityLevel: "antiscript"` in `flowchart` and `classDiagram` (`antiscript` strips `javascript:` links and blocks script callbacks); other diagram types, including `timeline`, `gitGraph` and `stateDiagram-v2`, do not reliably support `click`, so place clickable PR or issue links in a link list or collapsible `<details>` block beneath the diagram. When the caller or environment forbids remote resources, draw the diagram as inline SVG instead. Display the page through the host's inline HTML capability (see the [host mapping](references/t3-code.md)); otherwise write it to a collision-safe, OS-managed temporary path outside the repository and open the file for the user with the host's viewer or the OS opener; if neither is available, give its path.
 
 ### guidance
 

@@ -100,8 +100,8 @@ E1-E4 were fixed before the runs:
 
 | Side | E1 | E2 | E3 | E4 | Time | Cost |
 | --- | --- | --- | --- | --- | --- | --- |
-| `with_skill` | pass (`gitGraph`) | pass (0 hits) | pass | pass | 32 s | $0.22 |
-| `old_skill` | fail (ASCII in a bare fence) | fail (1 hit, line 6) | pass | pass | 36 s | $0.22 |
+| `with_skill` | pass (`gitGraph`) | pass (0 hits) | pass | pass | 30 s | $0.22 |
+| `old_skill` | fail (ASCII in a bare fence) | fail (1 hit, line 6) | pass | pass | 35 s | $0.22 |
 
 `with_skill` drew a `gitGraph` and put the PR links in a `<details>` block
 below it, as the skill now says for diagram types without `click`. With no
@@ -220,6 +220,13 @@ Both rendered pages load only `mermaid@12.3.0/dist/mermaid.min.js` with the
 pinned `sha384-HHW54r…` integrity and `securityLevel:"antiscript"`; no other
 remote URL appears.
 
+Re-audit probe (T3 `html_preview`, same build, `antiscript`): `click ... href`
+produced an `<a>` in `classDiagram` and `flowchart`; `stateDiagram-v2` with
+`click` failed to parse; `gantt` marked the task clickable but rendered no
+link. show-me now limits the claim to `flowchart` and `classDiagram`.
+
+Durations come from each run's `duration_ms` in the `--output-format json` result.
+
 SHA-256 at the evaluated head:
 
 ```text
@@ -228,6 +235,9 @@ ed336637ae3e07c1505c70852d4c7f56c49d051ec8dfc459eb0ea20320917b3d  plugins/srulik
 3a4e46c1e1ba0f578db5f473bd776d964e38f950b24b587ed7fab41b63b3c946  plugins/srulik-toolkit/skills/tour/SKILL.md
 9e17439c1acdbb6356db6e9a5bfe7c4fa1d002d3694a606992a06f9af03d2f1f  plugins/srulik-toolkit/skills/show-me/references/t3-code.md
 ```
+
+After the evals, show-me line 197 changed only its `click` support sentence
+(the re-audit probe above); the routing text the runs exercised is unchanged.
 
 ## Limits
 
