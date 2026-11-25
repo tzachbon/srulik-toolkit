@@ -135,7 +135,7 @@ function render() {
     cards(node).forEach(i => col.append(card(i))); board.append(col);
   }
   main.replaceChildren(board);
-  if (focused) board.querySelector(`[data-id="${CSS.escape(focused)}"]`)?.focus();
+  if (focused) board.querySelector(`[data-id="${CSS.escape(focused)}"]`)?.focus({ preventScroll: true });
   edges(board, svg);
   follow(board);
   if (open) fillPanel(open);
