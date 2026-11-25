@@ -201,6 +201,7 @@ tour_contract = [
     "after the initial research",
     "materially change the tour's scope, chronology, or interpretation",
     "invoke `$show-me` for every completed tour",
+    "when `$show-me` publishes to the host's hosted page, its host reference chooses the file location",
     "Defer the chat visual format to `$show-me`'s host-capability routing",
     "never ASCII box-drawing or arrow art for flows, timelines, pipelines, or PR stacks",
     "Keep the visual embedded inside the temporary tour Markdown file in Markdown",

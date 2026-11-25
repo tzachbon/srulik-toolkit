@@ -62,6 +62,39 @@ for token in ["Bash(", "Claude", "Codex", "Cursor", "T3", "t3_", "html_preview",
     if token in show_me:
         raise SystemExit(f"show-me core must stay host-neutral: {token}")
 
+# show-me: HTML goes to the host's hosted page when one exists; the Claude Code mapping lives in a reference.
+for token in [
+    "when a host reference documents a host-native private, shareable hosted page",
+    "when you revise a visual you already published in this conversation, update that page",
+    "Do not publish when the user asked for the file itself",
+    "say it is untested, and publish only after the user confirms",
+    "Otherwise, or when publishing fails, write it to a collision-safe, OS-managed temporary path",
+    "Hosted-page references: [references/claude-code.md](references/claude-code.md)",
+]:
+    if token not in show_me:
+        raise SystemExit(f"show-me is missing: {token}")
+if "`Artifact`" in show_me or "artifact-design" in show_me:
+    raise SystemExit("show-me core must stay host-neutral: name the hosted page, not the tool")
+show_me_claude = skill_root / "show-me" / "references" / "claude-code.md"
+if not show_me_claude.is_file():
+    raise SystemExit("show-me is missing references/claude-code.md")
+show_me_claude_text = show_me_claude.read_text(encoding="utf-8")
+for token in [
+    "`Artifact`",
+    "`artifact-design`",
+    "same `file_path`",
+    "leave out the core's Mermaid scripts",
+    "add the core's pinned Mermaid scripts back before opening the local file",
+    "Without that tool, or when a publish is refused, use the core fallback",
+    "When the system prompt lists no scratchpad, use the core fallback",
+    "skip `quickstart` and the Artifact types",
+    "When the caller forbids remote resources, also skip web fonts and CDN scripts",
+    "do not also open the local file",
+    "Never publish a page that imitates",
+    "Observed with Claude Code",
+]:
+    if token not in show_me_claude_text:
+        raise SystemExit(f"show-me Claude Code reference is missing: {token}")
 # Host-specific reference contract (CODING_STANDARDS.md).
 # Part 5 already fails when the linked file is missing, so read it directly.
 show_me_t3 = (skill_root / "show-me" / "references" / "t3-code.md").read_text(encoding="utf-8")
