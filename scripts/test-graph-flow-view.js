@@ -138,4 +138,34 @@ module.exports = {
     assert.match(yaml, /tasks lists only the first PR's tasks/);
     assert.match(yaml, /With no Git repository,\r?\n\s+back up each file first/);
   },
+
+  // the live view scrolls the last dispatched card into view once, not on every re-render
+  C50() {
+    const { PAGE } = mod('view.js');
+    const section = PAGE.split('// ---- state folded from run.jsonl')[1].split('// ---- preferences')[0];
+    const pg = vm.runInNewContext(section + '\n;({ run, apply })');
+    pg.apply({ type: 'spec', t: 1, name: 'x', nodes: ['a', 'b'], edges: {} });
+    assert.equal(pg.run.active, undefined, 'nothing is active before a dispatch');
+    pg.apply({ type: 'dispatch', t: 2, node: 'a', index: 0, taskType: 'agent' });
+    assert.equal(pg.run.active, 'a#0');
+    pg.apply({ type: 'dispatch', t: 3, node: 'b', index: 1, round: 2, taskType: 'agent' });
+    assert.equal(pg.run.active, 'b#1.r2', 'the latest dispatch wins, round included');
+    pg.apply({ type: 'result', t: 4, node: 'b', index: 1, round: 2, output: {} });
+    assert.equal(pg.run.active, 'b#1.r2', 'a result keeps the last active card');
+    // render's scroll step: scrolls once per new active card
+    const step = PAGE.split('// ---- follow the active card')[1].split(/\r?\n}\r?\n/)[0] + '\n}';
+    const scrolled = [];
+    const board = { querySelector: sel => ({ scrollIntoView: o => scrolled.push([sel, o.behavior]) }) };
+    const run = { active: 'a#0', dispatches: 1 }; let reduce = true;
+    const f = vm.runInNewContext(step + '\n;follow', { run, CSS: { escape: s => s }, matchMedia: () => ({ matches: reduce }) });
+    f({ querySelector: () => null });
+    f(board); f(board);
+    assert.deepEqual(scrolled, [['[data-id="a#0"]', 'auto']], 'a card not drawn yet is retried; then one scroll per dispatch; reduced motion jumps');
+    run.dispatches = 2; reduce = false; f(board);
+    assert.deepEqual(scrolled[1], ['[data-id="a#0"]', 'smooth'], 'a retry of the same card scrolls again, smoothly by default');
+    pg.apply({ type: 'dispatch', t: 5, node: 'b', index: 1, round: 2, taskType: 'agent', attempt: 2 });
+    assert.equal(pg.run.dispatches, 3, 'every dispatch counts, retries included');
+    assert.match(PAGE.split('function render() {')[1].split(/\r?\n}\r?\n/)[0], /follow\(board\);/, 'render follows the active card');
+    assert.match(PAGE, /\?\.focus\(\{ preventScroll: true \}\);\r?\n  edges\(board, svg\);/, 'restoring focus on re-render does not scroll the view back');
+  },
 };
