@@ -156,8 +156,15 @@ module.exports = {
     const step = PAGE.split('// ---- follow the active card')[1].split(/\r?\n}\r?\n/)[0] + '\n}';
     const scrolled = [];
     const board = { querySelector: sel => ({ scrollIntoView: o => scrolled.push([sel, o.behavior]) }) };
-    const f = vm.runInNewContext(step + '\n;follow', { run: { active: 'a#0' }, CSS: { escape: s => s }, matchMedia: () => ({ matches: true }) });
+    const run = { active: 'a#0', dispatches: 1 }; let reduce = true;
+    const f = vm.runInNewContext(step + '\n;follow', { run, CSS: { escape: s => s }, matchMedia: () => ({ matches: reduce }) });
+    f({ querySelector: () => null });
     f(board); f(board);
-    assert.deepEqual(scrolled, [['[data-id="a#0"]', 'auto']], 'one scroll per new active card; reduced motion jumps');
+    assert.deepEqual(scrolled, [['[data-id="a#0"]', 'auto']], 'a card not drawn yet is retried; then one scroll per dispatch; reduced motion jumps');
+    run.dispatches = 2; reduce = false; f(board);
+    assert.deepEqual(scrolled[1], ['[data-id="a#0"]', 'smooth'], 'a retry of the same card scrolls again, smoothly by default');
+    pg.apply({ type: 'dispatch', t: 5, node: 'b', index: 1, round: 2, taskType: 'agent', attempt: 2 });
+    assert.equal(pg.run.dispatches, 3, 'every dispatch counts, retries included');
+    assert.match(PAGE.split('function render() {')[1].split('\n}\n')[0], /follow\(board\);/, 'render follows the active card');
   },
 };

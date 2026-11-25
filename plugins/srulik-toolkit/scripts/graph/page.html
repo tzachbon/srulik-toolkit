@@ -36,7 +36,7 @@ function apply(e) {
       run.loopOf = map(); for (const [L, l] of Object.entries(e.loops || {})) { run.loops[L] = { round: 1, max: l.max_rounds, exit: null }; l.nodes.forEach(n => { run.loopOf[n] = L; }); } break;
     case 'admit': run.admitted[e.node] = e.count; (e.items || []).forEach((it, i) => Object.assign(inst(e.node, i, e.round), { item: it.item, src: it.src })); break;
     case 'dispatch': { const i = at(e); Object.assign(i, { state: e.taskType === 'parent' ? 'waiting on orchestrator' : 'running', parent: e.taskType === 'parent',
-      attempt: e.attempt, item: e.item, src: e.src }); i.start ??= e.t; run.active = i.id; break; }
+      attempt: e.attempt, item: e.item, src: e.src }); i.start ??= e.t; run.active = i.id; run.dispatches = (run.dispatches || 0) + 1; break; }
     case 'pick': Object.assign(at(e), { model: e.model, effort: e.effort, provider: e.provider, reason: e.reason }); break;
     case 'result': Object.assign(at(e), { state: e.dropped ? 'dropped' : 'done', stop: e.t, output: e.output, file: e.file, summary: e.summary, error: undefined,
       attachments: e.attachments || [], model: e.model ?? at(e).model }); break;
@@ -141,12 +141,14 @@ function render() {
   if (open) fillPanel(open);
 }
 // ---- follow the active card
-// scroll to it once each time a new card is dispatched, so later re-renders don't pull the view back
-let followed = null;
+// scroll to it once per dispatch (a retry counts), so later re-renders don't pull the view back
+let followed = 0;
 function follow(board) {
-  if (!run.active || run.active === followed) return;
-  followed = run.active;
-  board.querySelector(`[data-id="${CSS.escape(run.active)}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  if (!run.active || run.dispatches === followed) return;
+  const c = board.querySelector(`[data-id="${CSS.escape(run.active)}"]`);
+  if (!c) return; // not drawn yet: the next render tries again
+  followed = run.dispatches;
+  c.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }
 // An instance fanned out from one source instance draws one edge from it; any other instance draws from every card of each parent.
 function edges(board, svg) {
