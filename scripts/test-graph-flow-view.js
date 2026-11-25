@@ -165,7 +165,7 @@ module.exports = {
     assert.deepEqual(scrolled[1], ['[data-id="a#0"]', 'smooth'], 'a retry of the same card scrolls again, smoothly by default');
     pg.apply({ type: 'dispatch', t: 5, node: 'b', index: 1, round: 2, taskType: 'agent', attempt: 2 });
     assert.equal(pg.run.dispatches, 3, 'every dispatch counts, retries included');
-    assert.match(PAGE.split('function render() {')[1].split('\n}\n')[0], /follow\(board\);/, 'render follows the active card');
-    assert.match(PAGE, /\?\.focus\(\{ preventScroll: true \}\);\n  edges\(board, svg\);/, 'restoring focus on re-render does not scroll the view back');
+    assert.match(PAGE.split('function render() {')[1].split(/\r?\n}\r?\n/)[0], /follow\(board\);/, 'render follows the active card');
+    assert.match(PAGE, /\?\.focus\(\{ preventScroll: true \}\);\r?\n  edges\(board, svg\);/, 'restoring focus on re-render does not scroll the view back');
   },
 };
